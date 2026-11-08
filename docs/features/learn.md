@@ -15,6 +15,21 @@ The flow is **Home → Study Set → Learn → round review → finish → Study
 | Flashcard preview | Match the 500 px height, 12 px corner radius, two-layer shadow, orange progress stripe, and 48 px previous and next controls. Show MCQ prompts and answers, position, and a star action. Use `#0036b4` for outline controls. |
 
 
+### Flashcard preview interactions
+
+The preview shows the question position, star, and navigation controls. JaneQ uses separate vertical flip and horizontal slide animations, with horizontal swipes for touchscreens. Motion runs the animations. Pointer Events distinguish a tap, a horizontal swipe, and a vertical scroll. [Quizzy flashcards](https://github.com/sztephen/Quizzy/blob/main/app/flashcards/page.tsx)
+
+Open any Ready set from Home. Tap the card or press Space or Enter with the card focused to flip it in place. Swipe left for the next card and right for the previous card. The arrow buttons and keys use the same navigation. Each swipe moves at most one card, and the first and last cards stop at the ends of the set. Each new card opens on its question by default. **Show the answer first** reverses that preference. With reduced motion enabled, both changes happen immediately.
+
+The preview reads prompts and correct answer text from `GET /api/study-sets/{set_id}/preview` using the signed-in session. It flips and navigates the loaded cards locally. [API and storage](#api-and-storage)
+
+| Check | How to reproduce | Expected result | Verification |
+| --- | --- | --- | --- |
+| Desktop flip and navigation | At 1440 px, click the first HTML / CSS card, drag left while on the answer, then focus the card and press Left and Space. | The card rotates vertically. The drag slides to question 2 without flipping it. Left returns to question 1 and Space flips it with visible focus. | Pass · Chromium |
+| Touch gestures | At 390 px with touch emulation, tap the card, swipe left and right, swipe right again on question 1, then try a short drag and a vertical swipe. | Tap flips the card. Horizontal swipes move one card each. The boundary, short drag, and vertical swipe leave the card on question 1. The page fits the viewport. | Pass · Chromium with touch emulation |
+| Reduced motion and settings | Enable reduced motion, flip a card, and select Next. Set **Show the answer first** and run Autoplay. | Flip and navigation update without a transition. Each new card honors the chosen face, and Autoplay advances. | Pass · Chromium |
+| Preview retry | Block the preview request, reload, unblock it, and select **Try again**. | The error clears and the first card loads from the API. | Pass · Chromium |
+
 ## Learn milestone
 
 Learn has a round header with Back and Settings, a progress bar, and one prompt at a time. Answer choices use two columns at wider widths and one on narrow screens. Learners can acknowledge an incorrect answer or continue after the round summary. The completion screen returns to the set and can offer review of missed items.

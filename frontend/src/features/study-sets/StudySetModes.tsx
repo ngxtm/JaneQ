@@ -1,14 +1,15 @@
-import { Box, Button, Dialog, Flex, Grid, IconButton, Portal, Stack, Text, VisuallyHidden, chakra } from '@chakra-ui/react'
+import { Box, Button, Dialog, Flex, Grid, IconButton, Portal, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import {
   IconArrowsShuffle, IconBrain, IconCards, IconChevronLeft, IconChevronRight, IconReport,
   IconPlayerPlay, IconSettings, IconStar, IconStarFilled,
 } from '@tabler/icons-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { httpErrorMessage, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import { getStudyPreview, type StudyCard } from '../learn/api'
 import { learnHref } from './library-navigation'
+import { PreviewCard } from './PreviewCard'
 
 const actionColor = '#0036b4'
 const actionHover = '#e0edff'
@@ -66,6 +67,7 @@ function readStars(key: string): string[] {
 function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   const [order, setOrder] = useState(cards)
   const [index, setIndex] = useState(0)
+  const [direction, setDirection] = useState(0)
   const [answerFirst, setAnswerFirst] = useState(false)
   const [flipped, setFlipped] = useState(false)
   const [autoplay, setAutoplay] = useState(false)
@@ -73,23 +75,26 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   const [stars, setStars] = useState(() => readStars(starKey))
   const card = order[index]
   const showingAnswer = answerFirst !== flipped
+  const changeCard = useCallback((nextIndex: number, nextDirection: number) => {
+    setDirection(nextDirection)
+    setIndex(nextIndex)
+    setFlipped(false)
+  }, [])
 
   useEffect(() => {
     if (!autoplay || settings) return
     const timer = window.setTimeout(() => {
       if (!flipped) setFlipped(true)
-      else if (index + 1 < order.length) {
-        setIndex(index + 1)
-        setFlipped(false)
-      } else setAutoplay(false)
+      else if (index + 1 < order.length) changeCard(index + 1, 1)
+      else setAutoplay(false)
     }, 2500)
     return () => window.clearTimeout(timer)
-  }, [autoplay, flipped, index, order.length, settings])
+  }, [autoplay, changeCard, flipped, index, order.length, settings])
 
-  function move(offset: number) {
+  function move(offset: -1 | 1) {
     setAutoplay(false)
-    setIndex((current) => Math.max(0, Math.min(order.length - 1, current + offset)))
-    setFlipped(false)
+    const nextIndex = index + offset
+    if (nextIndex >= 0 && nextIndex < order.length) changeCard(nextIndex, offset)
   }
 
   function shuffleCards() {
@@ -101,8 +106,7 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
       shuffled[other] = card
     }
     setOrder(shuffled)
-    setIndex(0)
-    setFlipped(false)
+    changeCard(0, 0)
   }
 
   if (!card) return null
@@ -130,20 +134,8 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
             css={iconSize} _hover={{ bg: actionHover }} aria-label={starred ? 'Unstar question' : 'Star question'}
             aria-pressed={starred} onClick={() => toggleStar(card.id)}>{starred ? <IconStarFilled /> : <IconStar />}</IconButton>
         </Grid>
-        <chakra.button type="button" display="grid" placeItems="safe center" flex="1" minH="0" px="3" py="3" bg="transparent"
-          border="0" rounded="lg" color="inherit" cursor="pointer" overflowY="auto" textAlign="center" whiteSpace="pre-wrap" overflowWrap="anywhere"
-          fontFamily="heading" fontSize="36px" lineHeight="1.2" fontWeight="400"
-          _focusVisible={{ outline: '2px solid', outlineColor: 'janeq.focus', outlineOffset: '-2px' }}
-          aria-label={`Flip card. ${showingAnswer ? card.answers.join(', ') : card.prompt}`}
-          onClick={() => { setAutoplay(false); setFlipped((value) => !value) }}
-          onKeyDown={(event) => {
-            if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-              event.preventDefault()
-              move(event.key === 'ArrowLeft' ? -1 : 1)
-            }
-          }}>
-          {showingAnswer ? card.answers.join('\n') : card.prompt}
-        </chakra.button>
+        <PreviewCard card={card} flipped={flipped} answerFirst={answerFirst} direction={direction}
+          onFlip={() => { setAutoplay(false); setFlipped((value) => !value) }} onMove={move} />
         <Grid templateColumns="1fr 1fr" gap="4">
           <IconButton {...previewOutline} h="12" color="janeq.ink" aria-label="Previous card" disabled={index === 0} onClick={() => move(-1)}><IconChevronLeft /></IconButton>
           <IconButton {...previewOutline} h="12" color="janeq.ink" aria-label="Next card" disabled={index + 1 === order.length} onClick={() => move(1)}><IconChevronRight /></IconButton>
