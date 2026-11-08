@@ -5,7 +5,13 @@ import { isQuestion, type Question } from '../study-sets/question'
 type TestMetadata = { set_id: string; title: string; revision: number }
 export type TestPaper = TestMetadata & { questions: Question[] }
 export type GradedQuestion = Question & { selected_ids: string[]; correct_ids: string[]; correct: boolean }
-export type TestResult = TestMetadata & { score: number; total: number; questions: GradedQuestion[] }
+export type TestResult = TestMetadata & {
+  score: number
+  total: number
+  submitted_by: string
+  submitted_at: string
+  questions: GradedQuestion[]
+}
 type TestAnswer = { question_id: string; selected_ids: string[] }
 type TestConflict = { code: 'draft'; remaining_questions: number } | { code: 'revision_changed' }
 
@@ -47,6 +53,9 @@ export async function getTest(id: string, signal: AbortSignal): Promise<TestPape
 export async function submitTest(paper: TestPaper, answers: TestAnswer[], signal: AbortSignal): Promise<TestResult> {
   const { data } = await http.post<unknown>(testPath(paper.set_id), { revision: paper.revision, answers }, { signal })
   if (!isMetadata(data, paper.set_id) || data.revision !== paper.revision
+    || typeof data.submitted_by !== 'string' || !data.submitted_by.trim()
+    || typeof data.submitted_at !== 'string' || !/(?:Z|\+00:00)$/.test(data.submitted_at)
+    || !Number.isFinite(Date.parse(data.submitted_at))
     || !Array.isArray(data.questions) || !data.questions.every(isGradedQuestion)
     || data.total !== paper.questions.length || data.total !== data.questions.length
     || !isCount(data.score) || data.score !== data.questions.filter((question) => question.correct).length) {

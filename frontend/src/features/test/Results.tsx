@@ -1,25 +1,14 @@
 import { Box, Button, Flex, Heading, HStack, ProgressCircle, Stack, Text } from '@chakra-ui/react'
-import { IconArrowLeft, IconCircleCheck, IconCircleX, IconDownload, IconRotateClockwise2 } from '@tabler/icons-react'
-import { useEffect, useRef } from 'react'
-import { PrimaryButton } from '../../ui/PrimaryButton'
+import { IconArrowLeft, IconCircleCheck, IconCircleX, IconRotateClockwise2 } from '@tabler/icons-react'
+import { useEffect, useRef, useState } from 'react'
 import { studySetHref } from '../study-sets/library-navigation'
 import type { TestResult } from './api'
+import { DownloadResultButton } from './DownloadResultButton'
 import { ReviewedQuestion } from './TestQuestion'
-
-function downloadResult(result: TestResult) {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2) + '\n'], { type: 'application/json' }))
-  const link = document.createElement('a')
-  link.href = url
-  link.download = `${result.set_id.replace(/[^a-zA-Z0-9_-]/g, '-')}-test-results.json`
-  document.body.append(link)
-  link.click()
-  link.remove()
-  // Leave the URL available until Chromium has started the download.
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
 
 export function Results({ result, onRestart }: { result: TestResult; onRestart: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null)
+  const [downloadError, setDownloadError] = useState('')
   useEffect(() => {
     window.scrollTo(0, 0)
     heading.current?.focus({ preventScroll: true })
@@ -38,7 +27,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
           </Heading>
         </Box>
         <Flex wrap="wrap" gap="2">
-          <PrimaryButton onClick={() => downloadResult(result)}><IconDownload size={18} aria-hidden="true" /> Export JSON</PrimaryButton>
+          <DownloadResultButton result={result} onError={setDownloadError} />
           <Button variant="outline" color="janeq.focus" borderColor="janeq.line" _hover={{ bg: 'blue.50' }} onClick={onRestart}>
             <IconRotateClockwise2 size={18} aria-hidden="true" /> New test
           </Button>
@@ -47,6 +36,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
           </Button>
         </Flex>
       </Flex>
+      {downloadError ? <Text role="alert" color="red.700">{downloadError}</Text> : null}
       <Flex as="section" aria-label="Score summary" direction={{ base: 'column', md: 'row' }} gap="6"
         bg="white" rounded="3xl" borderWidth="2px" borderStyle="solid" borderColor="janeq.divider" shadow="xl"
         px={{ base: '5', sm: '8' }} py="6">

@@ -1,5 +1,6 @@
 import os
 from contextlib import closing
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
@@ -71,16 +72,25 @@ class TestResultsTests(TestCase):
             for option in question["options"]:
                 self.assertEqual(set(option), {"id", "text"})
 
+        before_submit = datetime.now(UTC)
         response = self.submit()
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.headers["Cache-Control"], "no-store")
         result = response.json()
+        self.assertEqual(result["submitted_by"], self.credentials["username"])
+        submitted_at = datetime.fromisoformat(result["submitted_at"])
+        self.assertEqual(submitted_at.utcoffset(), timedelta(0))
+        self.assertLessEqual(before_submit, submitted_at)
+        self.assertLessEqual(submitted_at, datetime.now(UTC))
         self.assertEqual((result["score"], result["total"]), (2, 3))
         for graded, question, selected, correct in zip(
             result["questions"], paper["questions"], ("q15-a", "q16-a", "q24-a"), ("q15-a", "q16-c", "q24-a"), strict=True,
         ):
             self.assertEqual(graded, {**question, "selected_ids": [selected], "correct_ids": [correct], "correct": selected == correct})
-        self.assertEqual(self.submit().json(), result)
+        resubmitted = self.submit().json()
+        self.assertGreaterEqual(datetime.fromisoformat(resubmitted.pop("submitted_at")), submitted_at)
+        result.pop("submitted_at")
+        self.assertEqual(resubmitted, result)
         with closing(connect(self.database)) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM learn_progress").fetchone()[0], 0)
 

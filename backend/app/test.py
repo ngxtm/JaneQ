@@ -1,11 +1,12 @@
 import sqlite3
 from contextlib import closing
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-from .auth import AuthError, SESSION_REQUIRED_RESPONSES, require_user
+from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect
 from .question_bank import Question, QuestionBank, read_question_bank
 
@@ -45,6 +46,11 @@ class TestResult(BaseModel):
     revision: int
     score: int
     total: int
+    submitted_by: str = Field(description="Username from the signed session.", examples=["review"])
+    submitted_at: AwareDatetime = Field(
+        description="Server time when the successful submission was received, in UTC.",
+        examples=["2026-11-08T09:30:00Z"],
+    )
     questions: list[GradedQuestion]
 
 
@@ -68,7 +74,6 @@ class SubmissionConflict(BaseModel):
 router = APIRouter(
     prefix="/api/study-sets/{set_id}/test",
     tags=["test"],
-    dependencies=[Depends(require_user)],
     responses={
         **SESSION_REQUIRED_RESPONSES,
         404: {"model": AuthError, "description": "Study set not found."},
@@ -115,7 +120,11 @@ def grade_test(bank: QuestionBank, submission: TestSubmission) -> list[GradedQue
     return results
 
 
-@router.get("", responses={409: {"model": DraftError, "description": "The study set is Draft."}})
+@router.get(
+    "",
+    dependencies=[Depends(require_user)],
+    responses={409: {"model": DraftError, "description": "The study set is Draft."}},
+)
 def get_test(set_id: str, request: Request, response: Response) -> TestPaper:
     """Load the ordered questions and selection types for a Ready study set."""
     response.headers["Cache-Control"] = "no-store"
@@ -127,9 +136,13 @@ def get_test(set_id: str, request: Request, response: Response) -> TestPaper:
 
 
 @router.post("", responses={409: {"model": SubmissionConflict, "description": "The set is Draft or the revision changed."}})
-def submit_test(set_id: str, submission: TestSubmission, request: Request, response: Response) -> TestResult:
+def submit_test(
+    set_id: str, submission: TestSubmission, request: Request, response: Response,
+    user: Annotated[User, Depends(require_user)],
+) -> TestResult:
     """Grade every question against the submitted revision and return the complete review."""
     response.headers["Cache-Control"] = "no-store"
+    submitted_at = datetime.now(UTC)
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
         bank = ready_bank(connection, set_id)
@@ -139,4 +152,5 @@ def submit_test(set_id: str, submission: TestSubmission, request: Request, respo
     return TestResult(
         set_id=set_id, title=bank.title, revision=bank.revision,
         score=sum(question.correct for question in questions), total=len(questions), questions=questions,
+        submitted_by=user.username, submitted_at=submitted_at,
     )

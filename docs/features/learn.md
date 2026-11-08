@@ -2,7 +2,7 @@
 
 ## Scope and order
 
-The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. The standalone **Flashcards** card is reserved. **Test** opens the [Test, Results, and JSON export flow](test-results.md) on Ready sets.
+The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. The standalone **Flashcards** card is reserved. **Test** opens the [Test, Results, and PDF download flow](test-results.md) on Ready sets.
 
 ## Study Set reference
 
