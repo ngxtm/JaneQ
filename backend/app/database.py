@@ -2,11 +2,14 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-from uuid import UUID, uuid5
+from uuid import UUID, uuid4, uuid5
+
+from .study_set_content import OptionContent, QuestionContent, StudySetContent, StudySetRevision
 
 BUILTIN_SETS_DIR = Path(__file__).with_name("builtin_sets")
 SEED_NAME = "builtin_catalog"
 STUDY_SET_NAMESPACE = UUID("9bcc275f-37db-4835-998b-ea87df42f6f7")
+CUSTOM_SET_NAMESPACE = UUID("f4b41117-0ff5-4df8-9146-fce50f20eac0")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS study_sets (
@@ -15,6 +18,7 @@ CREATE TABLE IF NOT EXISTS study_sets (
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     source_kind TEXT NOT NULL CHECK (source_kind IN ('builtin', 'custom')),
+    owner_username TEXT,
     revision INTEGER NOT NULL DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS questions (
@@ -55,6 +59,8 @@ QUESTION_STATUS = """
     GROUP BY q.id
 """
 
+VISIBLE_STUDY_SETS = "(source_kind = 'builtin' OR owner_username = :username)"
+
 
 def connect(path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
@@ -63,8 +69,10 @@ def connect(path: Path) -> sqlite3.Connection:
     return connection
 
 
-def upgrade_study_set_ids(connection: sqlite3.Connection) -> None:
+def upgrade_study_sets(connection: sqlite3.Connection) -> None:
     columns = {row["name"] for row in connection.execute("PRAGMA table_info(study_sets)")}
+    if "owner_username" not in columns:
+        connection.execute("ALTER TABLE study_sets ADD COLUMN owner_username TEXT")
     if "legacy_id" not in columns:
         connection.execute("ALTER TABLE study_sets ADD COLUMN legacy_id TEXT")
         # The parent and both referencing tables must change in the same transaction.
@@ -83,7 +91,7 @@ def initialize_database(path: Path) -> None:
     with closing(connect(path)) as connection, connection:
         # Acquire the write lock before checking the seed marker.
         connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA)
-        upgrade_study_set_ids(connection)
+        upgrade_study_sets(connection)
         already_seeded = connection.execute(
             "SELECT 1 FROM seed_history WHERE name = ?", (SEED_NAME,)
         ).fetchone()
@@ -138,34 +146,111 @@ def seed_question(
     )
 
 
-def list_study_sets(path: Path) -> list[sqlite3.Row]:
-    with closing(connect(path)) as connection:
-        return connection.execute(
-            f"""
-            WITH question_status AS ({QUESTION_STATUS})
-            SELECT s.id, s.legacy_id, s.title, s.description, s.source_kind,
-                COUNT(q.id) AS question_count,
-                COALESCE(SUM(q.configured), 0) AS configured_count,
-                CASE
-                    WHEN COUNT(q.id) > 0 AND COUNT(q.id) = SUM(q.configured) THEN 'ready'
-                    ELSE 'draft'
-                END AS status
-            FROM study_sets AS s
-            LEFT JOIN question_status AS q ON q.study_set_id = s.id
-            GROUP BY s.id
-            ORDER BY s.title COLLATE NOCASE, s.id
-            """
-        ).fetchall()
-
-
-def read_study_set(connection: sqlite3.Connection, set_id: str) -> sqlite3.Row | None:
+def read_study_set_summaries(
+    connection: sqlite3.Connection, username: str, set_id: str | None = None,
+) -> list[sqlite3.Row]:
     return connection.execute(
-        """
-        SELECT id, title, source_kind, revision FROM study_sets
-        WHERE id = :id OR legacy_id = :id ORDER BY id = :id DESC LIMIT 1
+        f"""
+        WITH question_status AS ({QUESTION_STATUS})
+        SELECT s.id, s.legacy_id, s.title, s.description, s.source_kind,
+            COUNT(q.id) AS question_count,
+            COALESCE(SUM(q.configured), 0) AS configured_count,
+            CASE
+                WHEN COUNT(q.id) > 0 AND COUNT(q.id) = SUM(q.configured) THEN 'ready'
+                ELSE 'draft'
+            END AS status
+        FROM study_sets AS s
+        LEFT JOIN question_status AS q ON q.study_set_id = s.id
+        WHERE {VISIBLE_STUDY_SETS} AND (:id IS NULL OR s.id = :id)
+        GROUP BY s.id
+        ORDER BY s.title COLLATE NOCASE, s.id
         """,
-        {"id": set_id},
+        {"username": username, "id": set_id},
+    ).fetchall()
+
+
+def read_study_set(connection: sqlite3.Connection, set_id: str, username: str) -> sqlite3.Row | None:
+    return connection.execute(
+        f"""
+        SELECT id, title, description, source_kind, revision FROM study_sets
+        WHERE (id = :id OR legacy_id = :id) AND {VISIBLE_STUDY_SETS}
+        ORDER BY id = :id DESC LIMIT 1
+        """,
+        {"id": set_id, "username": username},
     ).fetchone()
+
+
+def read_study_set_editor(connection: sqlite3.Connection, study_set: sqlite3.Row) -> StudySetRevision:
+    rows = connection.execute(
+        """
+        SELECT q.id, q.prompt, o.id AS option_id, o.text, o.is_correct
+        FROM questions AS q
+        LEFT JOIN answer_options AS o ON o.question_id = q.id
+        WHERE q.study_set_id = ?
+        ORDER BY q.position, o.position
+        """,
+        (study_set["id"],),
+    )
+    questions: dict[str, QuestionContent] = {}
+    for row in rows:
+        if row["id"] not in questions:
+            questions[row["id"]] = QuestionContent(prompt=row["prompt"], options=[])
+        if row["option_id"] is not None:
+            questions[row["id"]].options.append(OptionContent(text=row["text"], is_correct=bool(row["is_correct"])))
+    return StudySetRevision(
+        title=study_set["title"], description=study_set["description"],
+        revision=study_set["revision"], questions=list(questions.values()),
+    )
+
+
+def create_study_set(
+    connection: sqlite3.Connection, username: str, content: StudySetContent, idempotency_key: UUID | None,
+) -> str | None:
+    set_id = str(uuid4())
+    if idempotency_key is not None:
+        # A retry from the same editor and account resolves to the same set.
+        set_id = str(uuid5(CUSTOM_SET_NAMESPACE, json.dumps([username, str(idempotency_key)])))
+        existing = read_study_set(connection, set_id, username)
+        if existing is not None:
+            saved = read_study_set_editor(connection, existing)
+            return set_id if saved.model_dump(exclude={"revision"}) == content.model_dump() else None
+    connection.execute(
+        "INSERT INTO study_sets (id, title, description, source_kind, owner_username) VALUES (?, ?, ?, 'custom', ?)",
+        (set_id, content.title, content.description, username),
+    )
+    write_study_questions(connection, set_id, content.questions)
+    return set_id
+
+
+def update_study_set(
+    connection: sqlite3.Connection, set_id: str, current: StudySetRevision, updated: StudySetRevision,
+) -> None:
+    if current == updated:
+        return
+    connection.execute(
+        "UPDATE study_sets SET title = ?, description = ?, revision = revision + 1 WHERE id = ?",
+        (updated.title, updated.description, set_id),
+    )
+    if current.questions != updated.questions:
+        # Replacing the question tree is atomic and the new revision invalidates older papers.
+        connection.execute("DELETE FROM questions WHERE study_set_id = ?", (set_id,))
+        write_study_questions(connection, set_id, updated.questions)
+
+
+def write_study_questions(connection: sqlite3.Connection, set_id: str, questions: list[QuestionContent]) -> None:
+    for position, question in enumerate(questions, start=1):
+        question_id = str(uuid4())
+        connection.execute(
+            "INSERT INTO questions (id, study_set_id, prompt, position) VALUES (?, ?, ?, ?)",
+            (question_id, set_id, question.prompt, position),
+        )
+        connection.executemany(
+            "INSERT INTO answer_options (id, question_id, text, position, is_correct) VALUES (?, ?, ?, ?, ?)",
+            (
+                (str(uuid4()), question_id, option.text, index, option.is_correct)
+                for index, option in enumerate(question.options, start=1)
+            ),
+        )
 
 
 def read_study_questions(connection: sqlite3.Connection, set_id: str) -> list[sqlite3.Row]:

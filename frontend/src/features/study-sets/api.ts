@@ -13,7 +13,7 @@ export type StudySet = {
   status: 'draft' | 'ready'
 }
 
-function isStudySet(value: unknown): value is StudySet {
+export function isStudySet(value: unknown): value is StudySet {
   if (typeof value !== 'object' || value === null) return false
   const set = value as Partial<StudySet>
   return typeof set.id === 'string' && setIdPattern.test(set.id)

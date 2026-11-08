@@ -41,8 +41,8 @@ class QuestionBank:
         return bool(self.questions) and self.remaining_questions == 0
 
 
-def read_question_bank(connection: sqlite3.Connection, set_id: str) -> QuestionBank | None:
-    study_set = read_study_set(connection, set_id)
+def read_question_bank(connection: sqlite3.Connection, set_id: str, username: str) -> QuestionBank | None:
+    study_set = read_study_set(connection, set_id, username)
     if study_set is None:
         return None
 

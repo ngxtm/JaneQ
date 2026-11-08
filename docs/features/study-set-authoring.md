@@ -1,0 +1,61 @@
+# My sets and Create/Edit
+
+## Run the flow
+
+Use the [local setup](../../README.md#local-development) with `JANEQ_DB_PATH` pointing to a disposable SQLite file. Sign in with the configured demo account.
+
+1. Open **My sets** from the header, then select **Create set**. Enter **HTTP methods** as the title and add one question with the prompt **Which HTTP methods are safe?**. Enter **GET**, **HEAD**, and **POST**. Use **Add answer option** to append the third row.
+2. Select **Save draft** with the three options unmarked. The overview shows **Draft**, one question, and a disabled Test action. Select **Back to My sets** and reload. The saved draft appears with its question count and an **Edit** link.
+3. Open **Edit**, mark **GET** and **HEAD** as correct, then select **Save set**. The same set opens as **Ready**. Select **Test**, choose **GET** and **HEAD**, and submit. Results shows **1 / 1** and marks the two selected answers correct.
+
+Only the owner can open an editor or study a custom set. The signed-in library still includes the seeded catalog, which is available for study. Home shows recently opened sets. My sets gives the owner a dedicated list of saved Draft and Ready sets.
+
+## Editor design
+
+The editor has a sticky action bar, large set title, filled description field, numbered cards with a divided header, and underlined question fields. The prompt sits beside its answer choices on desktop. Mobile stacks the prompt and choices. The full-width **Add question** action sits below the cards.
+
+The supplied Quizlet reference puts the add-choice action below the definition. JaneQ places **Add answer option** below the current choices in that same question. It adds a row and focuses the new input. Each choice has its own **Correct** checkbox and remove action.
+
+The [shared theme](../../frontend/src/ui/theme.ts) supplies JaneQ typography and focus styling. My sets has a dedicated empty panel with a create action. The editor has a question-empty panel inside the form, so a title-only Draft can be saved. The catalog and editor keep headings and navigation visible while loading. A static Boneyard placeholder appears in the pending region after 200 ms. Load failures offer a retry where applicable.
+
+Save refreshes the catalog summary, clears any cached preview, and opens the set overview. Save failures keep the form intact. A revision conflict offers the latest editor in a new tab so the user can compare. If the session expires during save, the form offers sign-in in a new tab before retrying. The shared navigation shows a discard dialog when leaving an edited form. The browser supplies its confirmation for a reload or tab close.
+
+## API and storage
+
+Use [Swagger UI](http://127.0.0.1:8000/docs) or [OpenAPI JSON](http://127.0.0.1:8000/openapi.json). Requests require the signed `janeq_session` cookie. The [feature client](../../frontend/src/features/authoring/api.ts) uses the shared Axios instance and validates the responses before rendering.
+
+| Request | Input and outcome |
+| --- | --- |
+| `GET /api/study-sets` | Returns summary rows for built-in sets and sets owned by the signed-in user. My sets displays the custom rows. |
+| `POST /api/study-sets` | Creates a private set from `title`, `description`, and ordered `questions`. The response is `201` with the saved summary, including `id`, `question_count`, `configured_count`, and `status`. The browser sends an `Idempotency-Key` UUID when available. Replaying the same content with the same key returns the same set. A key that already belongs to a set with different content returns `409`. |
+| `GET /api/study-sets/{set_id}/editor` | Returns the saved editor content and `revision`. It includes options with `text` and `is_correct`, including empty rows. |
+| `PUT /api/study-sets/{set_id}/editor` | Accepts the editor content and the loaded integer `revision`. Returns `200` with the saved summary. A stale revision returns `409` and leaves the saved set intact. |
+
+For a title-only Draft, send `{"title":"HTTP methods","questions":[]}`. A question takes `prompt` and `options`. A title with only whitespace, a correct option without text, and malformed payloads return `422`. Missing sessions return `401`. The editor returns `404` for missing sets, built-in sets, and sets owned by another account. The account and source kind come from server state.
+
+The [router](../../backend/app/study_sets.py) sends reads and writes through [SQLite persistence](../../backend/app/database.py). The set, question, and option writes share a transaction. The editor, Learn, and Test use the set revision to detect changes. A save with identical content keeps the revision. [Database rules](../database.md#custom-study-set-writes)
+
+## Acceptance checks
+
+| Check | Reproduce and expect | Observed |
+| --- | --- | --- |
+| Create, reopen, edit, and grade | Run the sample above. Expect Draft after reload, Ready after editing, and a 1/1 Test result. | Pass · Chromium and API on disposable SQLite. Browser creation at 1440 px and editing and grading at 360 px produced 1/1. The API suite reopened the database and verified the saved draft and answer key. |
+| Ownership and built-in catalog | Submit a valid editor request for a built-in set and repeat against another username's custom set. Check the other account's catalog, preview, Learn, and Test. | Pass · API. Editor requests returned 404. The other account could access the built-in Test and received 404 for private study routes. |
+| Stale revisions | Open the same editor in two tabs and save one before the other. Open a Test paper, then edit an answer key and submit the original paper. | Pass · Chromium and API. The editor showed the conflict, retained the first tab's form, and opened the saved version in a new tab. The original Test revision was rejected in the API suite. |
+| Save retry | Abort the editor save request in Chromium, then retry with the request restored. At the API, repeat a create with the same creation key. | Pass · Chromium and API. The failed editor save kept the entered description and retry persisted it. The create retry returned the original set ID and one list row. |
+| Editor loading | Delay the editor GET and open a set from My sets. Expect the shared header to stay mounted while the form loads. | Pass · Chromium. The same header remained mounted and the metadata placeholder appeared before the form. |
+| Keyboard and responsive design | At 1440 px and 360 px, inspect the cards, use Tab and Space on **Correct**, add an option, and press browser Back with changes pending. | Pass · Chromium. Desktop showed two columns. Mobile stacked the fields within the viewport. Adding an option focused its input. Tab focused the checkbox and Space selected it. Browser Back showed the discard dialog and Escape preserved the form. |
+| Backend, lint, and build | Run the commands below. | Pass · CLI. All 18 backend tests, lint, and the production build passed. |
+
+From `backend/`:
+
+```powershell
+uv run --locked --no-sync python -m unittest discover -s tests -v
+```
+
+From `frontend/`:
+
+```powershell
+npm run lint
+npm run build
+```

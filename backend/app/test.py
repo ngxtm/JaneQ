@@ -81,8 +81,8 @@ router = APIRouter(
 )
 
 
-def ready_bank(connection: sqlite3.Connection, set_id: str) -> QuestionBank:
-    bank = read_question_bank(connection, set_id)
+def ready_bank(connection: sqlite3.Connection, set_id: str, username: str) -> QuestionBank:
+    bank = read_question_bank(connection, set_id, username)
     if bank is None:
         raise HTTPException(404, "Study set not found.")
     if not bank.ready:
@@ -122,16 +122,17 @@ def grade_test(bank: QuestionBank, submission: TestSubmission) -> list[GradedQue
 
 @router.get(
     "",
-    dependencies=[Depends(require_user)],
     responses={409: {"model": DraftError, "description": "The study set is Draft."}},
 )
-def get_test(set_id: str, request: Request, response: Response) -> TestPaper:
+def get_test(
+    set_id: str, request: Request, response: Response, user: Annotated[User, Depends(require_user)],
+) -> TestPaper:
     """Load the ordered questions and selection types for a Ready study set."""
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         # Keep the revision and ordered question rows in the same SQLite snapshot.
         connection.execute("BEGIN")
-        bank = ready_bank(connection, set_id)
+        bank = ready_bank(connection, set_id, user.username)
     return TestPaper(set_id=set_id, title=bank.title, revision=bank.revision, questions=list(bank.questions.values()))
 
 
@@ -145,7 +146,7 @@ def submit_test(
     submitted_at = datetime.now(UTC)
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
-        bank = ready_bank(connection, set_id)
+        bank = ready_bank(connection, set_id, user.username)
         if submission.revision != bank.revision:
             raise HTTPException(409, StaleTest(code="revision_changed").model_dump())
         questions = grade_test(bank, submission)

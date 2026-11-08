@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Menu, Text } from '@chakra-ui/react'
 import { IconChevronDown, IconHome, IconLogout } from '@tabler/icons-react'
-import { homeHref, navigateLibrary } from '../navigation/app-location'
+import { homeHref, navigateLibrary, requestLibraryNavigation } from '../navigation/app-location'
 
 type AccountMenuProps = {
   username: string
@@ -25,7 +25,7 @@ export function AccountMenu({ username, signingOut, onSignOut }: AccountMenuProp
         return
       }
       // The menu's keyboard navigation bypasses the layout's click handler.
-      navigateLibrary(homeHref)
+      requestLibraryNavigation(() => navigateLibrary(homeHref))
     }}>
       <Menu.Trigger asChild>
         <Button
@@ -90,7 +90,7 @@ export function AccountMenu({ username, signingOut, onSignOut }: AccountMenuProp
             <a href={homeHref}><IconHome size={18} aria-hidden="true" /> Home</a>
           </Menu.Item>
           <Menu.Separator mx="0" borderWidth="0" bg="janeq.divider" />
-          <Menu.Item value="sign-out" disabled={signingOut} onSelect={onSignOut} {...itemStyle}>
+          <Menu.Item value="sign-out" disabled={signingOut} onSelect={() => requestLibraryNavigation(onSignOut)} {...itemStyle}>
             <IconLogout size={18} aria-hidden="true" /> Sign out
           </Menu.Item>
         </Menu.Content>

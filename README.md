@@ -8,6 +8,7 @@ JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and
 - [Built-in study sets](docs/features/builtin-sets.md) covers the seeded question bank and the path from Home to Learn.
 - [Study Set and Learn](docs/features/learn.md) covers the study flow, local review setup, and Learn acceptance checks. [Study set URLs and preview loading](docs/features/learn.md#study-set-urls-and-preview-loading) covers direct links and the top loading bar.
 - [Test, Results, and PDF download](docs/features/test-results.md) covers the practice flow, API contract, and sample report.
+- [My sets and Create/Edit](docs/features/study-set-authoring.md) covers private sets, Draft and Ready states, and editing.
 - [JaneQ branding](docs/features/branding.md) describes the shared logo and where it appears.
 - [Database reference](docs/database.md) covers the SQLite schema, seed behavior, and read-only inspection.
 - [Frontend UI guide](docs/frontend.md) covers shared components, interaction states, and verification.
@@ -37,7 +38,7 @@ npm run dev
 
 Open [JaneQ](http://127.0.0.1:5173/). Vite forwards `/api` to FastAPI on port 8000. [The health endpoint](http://127.0.0.1:5173/api/health) should return `{"status":"ok"}` through the proxy. [FastAPI's OpenAPI UI](http://127.0.0.1:8000/docs) is available on the backend port.
 
-Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. The MVP seeds `backend/data/janeq-mvp.sqlite3` on first startup. An existing MVP database upgrades its study set IDs to UUIDs on startup and retains Learn progress. A fresh file starts with empty Learn progress. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. [Database upgrade](docs/database.md#study-set-identity-and-upgrade)
+Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. Open **My sets** to create and edit private study sets. The MVP seeds `backend/data/janeq-mvp.sqlite3` on first startup. An existing MVP database upgrades on startup and retains Learn progress. A fresh file starts with empty Learn progress. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. [Database upgrade](docs/database.md#study-set-identity-and-upgrade)
 
 ## Frontend checks
 

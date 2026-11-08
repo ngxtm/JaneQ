@@ -103,9 +103,9 @@ Command = Annotated[CheckAnswer | Advance | Reset | ChangeSettings, Field(discri
 
 
 def ready_bank(
-    connection: sqlite3.Connection, set_id: str
+    connection: sqlite3.Connection, set_id: str, username: str,
 ) -> QuestionBank:
-    bank = read_question_bank(connection, set_id)
+    bank = read_question_bank(connection, set_id, username)
     if bank is None:
         raise HTTPException(404, "Study set not found.")
     if not bank.ready:
@@ -205,7 +205,7 @@ def get_preview(
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
-        bank = ready_bank(connection, set_id)
+        bank = ready_bank(connection, set_id, user.username)
         return [study_card(question, bank.correct_ids[question.id]) for question in bank.questions.values()]
 
 
@@ -225,7 +225,7 @@ def get_learn(
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
-        bank = ready_bank(connection, set_id)
+        bank = ready_bank(connection, set_id, user.username)
         progress, changed = load_progress(connection, user.username, bank.id, bank.revision, bank.questions)
         return learn_view(progress, bank.revision, changed, bank.questions, bank.correct_ids)
 
@@ -239,7 +239,7 @@ def update_learn(
     with closing(connect(request.app.state.database_path)) as connection, connection:
         # Check the revision and step under the same write lock as the progress update.
         connection.execute("BEGIN IMMEDIATE")
-        bank = ready_bank(connection, set_id)
+        bank = ready_bank(connection, set_id, user.username)
         progress, _ = load_progress(connection, user.username, bank.id, bank.revision, bank.questions)
         if command.revision != bank.revision or command.version != progress.version:
             raise HTTPException(409, "This Learn step has changed. Reload your progress.")

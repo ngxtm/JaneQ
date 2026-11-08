@@ -1,11 +1,12 @@
 import { Box, Button, Container, Flex, HStack, Image, Link, Text } from '@chakra-ui/react'
 import type { PropsWithChildren } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
-import { followLibraryLink, homeHref } from '../navigation/app-location'
+import { followLibraryLink, homeHref, mySetsHref } from '../navigation/app-location'
 import { AccountMenu } from './AccountMenu'
 
 type LibraryLayoutProps = PropsWithChildren<{
   username: string
+  inMySets: boolean
   signingOut: boolean
   signOutError: string
   onSignOut: () => void
@@ -23,15 +24,18 @@ function Brand({ size }: { size: 'sm' | 'lg' }) {
   )
 }
 
-type NavigationProps = Pick<LibraryLayoutProps, 'username' | 'signingOut' | 'onSignOut'>
+type NavigationProps = Pick<LibraryLayoutProps, 'username' | 'inMySets' | 'signingOut' | 'onSignOut'>
 
-function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps) {
+function LibraryNavigation({ username, inMySets, signingOut, onSignOut }: NavigationProps) {
   return (
-    <Flex as="header" h="20" px={{ base: '6', md: '8' }} align="center" justify="space-between" gap="4">
-      <HStack as="nav" aria-label="Main navigation" gap="4" flexShrink="0">
+    <Flex as="header" h="20" px={{ base: '4', md: '8' }} align="center" justify="space-between" gap="2">
+      <HStack as="nav" aria-label="Main navigation" gap={{ base: '1', md: '4' }} flexShrink="0">
         <Brand size="lg" />
         <Button asChild variant="ghost" fontFamily="body" fontSize="sm" fontWeight="700" hideBelow="md">
           <a href={homeHref}>Home</a>
+        </Button>
+        <Button asChild variant={inMySets ? 'subtle' : 'ghost'} fontFamily="body" fontSize="sm" fontWeight="700">
+          <a href={mySetsHref} aria-current={inMySets ? 'location' : undefined}>My sets</a>
         </Button>
       </HStack>
       <AccountMenu username={username} signingOut={signingOut} onSignOut={onSignOut} />
@@ -40,11 +44,11 @@ function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps)
 }
 
 export function LibraryLayout({
-  children, username, signingOut, signOutError, onSignOut,
+  children, username, inMySets, signingOut, signOutError, onSignOut,
 }: LibraryLayoutProps) {
   return (
     <Flex onClick={followLibraryLink} direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
-      <LibraryNavigation username={username} signingOut={signingOut} onSignOut={onSignOut} />
+      <LibraryNavigation username={username} inMySets={inMySets} signingOut={signingOut} onSignOut={onSignOut} />
       <Container as="main" maxW="7xl" mt="10" pb={{ base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
         {signOutError ? <Text role="alert" color="red.700" mb="4">{signOutError}</Text> : null}
         {children}

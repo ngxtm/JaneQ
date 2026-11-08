@@ -25,7 +25,7 @@ The overview shows the set title, question count, preview, and study modes. Read
 
 Both clients use the shared [Axios instance](../../frontend/src/http.ts) for same-origin `/api` requests. Each client reads `response.data` and validates its response shape. The app shell owns the session, and Home owns the list loading and retry state.
 
-[main.py](../../backend/app/main.py) wires up the routers and initializes SQLite on startup. The [database reference](../database.md#study-set-status-on-home) explains how `list_study_sets()` reads the tables to compute the counts and status shown on Home.
+[main.py](../../backend/app/main.py) wires up the routers and initializes SQLite on startup. The [database reference](../database.md#study-set-status-on-home) explains how `read_study_set_summaries()` computes the counts and status shown on Home.
 
 ## API contract
 
@@ -35,7 +35,7 @@ FastAPI generates the endpoint and schema reference from the backend. With the b
 | --- | --- | --- | --- |
 | `POST /api/auth/login` | JSON with `username` and `password` | `200` with the configured username, such as `{ "username": "demo" }`. Sets the signed session cookie. | `401` for incorrect credentials. The form shows the invalid-credentials message. |
 | `GET /api/auth/me` | Valid session cookie | `200` with the signed-in username. The app opens Home. | `401` opens Sign in. Other failures, including a response JaneQ cannot read, show the [connection error screen](../../frontend/src/features/auth/SessionUnavailable.tsx). **Try again** repeats the session check. |
-| `GET /api/study-sets` | Valid session cookie | `200` with a list of study set summaries. Home renders the cards from that list. | `401` for a missing or invalid session. Home returns to Sign in. Other load errors show **Try again**. |
+| `GET /api/study-sets` | Valid session cookie | `200` with summaries for the built-in catalog and sets owned by the signed-in user. Home and My sets use this list. | `401` for a missing or invalid session. Home returns to Sign in. Other load errors show **Try again**. |
 | `POST /api/auth/logout` | The UI calls this from the signed-in account menu. | `204` with an empty body. The response clears the session cookie if present. | A failed request keeps the current screen and shows a sign-out error. |
 
 Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh database.
@@ -43,13 +43,14 @@ Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh da
 ```json
 [
   {
-    "id": "html-css",
+    "id": "e50a062a-6abc-50be-b0ab-28452a4ce1eb",
+    "legacy_id": "html-css",
     "title": "HTML / CSS",
     "description": "",
     "source_kind": "builtin",
     "question_count": 3,
-    "configured_count": 0,
-    "status": "draft"
+    "configured_count": 3,
+    "status": "ready"
   }
 ]
 ```
@@ -135,9 +136,9 @@ The library shell holds the header, account menu, and footer. Home shows recentl
 | Surface | Design |
 | --- | --- |
 | Empty dashboard | The JaneQ mark and study icons float with staggered timing. **Browse study sets** scrolls to the built-in catalog. |
-| Library sections | Recent lists sets opened by the signed-in user. Built-in sets lists the seeded catalog. My sets appears when custom sets are available. |
+| Library sections | Recent lists sets opened by the signed-in user. Built-in sets lists the seeded catalog. The **My sets** link opens the private library on its own route. [Create/Edit](study-set-authoring.md) |
 | Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the overview. |
-| Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
+| Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The header links to **My sets** at both widths. The account menu offers Home and Sign out. |
 | Navigation state | Home uses `/` and each set uses its UUID in `/<uuid>`. The library stores up to 16 recent set IDs per demo username and upgrades saved aliases after loading the catalog. Account menu navigation keeps the header mounted with pointer and keyboard activation. [Route handling](../../frontend/src/features/navigation/app-location.ts) · [Recent sets](../../frontend/src/features/study-sets/library-navigation.ts) |
 
 [LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and renders [AccountMenu](../../frontend/src/features/study-sets/AccountMenu.tsx). [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.

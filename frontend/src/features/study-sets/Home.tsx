@@ -4,7 +4,7 @@ import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
-import { homeHref, type LibraryRoute } from '../navigation/app-location'
+import { homeHref, mySetsHref, navigateLibrary, studySetHref, type LibraryRoute } from '../navigation/app-location'
 import { draftTestMessage } from '../test/copy'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
@@ -17,6 +17,8 @@ import './bones/registry'
 
 const Learn = lazy(() => import('../learn/Learn'))
 const Test = lazy(() => import('../test/Test'))
+const MySets = lazy(() => import('../authoring/MySets'))
+const SetEditor = lazy(() => import('../authoring/SetEditor'))
 const NotFoundPage = lazy(() => import('../navigation/NotFoundPage'))
 
 type StudySetsState =
@@ -72,6 +74,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
   const pending = status === 'loading'
+  const custom = set?.source_kind === 'custom'
 
   useEffect(() => {
     // Do not take focus away from navigation during a delayed response.
@@ -81,7 +84,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   return (
     <Stack align="start" gap="4">
       <Button asChild variant="ghost" size="xs" h="6" minH="6" fontFamily="body" color="janeq.ink">
-        <a href={homeHref}><IconArrowLeft size={18} /> Back to Home</a>
+        <a href={custom ? mySetsHref : homeHref}><IconArrowLeft size={18} />{custom ? 'Back to My sets' : 'Back to Home'}</a>
       </Button>
       {pending ? <VisuallyHidden role="status">Loading study set…</VisuallyHidden> : null}
       {status === 'error' ? <StudySetLoadError onRetry={onRetry} /> : null}
@@ -90,10 +93,13 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
             {status === 'loaded' && set ? (
               <Stack gap="4">
-                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
-                  lineHeight={{ base: '1.2', md: '1' }} _focus={{ outline: 'none' }}>
-                  {set.title}
-                </Heading>
+                <HStack align="start" gap="4" flexWrap="wrap" justify="space-between">
+                  <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
+                    lineHeight={{ base: '1.2', md: '1' }} overflowWrap="anywhere" minW="0" _focus={{ outline: 'none' }}>
+                    {set.title}
+                  </Heading>
+                  {custom ? <Button asChild variant="outline" fontFamily="body"><a href={studySetHref(set.id, 'editor')}>Edit set</a></Button> : null}
+                </HStack>
                 <Text color="janeq.muted" fontWeight="semibold" minH="8" display="flex" alignItems="center">
                   {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
                 </Text>
@@ -120,9 +126,12 @@ export default function Home({ route, username, signingOut, signOutError, onSign
   const [attempt, setAttempt] = useState(0)
   const [showSkeleton, setShowSkeleton] = useState(false)
   const [previewLoader] = useState(createPreviewLoader)
+  const catalogRequest = useRef<AbortController>(null)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
   const { selectedSet, recent, recentCount, viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets } =
     useLibraryNavigation(username, sets, route)
+  const editorId = route.kind === 'set' && route.mode === 'editor' ? route.id : undefined
+  const inMySets = route.kind === 'my-sets' || route.kind === 'create' || editorId !== undefined || selectedSet?.source_kind === 'custom'
 
   useEffect(() => previewLoader.clear, [previewLoader])
 
@@ -135,6 +144,7 @@ export default function Home({ route, username, signingOut, signOutError, onSign
 
   useEffect(() => {
     const controller = new AbortController()
+    catalogRequest.current = controller
     // Brief waits leave the card region quiet to avoid flashing the placeholder.
     const timer = window.setTimeout(() => setShowSkeleton(true), placeholderDelayMs)
     getStudySets(controller.signal).then((sets) => {
@@ -148,7 +158,7 @@ export default function Home({ route, username, signingOut, signOutError, onSign
         onSessionExpired()
         return
       }
-      setState({ kind: 'error' })
+      setState((current) => current.kind === 'loaded' ? current : { kind: 'error' })
     }).finally(() => window.clearTimeout(timer))
     return () => {
       controller.abort()
@@ -162,11 +172,31 @@ export default function Home({ route, username, signingOut, signOutError, onSign
     setAttempt((current) => current + 1)
   }
 
-  if (viewingSet && state.kind === 'loaded' && !selectedSet) {
+  function handleSaved(set: StudySet) {
+    catalogRequest.current?.abort()
+    previewLoader.clear()
+    setState((current) => ({
+      kind: 'loaded', sets: [...(current.kind === 'loaded' ? current.sets.filter((item) => item.id !== set.id) : []), set],
+    }))
+    setAttempt((current) => current + 1)
+    navigateLibrary(studySetHref(set.id))
+  }
+
+  if (viewingSet && !editorId && state.kind === 'loaded' && !selectedSet) {
     return <Suspense fallback={null}><NotFoundPage studySet /></Suspense>
   }
 
   function renderLibrary() {
+    if (route.kind === 'create' || editorId) return (
+      <Suspense fallback={<VisuallyHidden role="status">Opening editor…</VisuallyHidden>}>
+        <SetEditor key={editorId ?? 'new'} id={editorId} onSaved={handleSaved} onSessionExpired={onSessionExpired} />
+      </Suspense>
+    )
+    if (route.kind === 'my-sets') return (
+      <Suspense fallback={<VisuallyHidden role="status">Opening My sets…</VisuallyHidden>}>
+        <MySets sets={sets} status={state.kind} showSkeleton={showSkeleton} onRetry={retry} />
+      </Suspense>
+    )
     if (viewingSet) {
       if (viewingTest && selectedSet) return (
         <Suspense fallback={<VisuallyHidden role="status">Loading Test…</VisuallyHidden>}>
@@ -185,7 +215,6 @@ export default function Home({ route, username, signingOut, signOutError, onSign
 
     const pending = state.kind === 'loading'
     const builtInSets = sets.filter((set) => set.source_kind === 'builtin')
-    const mySets = sets.filter((set) => set.source_kind === 'custom')
     const showRecent = (pending ? recentCount : recent.length) > 0
 
     return (
@@ -204,16 +233,13 @@ export default function Home({ route, username, signingOut, signOutError, onSign
           {builtInSets.length ? <StudySetGrid sets={builtInSets} username={username} onIntent={prefetchPreview} captureCard /> : null}
           {!pending && !builtInSets.length ? <Text color="janeq.muted">No study sets are available.</Text> : null}
         </SetSection>
-        {mySets.length ? (
-          <SetSection id="my-sets" title="My sets"><StudySetGrid sets={mySets} username={username} onIntent={prefetchPreview} /></SetSection>
-        ) : null}
       </Stack>
     )
   }
 
   return (
     <UiProvider>
-      <LibraryLayout username={username} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
+      <LibraryLayout username={username} inMySets={inMySets} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
         {renderLibrary()}
       </LibraryLayout>
     </UiProvider>

@@ -1,25 +1,29 @@
 import { useLayoutEffect, useMemo, useSyncExternalStore, type MouseEvent } from 'react'
 
 export const homeHref = import.meta.env.BASE_URL
+export const mySetsHref = `${homeHref}my-sets`
+export const createSetHref = `${mySetsHref}/new`
 const notFoundHref = `${homeHref}404`
 const navigationEvent = 'janeq:navigate'
 
-type SetRoute = { kind: 'set'; id: string; mode: 'overview' | 'learn' | 'test' }
+type SetMode = 'learn' | 'test' | 'editor'
+type SetRoute = { kind: 'set'; id: string; mode: 'overview' | SetMode }
 
 function readSetRoute(path: string, legacy = false): SetRoute | null {
-  const pattern = legacy ? /^([^/]+)(?:\/(learn|test|editor))?$/ : /^([^/]+)(?:\/(learn|test))?\/?$/
+  const pattern = /^([^/]+)(?:\/(learn|test|editor))?\/?$/
   const [, segment, mode] = pattern.exec(path) ?? []
   if (!segment) return null
   try {
     const id = decodeURIComponent(segment)
     if (id === '.' || id === '..') return null
-    return { kind: 'set', id, mode: mode === 'learn' || mode === 'test' ? mode : 'overview' }
+    const studyMode = mode === 'learn' || mode === 'test'
+    return { kind: 'set', id, mode: studyMode || (mode === 'editor' && !legacy) ? mode : 'overview' }
   } catch {
     return null
   }
 }
 
-export function studySetHref(id: string, mode?: 'learn' | 'test') {
+export function studySetHref(id: string, mode?: SetMode) {
   return `${homeHref}${encodeURIComponent(id)}${mode ? `/${mode}` : ''}`
 }
 
@@ -34,6 +38,7 @@ function legacyPath() {
 }
 
 function getPath() {
+  if (restoringPath) return restoringPath
   const path = window.location.pathname
   return legacyPath() ?? (path === `${homeHref}index.html` ? homeHref : path)
 }
@@ -50,17 +55,72 @@ export function replaceStudySetAlias(href: string) {
   window.dispatchEvent(new Event(navigationEvent))
 }
 
+type NavigationGuard = (proceed: () => void) => void
+let navigationGuard: NavigationGuard | undefined
+let restoringPath: string | undefined
+const positionKey = 'janeqLibraryPosition'
+
+export function guardLibraryNavigation(guard: NavigationGuard) {
+  navigationGuard = guard
+  return () => { if (navigationGuard === guard) navigationGuard = undefined }
+}
+
+export function requestLibraryNavigation(proceed: () => void) {
+  if (navigationGuard) navigationGuard(proceed)
+  else proceed()
+}
+
+function historyPosition(): number | undefined {
+  return window.history.state?.[positionKey]
+}
+
 function subscribe(onChange: () => void) {
+  let position = historyPosition() ?? 0
+  let path = getPath()
+  let resumeTraversal: (() => void) | undefined
+  let allowedPosition: number | undefined
+
   function updateLocation() {
+    if (restoringPath) return
     replaceLegacyUrl()
+    position = historyPosition() ?? position + 1
+    window.history.replaceState({ ...window.history.state, [positionKey]: position }, '')
+    path = getPath()
     onChange()
   }
 
-  window.addEventListener('popstate', updateLocation)
+  function traverse() {
+    const next = historyPosition()
+    if (restoringPath) {
+      if (next !== position) {
+        if (next !== undefined) window.history.go(position - next)
+        return
+      }
+      restoringPath = undefined
+      const resume = resumeTraversal
+      resumeTraversal = undefined
+      if (resume) requestLibraryNavigation(resume)
+    } else if (navigationGuard && next !== undefined && next !== position && next !== allowedPosition && getPath() !== path) {
+      // A popstate has already moved the browser. Restore its entry before asking whether to leave.
+      restoringPath = path
+      resumeTraversal = () => {
+        allowedPosition = next
+        window.history.go(next - position)
+      }
+      window.history.go(position - next)
+      return
+    }
+    allowedPosition = undefined
+    updateLocation()
+  }
+
+  window.history.replaceState({ ...window.history.state, [positionKey]: position }, '')
+  window.addEventListener('popstate', traverse)
   window.addEventListener('hashchange', updateLocation)
   window.addEventListener(navigationEvent, updateLocation)
   return () => {
-    window.removeEventListener('popstate', updateLocation)
+    restoringPath = undefined
+    window.removeEventListener('popstate', traverse)
     window.removeEventListener('hashchange', updateLocation)
     window.removeEventListener(navigationEvent, updateLocation)
   }
@@ -68,6 +128,8 @@ function subscribe(onChange: () => void) {
 
 function readRoute(path: string) {
   if (path === homeHref) return { kind: 'home' as const }
+  if (path === mySetsHref || path === `${mySetsHref}/`) return { kind: 'my-sets' as const }
+  if (path === createSetHref || path === `${createSetHref}/`) return { kind: 'create' as const }
   if (path === notFoundHref || path === `${notFoundHref}/`) return null
   return path.startsWith(homeHref) ? readSetRoute(path.slice(homeHref.length)) : null
 }
@@ -84,7 +146,7 @@ export function navigateLibrary(href: string) {
   const url = new URL(href, window.location.href)
   const samePath = url.pathname === window.location.pathname
   if (url.href !== window.location.href) {
-    window.history.pushState(null, '', url.href)
+    window.history.pushState({ [positionKey]: (historyPosition() ?? 0) + 1 }, '', url.href)
     window.dispatchEvent(new Event(navigationEvent))
   }
   if (samePath) window.scrollTo(0, 0)
@@ -98,5 +160,5 @@ export function followLibraryLink(event: MouseEvent<HTMLElement>) {
     || !readRoute(link.pathname)) return
 
   event.preventDefault()
-  navigateLibrary(link.href)
+  requestLibraryNavigation(() => navigateLibrary(link.href))
 }

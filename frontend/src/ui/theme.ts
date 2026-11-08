@@ -1,5 +1,29 @@
 import { createSystem, defaultConfig, defineConfig, defineRecipe, defineSlotRecipe } from '@chakra-ui/react'
 
+const textField = defineRecipe({
+  base: {
+    borderStyle: 'solid',
+    fontFamily: 'body',
+    _placeholder: { color: 'janeq.muted' },
+    '--focus-color': 'colors.janeq.focus',
+  },
+  variants: {
+    variant: {
+      outline: {
+        borderColor: 'janeq.line',
+        borderRadius: 'lg',
+        px: '3.5',
+        // Chakra colors the border and the adjacent ring as one focus indicator.
+        focusRingWidth: '1px',
+      },
+      flushed: {
+        borderTopWidth: '0',
+        borderInlineWidth: '0',
+      },
+    },
+  },
+})
+
 const janeqTheme = defineConfig({
   theme: {
     tokens: {
@@ -23,25 +47,8 @@ const janeqTheme = defineConfig({
     },
     recipes: {
       button: defineRecipe({ base: { borderStyle: 'solid' } }),
-      input: defineRecipe({
-        base: {
-          borderStyle: 'solid',
-          fontFamily: 'body',
-          _placeholder: { color: 'janeq.muted' },
-        },
-        variants: {
-          variant: {
-            outline: {
-              borderColor: 'janeq.line',
-              borderRadius: 'lg',
-              px: '3.5',
-              '--focus-color': 'colors.janeq.focus',
-              // Chakra colors the border and the adjacent ring as one focus indicator.
-              focusRingWidth: '1px',
-            },
-          },
-        },
-      }),
+      input: textField,
+      textarea: textField,
     },
     slotRecipes: {
       dialog: defineSlotRecipe({
