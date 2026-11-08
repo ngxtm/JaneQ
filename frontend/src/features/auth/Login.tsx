@@ -1,5 +1,6 @@
 import { type SubmitEvent, useState } from 'react'
-import { isUnauthorized, signIn, type User } from './api'
+import { isUnauthorized } from '../../http'
+import { signIn, type User } from './api'
 
 type LoginProps = { onSignIn: (user: User) => void }
 

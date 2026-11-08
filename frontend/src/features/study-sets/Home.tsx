@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getStudySets, isUnauthorized, type StudySet } from './api'
+import { isUnauthorized } from '../../http'
+import { getStudySets, type StudySet } from './api'
 
 type StudySetsState =
   | { kind: 'loading' }
@@ -32,6 +33,7 @@ export default function Home({ onSessionExpired }: { onSessionExpired: () => voi
     getStudySets(controller.signal).then((sets) => {
       if (!controller.signal.aborted) setState({ kind: 'loaded', sets })
     }).catch((error: unknown) => {
+      // A stale response from a previous Home screen cannot end the current session.
       if (controller.signal.aborted) return
       if (isUnauthorized(error)) {
         onSessionExpired()

@@ -64,6 +64,7 @@ def initialize_database(path: Path) -> None:
                     (set_ids[title], title),
                 )
 
+            # The answer review refers to the original positions of questions and options.
             question_id = f"q{index:02d}"
             connection.execute(
                 "INSERT INTO questions (id, study_set_id, prompt, position) VALUES (?, ?, ?, ?)",

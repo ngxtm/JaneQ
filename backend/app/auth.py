@@ -35,6 +35,7 @@ def login(credentials: LoginRequest, request: Request, response: Response) -> Us
         )
 
     request.session.clear()
+    # The signed cookie is readable, so keep the session payload to the username.
     request.session["username"] = username
     response.headers["Cache-Control"] = "no-store"
     return User(username=username)

@@ -2,6 +2,10 @@
 
 JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and `frontend/` contains the React and TypeScript app.
 
+## Feature documentation
+
+- [Demo sign-in and Home](docs/features/login-home.md) covers setup, the UI-to-API flow, and acceptance checks.
+
 ## Local development
 
 Use Python 3.13 with [uv](https://docs.astral.sh/uv/getting-started/installation/) and Node.js 24 with npm.

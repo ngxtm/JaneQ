@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getUser, isUnauthorized, signOut, type User } from './api'
-import Home from './Home'
-import Login from './Login'
+import { getUser, signOut, type User } from './features/auth/api'
+import Login from './features/auth/Login'
+import Home from './features/study-sets/Home'
+import { isUnauthorized } from './http'
 
 type Session =
   | { kind: 'checking' }

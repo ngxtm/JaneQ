@@ -1,3 +1,4 @@
+import { Agent } from 'node:http'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
@@ -8,7 +9,12 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      '^/api(?:/|$)': 'http://127.0.0.1:8000',
+      '^/api(?:/|$)': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true,
+        // Reuse upstream connections to avoid resets when proxying rapid local requests.
+        agent: new Agent({ keepAlive: true }),
+      },
     },
   },
 })
