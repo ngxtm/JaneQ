@@ -1,11 +1,13 @@
 import { Box, chakra } from '@chakra-ui/react'
-import { AnimatePresence, domAnimation, LazyMotion, useReducedMotion, type Variants } from 'motion/react'
+import { AnimatePresence, domAnimation, LazyMotion, type Variants } from 'motion/react'
 import * as m from 'motion/react-m'
-import { useRef, type PointerEvent } from 'react'
+import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
 import type { StudyCard } from '../learn/api'
+import { useReducedMotion } from './use-reduced-motion'
 
 const swipeDistance = 48
 const tapSlop = 10
+const scrollLine = 40
 const slide: Variants = {
   enter: (direction: number) => ({ x: direction * 120, opacity: direction ? 0 : 1 }),
   visible: { x: 0, opacity: 1 },
@@ -16,11 +18,12 @@ const faceStyles = {
   px: '3', py: '3', overflowY: 'auto', touchAction: 'pan-y', backfaceVisibility: 'hidden',
 } as const
 
-export function PreviewCard({ card, flipped, answerFirst, direction, onFlip, onMove }: {
+export function PreviewCard({ card, flipped, answerFirst, direction, onPointerStart, onFlip, onMove }: {
   card: StudyCard
   flipped: boolean
   answerFirst: boolean
   direction: number
+  onPointerStart: () => void
   onFlip: () => void
   onMove: (offset: -1 | 1) => void
 }) {
@@ -36,17 +39,57 @@ export function PreviewCard({ card, flipped, answerFirst, direction, onFlip, onM
     suppressClick.current = false
     pointer.current = { id: event.pointerId, x: event.clientX, y: event.clientY }
     event.currentTarget.setPointerCapture(event.pointerId)
+    onPointerStart()
+  }
+
+  function trackPointer(event: PointerEvent<HTMLButtonElement>) {
+    const start = pointer.current
+    if (!start || start.id !== event.pointerId) return
+    const dx = event.clientX - start.x
+    const dy = event.clientY - start.y
+    // Returning to the start cancels a drag without turning it back into a tap.
+    if (Math.max(Math.abs(dx), Math.abs(dy)) > tapSlop) suppressClick.current = true
+    return { dx, dy }
   }
 
   function endPointer(event: PointerEvent<HTMLButtonElement>) {
-    const start = pointer.current
-    if (!start || start.id !== event.pointerId) return
+    const offset = trackPointer(event)
+    if (!offset) return
     pointer.current = null
-    const dx = event.clientX - start.x
-    const dy = event.clientY - start.y
-    // A pointer gesture can also emit a click. Only a tap should flip the card.
-    suppressClick.current = Math.max(Math.abs(dx), Math.abs(dy)) > tapSlop
+    const { dx, dy } = offset
     if (Math.abs(dx) >= swipeDistance && Math.abs(dx) > Math.abs(dy)) onMove(dx < 0 ? 1 : -1)
+  }
+
+  function cancelPointer(event: PointerEvent<HTMLButtonElement>) {
+    if (pointer.current?.id !== event.pointerId) return
+    pointer.current = null
+    suppressClick.current = true
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+      event.preventDefault()
+      if (!event.repeat) onMove(event.key === 'ArrowLeft' ? -1 : 1)
+      return
+    }
+
+    // The flip button keeps focus while the active face scrolls.
+    const face = event.currentTarget.querySelector<HTMLElement>(
+      `[data-preview-card="${CSS.escape(card.id)}"] [data-active-face="true"]`,
+    )
+    if (!face || face.scrollHeight <= face.clientHeight) return
+    const page = face.clientHeight - scrollLine
+    switch (event.key) {
+      case 'ArrowUp': face.scrollTop -= scrollLine; break
+      case 'ArrowDown': face.scrollTop += scrollLine; break
+      case 'PageUp': face.scrollTop -= page; break
+      case 'PageDown': face.scrollTop += page; break
+      case 'Home': face.scrollTop = 0; break
+      case 'End': face.scrollTop = face.scrollHeight; break
+      default: return
+    }
+    event.preventDefault()
   }
 
   return (
@@ -58,30 +101,28 @@ export function PreviewCard({ card, flipped, answerFirst, direction, onFlip, onM
       _focusVisible={{ outline: '2px solid', outlineColor: 'janeq.focus', outlineOffset: '-2px' }}
       aria-label={`Flip card. ${showingAnswer ? card.answers.join(', ') : card.prompt}`}
       onPointerDown={startPointer}
+      onPointerMove={trackPointer}
       onPointerUp={endPointer}
-      onPointerCancel={() => { pointer.current = null }}
+      onPointerCancel={cancelPointer}
+      onLostPointerCapture={cancelPointer}
       onClick={(event) => {
         if (event.detail === 0 || !suppressClick.current) onFlip()
       }}
-      onKeyDown={(event) => {
-        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-          event.preventDefault()
-          if (!event.repeat) onMove(event.key === 'ArrowLeft' ? -1 : 1)
-        }
-      }}>
+      onKeyDown={handleKeyDown}>
       <LazyMotion features={domAnimation} strict>
         <AnimatePresence initial={false} custom={slideDirection}>
-          <m.span key={card.id} aria-hidden="true" custom={slideDirection} variants={slide}
+          <m.span key={card.id} data-preview-card={card.id} aria-hidden="true" custom={slideDirection} variants={slide}
             initial="enter" animate="visible" exit="exit"
             transition={{ duration: reduceMotion ? 0 : 0.25, ease: 'easeOut' }}
             style={{ position: 'absolute', inset: 0, perspective: 1200 }}>
             <m.span initial={false} animate={{ rotateX: flipped ? 180 : 0 }}
               transition={{ duration: reduceMotion ? 0 : 0.35, ease: 'easeInOut' }}
               style={{ position: 'absolute', inset: 0, transformStyle: 'preserve-3d' }}>
-              <Box as="span" {...faceStyles} pointerEvents={flipped ? 'none' : 'auto'}>
+              <Box as="span" {...faceStyles} tabIndex={-1} data-active-face={!flipped} pointerEvents={flipped ? 'none' : 'auto'}>
                 {answerFirst ? answer : card.prompt}
               </Box>
-              <Box as="span" {...faceStyles} transform="rotateX(180deg)" pointerEvents={flipped ? 'auto' : 'none'}>
+              <Box as="span" {...faceStyles} tabIndex={-1} data-active-face={flipped}
+                transform="rotateX(180deg)" pointerEvents={flipped ? 'auto' : 'none'}>
                 {answerFirst ? card.prompt : answer}
               </Box>
             </m.span>

@@ -2,21 +2,9 @@ import { Box, Center, Heading, HStack, Image, Stack, Text } from '@chakra-ui/rea
 import { IconArrowDown, IconBooks, IconFolder } from '@tabler/icons-react'
 import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
-import { useSyncExternalStore } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import { PrimaryButton } from '../../ui/PrimaryButton'
-
-const motionPreference = '(prefers-reduced-motion: reduce)'
-
-function subscribeToMotionPreference(onChange: () => void) {
-  const query = window.matchMedia(motionPreference)
-  query.addEventListener('change', onChange)
-  return () => query.removeEventListener('change', onChange)
-}
-
-function readMotionPreference() {
-  return window.matchMedia(motionPreference).matches
-}
+import { useReducedMotion } from './use-reduced-motion'
 
 const floatingIcons = [
   { name: 'books', graphic: <IconBooks size={30} />, duration: 4, delay: 0.2, tilt: -25 },
@@ -25,8 +13,7 @@ const floatingIcons = [
 ]
 
 function FloatingIllustration() {
-  // Read the media query live so an in-flight loop stops when the preference changes.
-  const reduceMotion = useSyncExternalStore(subscribeToMotionPreference, readMotionPreference)
+  const reduceMotion = useReducedMotion()
 
   return (
     <HStack aria-hidden="true" pos="relative" gap="4" color="blue.700" opacity="0.55">

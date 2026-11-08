@@ -135,6 +135,7 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
             aria-pressed={starred} onClick={() => toggleStar(card.id)}>{starred ? <IconStarFilled /> : <IconStar />}</IconButton>
         </Grid>
         <PreviewCard card={card} flipped={flipped} answerFirst={answerFirst} direction={direction}
+          onPointerStart={() => setAutoplay(false)}
           onFlip={() => { setAutoplay(false); setFlipped((value) => !value) }} onMove={move} />
         <Grid templateColumns="1fr 1fr" gap="4">
           <IconButton {...previewOutline} h="12" color="janeq.ink" aria-label="Previous card" disabled={index === 0} onClick={() => move(-1)}><IconChevronLeft /></IconButton>

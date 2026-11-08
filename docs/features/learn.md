@@ -21,6 +21,8 @@ The preview shows the question position, star, and navigation controls. JaneQ us
 
 Open any Ready set from Home. Tap the card or press Space or Enter with the card focused to flip it in place. Swipe left for the next card and right for the previous card. The arrow buttons and keys use the same navigation. Each swipe moves at most one card, and the first and last cards stop at the ends of the set. Each new card opens on its question by default. **Show the answer first** reverses that preference. With reduced motion enabled, both changes happen immediately.
 
+When the focused card has more text than fits, Up, Down, Page Up, Page Down, Home, and End scroll the visible face. Pressing the card stops Autoplay so the current question stays in place during a gesture. A drag back to its starting point leaves the current face visible.
+
 The preview reads prompts and correct answer text from `GET /api/study-sets/{set_id}/preview` using the signed-in session. It flips and navigates the loaded cards locally. [API and storage](#api-and-storage)
 
 | Check | How to reproduce | Expected result | Verification |
@@ -28,6 +30,9 @@ The preview reads prompts and correct answer text from `GET /api/study-sets/{set
 | Desktop flip and navigation | At 1440 px, click the first HTML / CSS card, drag left while on the answer, then focus the card and press Left and Space. | The card rotates vertically. The drag slides to question 2 without flipping it. Left returns to question 1 and Space flips it with visible focus. | Pass · Chromium |
 | Touch gestures | At 390 px with touch emulation, tap the card, swipe left and right, swipe right again on question 1, then try a short drag and a vertical swipe. | Tap flips the card. Horizontal swipes move one card each. The boundary, short drag, and vertical swipe leave the card on question 1. The page fits the viewport. | Pass · Chromium with touch emulation |
 | Reduced motion and settings | Enable reduced motion, flip a card, and select Next. Set **Show the answer first** and run Autoplay. | Flip and navigation update without a transition. Each new card honors the chosen face, and Autoplay advances. | Pass · Chromium |
+| Reduced motion while open | With HTML / CSS open, enable reduced motion and flip the card, then select Next. | The same preview responds without any intermediate rotation or horizontal slide. | Pass · Chromium |
+| Keyboard scrolling | At 320 px, focus the card and open the answer to question 20 of HTTP and API Design. Press Page Down, End, and Tab. | Page Down and End scroll the answer, while the page stays in place. Tab moves to **Previous card**. | Pass · Chromium |
+| Cancel a drag and hold during Autoplay | Drag the first card to the left, move back to the starting point, and release. Then turn on Autoplay, wait for the answer, and hold a left drag for more than 2.5 seconds before releasing. | The canceled drag leaves the question visible. The hold keeps the current answer visible and the release moves from card 1 to card 2. | Pass · Chromium |
 | Preview retry | Block the preview request, reload, unblock it, and select **Try again**. | The error clears and the first card loads from the API. | Pass · Chromium |
 
 ## Learn milestone
