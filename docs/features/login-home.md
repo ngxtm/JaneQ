@@ -133,3 +133,23 @@ JaneQ observes changes to the browser's reduced-motion media query and renders s
 | Sign in with reduced motion enabled in a fresh browser profile. Switch the setting off and back on with Home open. | All three icons start still, move with default preferences, and stop as soon as reduced motion is restored. | **Pass · browser** in Chromium. |
 | Switch to 360 px, restore default motion, open HTML / CSS, and return to Home. | The layout fits, the illustration runs before opening the set, and the visited set appears under Recent. | **Pass · browser** in Chromium. |
 | Run `npm run lint` and `npm run build` from `frontend/`. | Both checks pass. | **Pass · CLI**. |
+
+### Quiet loading and the study-set skeleton
+
+[App](../../frontend/src/App.tsx) leaves the screen blank during the session check and lazy screen imports. Sign-in keeps its action label while the submit button is busy. [Home](../../frontend/src/features/study-sets/Home.tsx) shows the ready shell and first-visit panel while the list is pending. The Built-in sets region stays blank for the first 200 ms and then uses the static [Boneyard skeleton](../../frontend/src/features/study-sets/bones/built-in-study-sets.bones.json). The section exposes busy state and hides decorative placeholders from assistive technology.
+
+Regenerate the bones when the built-in card layout changes. Start JaneQ and sign in with a dedicated Chromium test profile that exposes a CDP port. From `frontend/`, run the following using that port and the same origin used to sign in:
+
+```sh
+npm exec -- boneyard-js build http://127.0.0.1:5173/ --out ./src/features/study-sets/bones --breakpoints 360,592,864,1136 --no-scan --wait 1200 --force --cdp 9222
+```
+
+The captured widths follow the built-in grid's one-, two-, three-, and four-column layouts. The [registry](../../frontend/src/features/study-sets/bones/registry.ts) loads with the Home grid module.
+
+| Check | Expected result | Observed outcome |
+| --- | --- | --- |
+| Hold the session and study-set API responses in a Chromium test profile. | The session starts blank. The ready Home shell appears with a skeleton after the list wait reaches 200 ms. | **Pass · browser**. |
+| Release the study-set response at 360, 768, 900, and 1280 px. | The six cards replace the skeleton at the same top position and height. | **Pass · browser** at all four widths. |
+| Reload with the local API responding promptly. | The six cards appear without a skeleton flash. | **Pass · browser**. |
+| Delay sign-in, send an invalid password, then retry a failed study-set request. | Sign-in keeps its label while pending. Errors remain visible and retry restores the six cards. | **Pass · browser**. |
+| Run `npm run lint` and `npm run build` from `frontend/`. | Both checks pass. | **Pass · CLI**. |

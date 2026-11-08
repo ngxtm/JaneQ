@@ -84,8 +84,8 @@ export default function Login({ onSignIn }: LoginProps) {
                 shadow="sm"
                 focusRingColor="janeq.focus"
                 _hover={{ bg: 'janeq.blueHover' }}
-                loading={pending}
-                loadingText="Signing in…"
+                disabled={pending}
+                aria-busy={pending}
               >
                 Sign in
               </Button>

@@ -81,7 +81,7 @@ function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps)
               <a href="#home"><IconHome size={18} /> Home</a>
             </Menu.Item>
             <Menu.Item value="sign-out" disabled={signingOut} onSelect={onSignOut}>
-              <IconLogout size={18} /> {signingOut ? 'Signing out…' : 'Sign out'}
+              <IconLogout size={18} /> Sign out
             </Menu.Item>
           </Menu.Content>
         </Menu.Positioner>

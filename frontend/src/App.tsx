@@ -49,7 +49,6 @@ function App() {
 
   return (
     <>
-      {session.kind === 'checking' ? <main className="page"><p role="status">Checking your session…</p></main> : null}
       {session.kind === 'unavailable' ? (
         <main className="page">
           <p className="error" role="alert">Could not connect to JaneQ.</p>
@@ -57,12 +56,12 @@ function App() {
         </main>
       ) : null}
       {session.kind === 'signed-out' ? (
-        <Suspense fallback={<main className="page"><p role="status">Loading sign-in…</p></main>}>
+        <Suspense fallback={null}>
           <Login onSignIn={(user) => setSession({ kind: 'signed-in', user })} />
         </Suspense>
       ) : null}
       {session.kind === 'signed-in' ? (
-        <Suspense fallback={<main className="page"><p role="status">Loading Home…</p></main>}>
+        <Suspense fallback={null}>
           <Home
             username={session.user.username}
             signingOut={signingOut}

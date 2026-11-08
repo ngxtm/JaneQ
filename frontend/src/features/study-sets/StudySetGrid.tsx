@@ -1,8 +1,10 @@
-import { Avatar, Box, Grid, Heading, HStack, LinkBox, LinkOverlay, Skeleton, Stack, Text } from '@chakra-ui/react'
+import { Avatar, Grid, Heading, HStack, LinkBox, LinkOverlay, Stack, Text } from '@chakra-ui/react'
 import { IconProgress } from '@tabler/icons-react'
+import { Skeleton } from 'boneyard-js/react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import type { StudySet } from './api'
 import { studySetHref } from './library-navigation'
+import './bones/registry'
 
 const columns = 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))'
 const cardStyles = {
@@ -70,23 +72,14 @@ export function StudySetGrid({ sets, username }: { sets: StudySet[]; username: s
   )
 }
 
-export function StudySetGridSkeleton() {
+export function BuiltInStudySetGrid({ sets, username, loading }: {
+  sets: StudySet[]
+  username: string
+  loading: boolean
+}) {
   return (
-    <Grid templateColumns={columns} gap="4" aria-hidden="true">
-      {Array.from({ length: 6 }, (_, index) => (
-        <Box key={index} {...cardStyles}>
-          <Stack h="full" justify="space-between">
-            <Stack gap="2">
-              <Skeleton h="5" w="75%" />
-              <Skeleton h="3.5" w="40%" />
-            </Stack>
-            <HStack>
-              <Skeleton boxSize="6" rounded="full" />
-              <Skeleton h="3.5" w="16" />
-            </HStack>
-          </Stack>
-        </Box>
-      ))}
-    </Grid>
+    <Skeleton name="built-in-study-sets" loading={loading} select="viewport" animate="solid" color="#e3ebf1">
+      <StudySetGrid sets={sets} username={username} />
+    </Skeleton>
   )
 }

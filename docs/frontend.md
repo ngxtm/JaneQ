@@ -9,9 +9,15 @@
 | Primary action | Give the main action in a section the strongest emphasis. Use the shared blue tokens for actions such as **Sign in** and **Browse study sets**. |
 | Secondary action and navigation | Use outline styling for secondary actions such as **Try again** and quiet styling for navigation such as **Back to Home**. Use links for navigation and buttons for actions. |
 | Forms and focus | Pair inputs with accessible labels. Use the shared outline input recipe and keep keyboard focus visible on fields, buttons, cards, and menus. |
-| Loading, empty, and error | Keep loading placeholders close to the final layout. Explain an empty state and offer the next action when one exists. Put recoverable errors near the affected content and offer a retry when appropriate. |
+| Loading, empty, and error | Render ready sections immediately. Leave brief pending regions visually blank. For noticeable data waits, use a [Boneyard](https://boneyard.vercel.app/install) skeleton that matches the final layout. Explain an empty state and offer the next action when one exists. Put recoverable errors near the affected content and offer a retry when appropriate. |
 | Responsive layout | Keep the main action, content, and account controls usable at narrow and wide widths. Check real long titles and text wrapping in the layout. |
 | Motion | Use motion to show feedback or a transition. Honor reduced-motion preferences for animation and decorative movement. |
+
+## Loading behavior
+
+Use a quiet fallback for brief session checks and lazy imports. Keep ready navigation and content visible when another region is waiting. Reserve visible copy for meaningful outcomes or a concrete action the user can take. Preserve the action label on a pending button and prevent repeat submission.
+
+For slow or variable data requests, give quick responses time to arrive before showing a skeleton. Generate the skeleton from the real component with `boneyard-js`, keep it scoped to the pending region, and preserve its responsive footprint. Use a static skeleton by default. Expose busy state to assistive technology and keep decorative placeholders out of the accessibility tree.
 
 ## Existing examples
 

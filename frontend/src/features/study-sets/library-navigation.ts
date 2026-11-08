@@ -61,5 +61,8 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
     return set ? [set] : []
   })
 
-  return { selectedSet, recent, viewingSet: hash.startsWith('#set/'), rememberCurrentSet }
+  return {
+    selectedSet, recent, hasRecentHistory: recentIds.length > 0,
+    viewingSet: hash.startsWith('#set/'), rememberCurrentSet,
+  }
 }
