@@ -2,9 +2,9 @@
 
 ## Design and verify JaneQ screens
 
-1. Before implementing each JaneQ screen, review the shared theme and the closest existing feature for layout, spacing, typography, color, icons, and responsive states.
-2. Match the interaction and motion as well as the appearance. Check navigation, keyboard and pointer behavior, loading and empty states, hover and focus feedback, and animation timing. Honor reduced-motion preferences.
-3. Verify the result at desktop and mobile widths. In the feature document, record design decisions, why they were made, and any feature dependencies.
+1. Start from the [frontend UI guide](docs/frontend.md), the shared theme, and the closest existing feature. Before designing a new screen, consult the relevant screen and pinned sources in the local design notebook if available. The local notebook lives in `../janeq-research/` on development machines that have it.
+2. Record the chosen layout, component reuse, interaction states, and verification steps in the feature doc. Keep exploratory comparisons and reference captures in the local notebook.
+3. Verify the result at desktop and mobile widths. Check keyboard and pointer interactions, hover and focus, and reduced motion where applicable.
 
 ## Keep the frontend consistent
 
@@ -42,7 +42,7 @@ Keep UI shared by the source and destination mounted during in-app navigation. P
 - Use short English code comments to explain decisions and constraints that are easy to miss, such as why a transaction or a session check is necessary. Use clear names and control flow for routine behavior.
 - Keep backend startup and middleware in `backend/app/main.py`. Organize REST routes by feature, keep SQL in persistence code, and keep business rules independently testable.
 - Keep frontend screens, feature types, and endpoint calls together under `frontend/src/features/`. Send all frontend HTTP requests through the shared Axios instance in `frontend/src/http.ts`. Read `response.data` in feature clients and validate the payload at that boundary. Keep app-wide session orchestration in `App.tsx`.
-- Use the MCQ research report under `../interview/docs/` as a design reference. Review the relevant source for the current feature and record the ideas applied to JaneQ.
+- Use the local design notebook for MCQ research. Record the decisions adopted by JaneQ in the relevant feature doc.
 
 ## Document database changes
 

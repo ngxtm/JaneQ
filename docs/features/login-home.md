@@ -6,7 +6,7 @@ A user signs in with the configured demo account and sees the study sets availab
 
 Home lists the 18 built-in study sets from SQLite. Cards show the question count and status. Opening a card records the visit under Recent. Built-in sets are Ready and open to their study modes and flashcard preview. [Built-in study sets](builtin-sets.md)
 
-The overview links to Learn. Flashcards and Test have reserved entries for their own flows. [Study Set and Learn](learn.md)
+The overview shows the set title, question count, preview, and study modes. Ready sets support Learn and Test. [Study Set and Learn](learn.md)
 
 ## Run the flow
 
@@ -56,35 +56,31 @@ Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh da
 
 The backend declares this shape in `StudySetSummary` and the frontend checks it in `getStudySets()`. OpenAPI describes the `401` responses and lists the `janeq_session` cookie requirement for `/api/auth/me` and `/api/study-sets`. Both routes use the same session dependency, and the session middleware verifies the cookie signature. A sign-out error belongs to the current session. If that session expires during sign-out, the app cancels the pending request before returning to Login. [FastAPI authentication router](../../backend/app/auth.py) · [React study sets client](../../frontend/src/features/study-sets/api.ts)
 
-## Design references
+## Screen design
 
-The [frontend UI guide](../frontend.md) covers shared actions, states, and accessibility checks used across screens.
-
-The MCQ research report informed JaneQ's card-based Home and feature-specific FastAPI router with a shared authentication check. See [ClassQuiz's protected results router](https://github.com/mawoka-myblock/ClassQuiz/blob/master/classquiz/routers/results.py).
-
-For the later Test and Results flow, JaneQ's backend will own grading. The research report points to [react-quiz-component's hook](https://github.com/wingkwong/react-quiz-component/blob/develop/src/lib/engine/use-quiz.ts) for separating quiz state from presentation.
+Use the shared typography, controls, and accessibility checks across Login, session recovery, and 404. [Frontend UI guide](../frontend.md)
 
 ### Login design
 
-JaneQ's Vite sign-in uses a centered layout, outlined inputs, Outfit headings, Open Sans body text, blue accents, and a demo username and password form.
+Login uses a centered form with a 20 rem maximum width, JaneQ branding, Outfit headings, Open Sans body text, labeled outline fields, and a blue primary action. [Login component](../../frontend/src/features/auth/Login.tsx)
 
 [The JaneQ theme](../../frontend/src/ui/theme.ts) defines the outline input. On keyboard focus, Chakra uses the same color on the field border and the adjacent ring with zero gap. The sign-in route loads the Chakra components and bundled fonts on demand.
 
-The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in and moves down 16 px over 0.3 s after a 0.1 s delay. Reduced motion shows the final layout immediately, and keyboard focus brings the form into view immediately if the user tabs in during the entrance. The demo form uses a username and password with JaneQ's logo.
+The background fades in over 1.5 s after a 0.2 s delay. The form fades in and moves down 16 px over 0.3 s after a 0.1 s delay. Reduced motion shows the final layout immediately. Keyboard focus also reveals the form immediately during the entrance.
 
 ### Session connection error
 
-The error screen uses a centered illustration that fades into the background, a large heading, a short explanation, and a recovery action.
+A centered heading, short explanation, and recovery action sit above a decorative background. The recovery button uses the shared primary style.
 
 JaneQ uses its own mark and session-specific copy so users know what they can retry. The heading and explanation appear immediately. The decorative mark fades in and rises 8 px over 350 ms, and the tassel sways gently while the screen is visible. **Try again** keeps the screen and keyboard focus in place while the app checks the session. The arrow spins and the button prevents repeat requests until the check finishes. With reduced motion enabled, the illustration and arrow stay still. The button label remains **Try again** in both modes. [SessionUnavailable](../../frontend/src/features/auth/SessionUnavailable.tsx) · [App session check](../../frontend/src/App.tsx)
 
-The supplied visual reference adds soft light and orbital lines around the error content. JaneQ uses pale blue and violet light, three faint ellipses, and four drifting symbols drawn from study materials and math. On narrow screens the symbols sit above and below the message. The background is decorative, allows pointer input to pass through, and stays still when reduced motion is enabled. [Background styles](../../frontend/src/ui/study-error-screen.module.css)
+The background uses pale blue and violet light, three faint ellipses, and four drifting study and math symbols. On narrow screens the symbols sit above and below the message. The background allows pointer input to pass through and stays still with reduced motion. [Background styles](../../frontend/src/ui/study-error-screen.module.css)
 
 The error heading highlights the JaneQ name with italic Georgia on yellow. The heading wraps within the viewport and keeps the full message as one heading. Verified in Chromium at 1280 × 720 and 320 × 568. [Heading styles](../../frontend/src/ui/study-error-screen.module.css)
 
 ### Page and study set not found
 
-The [shared error screen](../../frontend/src/features/navigation/NotFoundPage.tsx) uses animated study symbols and a yellow status code above the heading. **Back to Home** is the primary action. For a missing study set, the copy explains what happened and takes the learner back to the catalog.
+The shared error layout shows a yellow `404` above the heading, a short explanation, and animated study symbols. **Back to Home** returns to the catalog when signed in. The copy distinguishes a missing page from a missing study set. [JaneQ screen](../../frontend/src/features/navigation/NotFoundPage.tsx)
 
 A document path outside the Home and study set route patterns opens the error screen before any session check. A study set link opens the set error screen after `GET /api/study-sets` succeeds and the target is absent. The 404 shown by React is a UI state. The frontend host controls the document response status and must serve the app shell for unknown document paths to show the screen. [App routing](../../frontend/src/features/navigation/app-location.ts) · [Study set routing](../../frontend/src/features/study-sets/Home.tsx)
 
@@ -134,15 +130,15 @@ During verification on Windows, rapid requests through Vite sometimes failed wit
 
 ## Home design
 
-The Home layout includes shared navigation, a recent-set grid, study set cards, and an empty dashboard.
+The library shell holds the header, account menu, and footer. Home shows recently opened sets when available, followed by the built-in catalog and any custom sets. [LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) · [Home](../../frontend/src/features/study-sets/Home.tsx)
 
-| Surface | JaneQ adaptation |
+| Surface | Design |
 | --- | --- |
-| Empty dashboard | The illustration uses the JaneQ mark with the same staggered floating motion. The primary action scrolls to Built-in sets because the question bank is already available. |
-| Recent, classes, and news | Recent uses real sets opened by the signed-in demo user. Built-in sets replace What's new. My sets appears when custom sets are available. Classes are outside the JaneQ feature plan. |
+| Empty dashboard | The JaneQ mark and study icons float with staggered timing. **Browse study sets** scrolls to the built-in catalog. |
+| Library sections | Recent lists sets opened by the signed-in user. Built-in sets lists the seeded catalog. My sets appears when custom sets are available. |
 | Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the overview. |
 | Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
-| Navigation state | [library-navigation.ts](../../frontend/src/features/study-sets/library-navigation.ts) handles browser history with hash URLs and stores up to 16 recent set IDs locally per demo username. The current API list supplies the displayed records. |
+| Navigation state | Home uses `/` and each set uses its stable ID in `/<id>`. The library stores up to 16 recent set IDs per demo username. The API catalog supplies the displayed records. [Route handling](../../frontend/src/features/navigation/app-location.ts) · [Recent sets](../../frontend/src/features/study-sets/library-navigation.ts) |
 
 [LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and renders [AccountMenu](../../frontend/src/features/study-sets/AccountMenu.tsx). [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.
 
@@ -152,13 +148,13 @@ Verified in Chromium at 1320 px and 360 px. Checks covered card dimensions and h
 
 ### Account menu
 
-The JaneQ account menu groups the avatar, name, and rotating chevron above a right-aligned dropdown. It uses a 32 px avatar, 18 px icons, and 40 px rows for Home and Sign out. The demo account uses initials, and the same trigger works on desktop and mobile.
+The Chakra menu groups a 32 px avatar with initials, username, and rotating chevron. Its right-aligned dropdown is 14 rem wide, with 18 px Tabler icons and 40 px rows for Home and Sign out. The same trigger works on desktop and mobile. [Account menu](../../frontend/src/features/study-sets/AccountMenu.tsx)
 
 The compact menu measured 224 px wide with 40 px rows in Chromium at 1320 px and 320 px. It fit the narrow viewport without horizontal overflow. Escape returned focus to the trigger and keyboard sign-out returned to the login screen. The earlier menu check confirmed reduced-motion behavior. Frontend lint and build passed.
 
 ### Floating illustration with Motion
 
-[EmptyLibrary](../../frontend/src/features/study-sets/EmptyLibrary.tsx) uses Motion's `LazyMotion` with `domAnimation` for the three floating icons. It uses `backInOut` easing, 20 px travel, and staggered timing.
+The three floating icons use Motion's `LazyMotion` and `domAnimation`, with `backInOut` easing, 20 px travel, and staggered timing. [EmptyLibrary](../../frontend/src/features/study-sets/EmptyLibrary.tsx)
 
 | Icon | Loop | Initial delay | Midpoint rotation |
 | --- | --- | --- | --- |

@@ -4,6 +4,8 @@
 
 [Chakra theme](../frontend/src/ui/theme.ts) defines JaneQ's colors, typography, and component recipes. Use theme tokens and recipes for recurring styles. Add a shared token or recipe when the same design role recurs across screens. Keep screen-specific layout close to the feature that owns it.
 
+Use Outfit for headings and Open Sans for body text. Use `janeq.ink` and `janeq.muted` for text, `janeq.library` for the library canvas, and `janeq.line` and `janeq.divider` for borders and separators. Preserve the visible `janeq.focus` treatment on interactive controls.
+
 Build interactive controls and overlays with Chakra UI or the shared JaneQ components in `frontend/src/ui/`. Use `Button`, `IconButton`, `Input`, `Checkbox`, `Switch`, `Select`, `Menu`, and `Dialog` for their corresponding roles. Do not author bare HTML controls or rely on browser-default styling. Chakra's hidden inputs and semantic children passed through `asChild` are part of the component. Use semantic HTML for document structure. When a control needs a custom presentation, style a Chakra component with theme tokens and preserve its keyboard, focus, and disabled states.
 
 | Pattern | Use in JaneQ |
@@ -28,14 +30,18 @@ Use a quiet fallback for brief session checks and lazy imports. Keep ready navig
 
 For slow or variable data requests, give quick responses time to arrive before showing a skeleton. Generate the skeleton from the real component with `boneyard-js`, keep it scoped to the pending region, and preserve its responsive footprint. Use a static skeleton by default. Expose busy state to assistive technology and keep decorative placeholders out of the accessibility tree.
 
-## Existing examples
+## Screen and component inventory
 
-- [Login](../frontend/src/features/auth/Login.tsx) shows labeled inputs, the shared focus treatment, and sign-in feedback.
-- [StudySetGrid](../frontend/src/features/study-sets/StudySetGrid.tsx) shows linked cards, matching skeletons, and focus and hover feedback.
-- [LibraryLayout](../frontend/src/features/study-sets/LibraryLayout.tsx) provides the library shell and responsive account menu. [EmptyLibrary](../frontend/src/features/study-sets/EmptyLibrary.tsx) shows a next action and motion that respects the browser preference.
+| Screen | Use as a baseline | Feature spec |
+| --- | --- | --- |
+| Sign-in and recovery | Centered sign-in form with labeled outline inputs and visible keyboard focus. Use `StudyErrorScreen` for full-page recovery states. | [Login, session errors, and 404](features/login-home.md#screen-design) |
+| Home and library | `LibraryLayout` owns the header, account menu, and footer. `StudySetGrid` owns linked cards and matching skeletons. `EmptyLibrary` leads to the catalog. | [Home layout and states](features/login-home.md#home-design) |
+| Study Set | Keep the set heading and modes available while the preview loads. `StudySetModes` provides the mode links and preview controls. | [Study Set layout](features/learn.md#study-set-design) |
+| Learn | Show one question at a time. Use the round header, answer feedback, progress summary, and shared `SettingsSwitch`. | [Learn screen states](features/learn.md#learn-screen-design) |
+| Test and Results | Use `Test` for the paper and `Results` for score and review. Share question card layout across both views. | [Test and Results layout](features/test-results.md#test-and-results-design) |
 
 ## Designing a new screen
 
 Start with the existing patterns for navigation, actions, and feedback. Choose the layout, illustration, and content hierarchy that fit the task on that screen. For example, Results can emphasize the score and group missed questions while following the same action and focus rules as Home.
 
-In the feature doc, record design decisions and explain how to verify them. Record the states exercised, keyboard behavior, desktop and mobile widths, and the reduced-motion result where applicable. See the [Login and Home feature doc](features/login-home.md) for examples.
+For a new screen or shared component, record its hierarchy, variants, responsive behavior, and loading, empty, error, and success states in the feature doc. Link the existing components it reuses. Record keyboard, desktop and mobile, and reduced-motion checks that were actually run. Update this guide when a pattern becomes shared across features.

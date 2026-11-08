@@ -10,7 +10,7 @@ Home opens at `/`. An overview opens at `/<id>`, with `/learn` and `/test` appen
 
 A 3 px yellow-orange bar at the top of the viewport uses BProgress in indeterminate mode while the flashcard preview is pending. The title, study modes, and shared header stay visible. The bar appears after 180 ms, disappears on completion, error, or leaving the preview, and stays still with reduced motion. The preview announces its pending state to assistive technology. [BProgress configuration](https://bprogress.vercel.app/docs/configure)
 
-Hover or focus a Ready card to start `GET /api/study-sets/{set_id}/preview` early. Opening the set uses the same request if it is still pending. The signed-in library keeps one successful response in memory for up to 30 seconds. A failed request can be retried and a Draft set skips the preview. The MCQ research report separates session and question reads from answer submissions. The speculative request only reads the preview and leaves Learn and Test actions to their respective screens. [MCQ research report](../../../interview/docs/MCQ_RESEARCH_REPORT.md) · [Database reference](../database.md)
+Hover or focus a Ready card to start `GET /api/study-sets/{set_id}/preview` early. Opening the set uses the same request if it is still pending. The signed-in library keeps one successful response in memory for up to 30 seconds. A failed request can be retried and a Draft set skips the preview. Learn and Test fetch their own data when opened. [Database reference](../database.md)
 
 | Check | How to reproduce | Expected result | Verification |
 | --- | --- | --- | --- |
@@ -19,20 +19,20 @@ Hover or focus a Ready card to start `GET /api/study-sets/{set_id}/preview` earl
 | Hover and quick return | Hold the .NET preview request, hover the card, then open it. Release the request, return Home and reopen the set. | Hover starts one request and opening reuses it. The yellow bar animates while waiting and goes away after completion. Reopening with the cached preview skips the bar. | Pass · Chromium at 1440 px against FastAPI and SQLite |
 | Keyboard, reduced motion, and retry | At 390 px with reduced motion, hold the .NET preview request, focus its card, then press Enter. Fail the held request, unblock it, and choose **Try again**. | Focus starts one request. The bar stays still during the wait, clears on failure, and the retry loads the preview. Home and the set fit the viewport. | Pass · Chromium at 390 px against FastAPI and SQLite |
 
-## Study Set reference
+## Study Set design
 
+The overview puts a quiet **Back to Home** link, title, and question count above the modes and flashcard preview. [Study Set overview](../../frontend/src/features/study-sets/Home.tsx) · [Modes and preview](../../frontend/src/features/study-sets/StudySetModes.tsx)
 
 | Area | JaneQ design target |
 | --- | --- |
-| Header | Use a 48 px bold title on desktop and 36 px on mobile. Ready metadata uses the MCQ question count. JaneQ retains a compact **Back to Home** above the title. |
-| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and a two-layer shadow. The 24 px Tabler icons use 2 px strokes, a `#4b83ff` foreground, and an offset `#1a5fff` copy blurred by 2 px at 30% opacity. Hover and keyboard focus move the icon layers, with stationary feedback under reduced motion. Disabled cards expose their unavailable state to assistive technology. |
-| Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. JaneQ's three modes occupy two rows above the preview. |
-| Flashcard preview | Match the 500 px height, 12 px corner radius, two-layer shadow, orange progress stripe, and 48 px previous and next controls. Show MCQ prompts and answers, position, and a star action. Use `#0036b4` for outline controls. |
-
+| Header | Use a bold 48 px title on desktop and 36 px on mobile. Show the question count and Ready or Draft status. |
+| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and layered shadow. Use 24 px Tabler icons with 2 px strokes, a blue foreground, and an offset blue shadow. Hover and keyboard focus move the icon layers. Reduced motion keeps the layers still. Disabled cards expose their unavailable state to assistive technology. |
+| Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. |
+| Flashcard preview | Use a 500 px height, 12 px radius, layered shadow, orange progress stripe, and 48 px previous and next controls. Show the question or answer face, position, and a star action. Use dark blue for outline controls. |
 
 ### Flashcard preview interactions
 
-The preview shows the question position, star, and navigation controls. JaneQ uses separate vertical flip and horizontal slide animations, with horizontal swipes for touchscreens. Motion runs the animations. Pointer Events distinguish a tap, a horizontal swipe, and a vertical scroll. [Quizzy flashcards](https://github.com/sztephen/Quizzy/blob/main/app/flashcards/page.tsx)
+The preview shows the current face, position, star action, and navigation controls. Motion runs the separate vertical flip and horizontal slide animations. Pointer Events distinguish a tap, a horizontal swipe, and vertical scrolling. [Preview card](../../frontend/src/features/study-sets/PreviewCard.tsx) · [Animation reference](https://github.com/sztephen/Quizzy/blob/main/app/flashcards/page.tsx)
 
 Open any Ready set from Home. Tap the card or press Space or Enter with the card focused to flip it in place. Swipe left for the next card and right for the previous card. The arrow buttons and keys use the same navigation. Each swipe moves at most one card, and the first and last cards stop at the ends of the set. Each new card opens on its question by default. **Show the answer first** reverses that preference. With reduced motion enabled, both changes happen immediately.
 
@@ -52,8 +52,7 @@ The preview reads prompts and correct answer text from `GET /api/study-sets/{set
 
 ## Learn milestone
 
-Learn has a round header with Back and Settings, a progress bar, and one prompt at a time. Answer choices use two columns at wider widths and one on narrow screens. Learners can acknowledge an incorrect answer or continue after the round summary. The completion screen returns to the set and can offer review of missed items.
-
+Learn shows one prompt at a time below a round header with Back, Settings, and progress. The answer card uses two columns at wider widths and one on narrow screens. The action bar lets the learner acknowledge an incorrect answer or continue after a round summary. [Learn component](../../frontend/src/features/learn/Learn.tsx)
 
 ### Confirmed behavior
 
@@ -61,13 +60,6 @@ Learn has a round header with Back and Settings, a progress bar, and one prompt 
 - **Answer feedback.** A single-choice selection checks immediately. For multi-select, the learner presses **Check answer**. After a correct answer, mark it on the question card and advance after about one second. After a wrong answer, mark the learner's choice and show the correct answer in the same card. Wait for **Continue** before advancing.
 - **Resume.** Save the current round, question or review step, and each question's learning status by signed-in account, study set, and revision. Reopening Learn resumes at the saved step. If the revision has changed, explain why and start a fresh session for the updated set if it is Ready. If it became Draft, apply the Draft behavior.
 - **Review data.** Use the three seeded HTML / CSS questions in a fresh disposable database. The Draft API test clears a key directly in its disposable fixture.
-
-### How the reference apps handle practice
-
-| App | Observed behavior | Application to JaneQ |
-| --- | --- | --- |
-| **Quizlet Learn** | The study path adapts to the learner's goal and familiarity. Quizlet describes drilling difficult terms, advancing from multiple-choice to written questions, and resuming saved progress. | Use missed questions to decide what comes back in a later round. Preserve progress when the learner leaves. [Quizlet Learn](https://quizlet.com/gb/features/learn) · [Study paths](https://help.quizlet.com/hc/en-us/articles/360048314692-Setting-up-a-study-path) |
-| **ClassQuiz live quiz** | Its check question allows multiple selections. The server compares the selected options with all correct options. The host controls the live question and results, and correct answers earn points based on time. | Use server-side validation for multiple selections. [Multi-select UI](https://github.com/mawoka-myblock/ClassQuiz/blob/49dca859dee1a1821b056abf95c2df501eda98e1/frontend/src/lib/play/questions/check.svelte) · [Answer checking](https://github.com/mawoka-myblock/ClassQuiz/blob/49dca859dee1a1821b056abf95c2df501eda98e1/classquiz/socket_server/helpers.py#L117) · [Live submissions](https://github.com/mawoka-myblock/ClassQuiz/blob/49dca859dee1a1821b056abf95c2df501eda98e1/classquiz/socket_server/__init__.py#L261) |
 
 ### Round rules for JaneQ
 
@@ -77,11 +69,11 @@ Learn has a round header with Back and Settings, a progress bar, and one prompt 
 
 ### Learn screen design
 
-The round summary shows the round number, progress, three status cards, and the items studied this round. The bottom action bar shows a keyboard hint and **Continue to round 2**.
+The round summary keeps the round number, Back, Settings, and progress at the top. Below, it shows mastery status counts and the questions reviewed that round. **Continue to round 2** includes an Enter shortcut when applicable.
 
 | Screen | Design target |
 | --- | --- |
-| Answer and feedback | Use a round header, progress, question card, and feedback states. Use labels or icons alongside color on the options. Show **Check answer** for multi-select and **Continue** after a wrong answer. |
+| Answer and feedback | Show the round header, progress, question card, and feedback. Use labels or icons alongside color. Show **Check answer** for multi-select and **Continue** after a wrong answer. |
 | Round summary | Keep the header, count and progress bar, three status cards, reviewed question rows, and bottom action bar. Rows show the question, correct answers, and the learner's result. **Learning** includes unseen questions and questions awaiting a first correct answer. The action bar uses Enter as its keyboard shortcut so other keys remain available for navigation. |
 | Completion and Settings | The completion screen shows the three status cards, a completion message, **Finish Learn**, and **Reset progress**. The Settings dialog provides shuffle for future rounds and reset with confirmation. JaneQ uses its source MCQ format for each pass. The preview has a separate setting for which card side appears first. |
 
@@ -107,7 +99,7 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 
 | Check | How to reproduce | Expected result | Verification |
 | --- | --- | --- | --- |
-| Study Set appearance | Open the Ready HTML / CSS set and inspect the layout at 1440 and 390 px. Check the mode and preview styles in DevTools. | The desktop mode card measures 160 × 59 px and the preview measures 832 × 500 px. At 390 and 320 px the page has no horizontal overflow. | Pass · browser |
+| Study Set appearance | Open the Ready HTML / CSS set at 1440, 390, and 320 px. Check mode and preview styles in DevTools. | The desktop mode card is 160 × 59 px and the preview is 832 × 500 px. At 390 and 320 px the page has no horizontal overflow. | Pass · browser |
 | Study Set interactions | Hover Learn, enable reduced motion, flip the preview, press Right Arrow, toggle Autoplay, open mobile Settings, and use Enter on Learn. | The icon layers move on hover and stay still under reduced motion. The preview flips and advances. Autoplay shows its active color. Settings opens and Learn enters Round 1. | Pass · browser |
 | Learn entry and return | Open Learn, use Back, and open Learn again. | Learn opens for the selected set. Back returns to its overview. | Pass · browser |
 | Draft entry | Clear a question's key in a disposable fixture and request Learn directly. | The request returns `409`. | Pass · API |
@@ -123,7 +115,7 @@ Browser checks used Chromium through Vite, FastAPI, and a disposable SQLite file
 
 ### Settings and Continue controls
 
-JaneQ uses the same Chakra switch for preview answer order and Learn shuffle. The preview keeps a single on/off setting for MCQ cards.
+The preview and Learn reuse the shared Chakra switch. **Show the answer first** controls which side the preview opens on. Learn's shuffle setting applies to future rounds. [SettingsSwitch](../../frontend/src/ui/SettingsSwitch.tsx)
 
 | Check | How to reproduce | Observed result |
 | --- | --- | --- |

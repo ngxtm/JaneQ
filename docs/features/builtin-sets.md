@@ -12,13 +12,13 @@ The rewritten catalog has **18 English sets, 281 questions, and 52 multiple-sele
 | Languages and backend | Java, .NET and C#, Python, Django, FastAPI |
 | Data, APIs, and security | SQL and Relational Databases, HTTP and API Design, Cybersecurity |
 
-Each set uses the same JSON format in [builtin_sets](../../backend/app/builtin_sets). Give every question a unique ID, four distinct choices, the complete answer key in `correctOptionIds`, and a short explanation. Use **Select all that apply** when a question has several correct choices. The MCQ research report identified topic and selection type as separate concepts, so each set has a topic while its questions can use either selection type. Learn uses the stored options for feedback. The explanations live in the source files.
+Each set uses the same JSON format. Give every question a unique ID, four distinct choices, the complete answer key in `correctOptionIds`, and a short explanation. Use **Select all that apply** when a question has several correct choices. Each set has a topic, and questions can use either selection type. Learn uses the stored options for feedback. The explanations live in the source files. [Built-in set files](../../backend/app/builtin_sets)
 
 Prompts specify the context when it affects the answer. For example, the comment question specifies JavaScript modules, and SQL questions name PostgreSQL where the dialect matters. [ECMAScript Annex B](https://tc39.es/ecma262/multipage/additional-ecmascript-features-for-web-browsers.html#sec-html-like-comments) · [React rules](https://react.dev/reference/rules) · [Next.js App Router](https://nextjs.org/docs/app) · [Django querysets](https://docs.djangoproject.com/en/6.0/ref/models/querysets/) · [FastAPI tutorial](https://fastapi.tiangolo.com/tutorial/) · [HTTP semantics](https://www.rfc-editor.org/rfc/rfc9110.html) · [OWASP password storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 
 ## UI, API, and data
 
-The Study Set overview shows the title, question count, Ready status, study modes, and flashcard preview. Home provides a separate catalog section.
+Home lists each built-in set as a linked card with its title, question count, and Ready or Draft status. The set overview shows study modes and, for Ready sets, a flashcard preview. [Home layout](login-home.md#home-design) · [Study Set layout](learn.md#study-set-design)
 
 Home uses the signed session to request `GET /api/study-sets`. The [study-set router](../../backend/app/study_sets.py) reads catalog summaries through [database.py](../../backend/app/database.py). Study Set requests `GET /api/study-sets/{set_id}/preview`, and Learn reads and updates progress through `GET` and `POST /api/study-sets/{set_id}/learn`. The old editor endpoint is retired. [OpenAPI](http://127.0.0.1:8000/docs) · [Learn API and storage](learn.md#api-and-storage)
 

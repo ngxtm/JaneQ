@@ -27,12 +27,9 @@ Open Sans comes from commit `8e14d710`. The Noto Sans TC asset comes from the re
 
 ## Test and Results design
 
+The paper uses a centered `4xl` column, timeline markers, white rounded question cards, and outline choices. Choices use two columns at `sm` and wider and one on smaller screens. Questions appear in catalog order with Chakra radios or checkboxes, an answered counter, and visible keyboard focus. **Submit test** becomes available when every question has a selection. While the paper loads, a static Boneyard placeholder appears after 200 ms. Recoverable failures show an inline action. [Test component](../../frontend/src/features/test/Test.tsx)
 
-**Test and Results layout.** The design uses a centered column, timeline markers, two-column answer choices at wider widths, and a score ring that scales down on narrow screens. Results switches from a horizontal summary to stacked sections and shows status icons in the timeline.
-
-JaneQ carries those dimensions and the Outfit, Open Sans, and Tabler treatments into its shared library shell. The paper presents the original MCQs in catalog order, with Chakra radios, checkboxes, an answered counter, and visible keyboard focus. All questions require a selection, so the footer uses a disabled **Submit test** until the paper is complete. The review reuses the paper cards and adds text labels beside the green and red marks. The Results header wraps **Download PDF**, **New test**, and **Back** at 360 px. The score card groups single-choice and multiple-select questions. The layout shows the ready paper or review immediately, with a static Boneyard placeholder after 200 ms during paper loading and an inline recovery panel for failures.
-
-The local [MCQ research report](../../../interview/docs/MCQ_RESEARCH_REPORT.md) informed the split between answer selection, server grading, and review. The report's comparison with ClassQuiz informed the exact-set scoring and validation at the API boundary.
+Results keeps the paper cards for review and adds text labels alongside correct and incorrect marks. The summary includes a score ring and a breakdown by question type. It stacks on narrow screens and lets **Download PDF**, **New test**, and **Back** wrap. [Results component](../../frontend/src/features/test/Results.tsx)
 
 ## API and storage
 
