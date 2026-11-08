@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "http-api-01",
-      "question": "Which request is intended to retrieve a representation of order 42?",
-      "options": { "a": "POST /orders/42", "b": "DELETE /orders/42", "c": "GET /orders/42", "d": "PATCH /orders/42" },
-      "correctOptionIds": ["c"],
-      "explanation": "GET requests a representation of the target resource."
+      "question": "Which request retrieves the current representation of invoice 17?",
+      "options": { "a": "PATCH /invoices/17", "b": "POST /invoices/17", "c": "DELETE /invoices/17", "d": "GET /invoices/17" },
+      "correctOptionIds": ["d"],
+      "explanation": "GET asks the server to transfer a representation of the target resource."
     },
     {
       "id": "http-api-02",
-      "question": "An API creates an order synchronously and knows the new resource URI. Which response best communicates that outcome?",
-      "options": { "a": "201 Created with Location: /orders/42", "b": "202 Accepted with no indication of a resource", "c": "304 Not Modified with an ETag", "d": "301 Moved Permanently with a collection URL" },
+      "question": "A POST creates /reports/4 synchronously. Which response describes that outcome and identifies the new resource?",
+      "options": { "a": "201 Created with Location: /reports/4", "b": "204 No Content with Retry-After: 4", "c": "202 Accepted with Allow: GET", "d": "404 Not Found with Location: /reports/4" },
       "correctOptionIds": ["a"],
-      "explanation": "201 signals resource creation, and Location can identify the newly created resource."
+      "explanation": "201 signals successful creation, and Location identifies the created resource."
     },
     {
       "id": "http-api-03",
-      "question": "An authenticated user requests a report that policy forbids them from reading. The API wants to report the permission failure explicitly. Which status fits?",
-      "options": { "a": "400 Bad Request", "b": "401 Unauthorized", "c": "405 Method Not Allowed", "d": "403 Forbidden" },
-      "correctOptionIds": ["d"],
-      "explanation": "403 indicates that the server understood the request but refuses to fulfill it."
+      "question": "A server chooses to tell an authenticated caller that they lack permission to export a report. Which status matches?",
+      "options": { "a": "400 Bad Request", "b": "401 Unauthorized", "c": "403 Forbidden", "d": "409 Conflict" },
+      "correctOptionIds": ["c"],
+      "explanation": "403 indicates the server understood the request but refuses to fulfill it."
     },
     {
       "id": "http-api-04",
-      "question": "A DELETE succeeds, and the API deliberately returns no response content. Which status expresses success without content?",
-      "options": { "a": "202 Accepted", "b": "204 No Content", "c": "206 Partial Content", "d": "304 Not Modified" },
+      "question": "A successful request should return no response content. Which status explicitly conveys that?",
+      "options": { "a": "200 OK", "b": "204 No Content", "c": "304 Not Modified", "d": "415 Unsupported Media Type" },
       "correctOptionIds": ["b"],
-      "explanation": "204 indicates successful fulfillment with no response content."
+      "explanation": "204 signals successful handling with no response content."
     },
     {
       "id": "http-api-05",
-      "question": "Which methods are defined as safe in HTTP semantics? Select all that apply.",
-      "options": { "a": "GET", "b": "DELETE", "c": "POST", "d": "HEAD" },
-      "correctOptionIds": ["a", "d"],
-      "explanation": "GET and HEAD are safe methods because the client requests read-only semantics. Incidental effects such as logging can still occur."
+      "question": "Which methods are defined as safe by HTTP? Select all that apply.",
+      "options": { "a": "GET", "b": "PUT", "c": "HEAD", "d": "DELETE" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "GET and HEAD have read-only semantics from the client's perspective."
     },
     {
       "id": "http-api-06",
-      "question": "Which request header tells a server that the client's request body is JSON?",
-      "options": { "a": "Accept: application/json", "b": "Content-Encoding: application/json", "c": "Content-Type: application/json", "d": "Vary: application/json" },
-      "correctOptionIds": ["c"],
-      "explanation": "Content-Type describes the media type of the message content. Accept expresses preferences for the response."
+      "question": "Which request header identifies the media type of a JSON request body?",
+      "options": { "a": "Accept", "b": "Vary", "c": "Location", "d": "Content-Type" },
+      "correctOptionIds": ["d"],
+      "explanation": "Content-Type describes the media type of the content being sent."
     },
     {
       "id": "http-api-07",
-      "question": "A resource exists and permits GET, but the client sends PATCH, which the resource does not support. Which status applies?",
-      "options": { "a": "404 Not Found", "b": "405 Method Not Allowed", "c": "406 Not Acceptable", "d": "415 Unsupported Media Type" },
-      "correctOptionIds": ["b"],
-      "explanation": "405 means the method is known but unsupported for the target resource. The response includes an Allow header."
+      "question": "A target allows GET and HEAD but refuses PUT as an unsupported method. Which status specifically fits?",
+      "options": { "a": "405 Method Not Allowed", "b": "406 Not Acceptable", "c": "415 Unsupported Media Type", "d": "429 Too Many Requests" },
+      "correctOptionIds": ["a"],
+      "explanation": "405 indicates the method is known but is unsupported for that target."
     },
     {
       "id": "http-api-08",
-      "question": "A service rejects a client because it exceeded the request rate limit. Which status specifically signals this condition?",
-      "options": { "a": "408 Request Timeout", "b": "413 Content Too Large", "c": "503 Service Unavailable", "d": "429 Too Many Requests" },
-      "correctOptionIds": ["d"],
-      "explanation": "429 indicates rate limiting. A Retry-After header can tell the client when to try again."
+      "question": "The API rejects a caller who sent too many requests in a rate-limit window. Which response status fits?",
+      "options": { "a": "408 Request Timeout", "b": "413 Content Too Large", "c": "429 Too Many Requests", "d": "503 Service Unavailable" },
+      "correctOptionIds": ["c"],
+      "explanation": "429 tells the caller the request exceeded a rate limit."
     },
     {
       "id": "http-api-09",
-      "question": "An API returns 401 because a request lacks valid authentication credentials. Which response header advertises the applicable authentication challenge?",
-      "options": { "a": "WWW-Authenticate", "b": "Authorization", "c": "Content-Disposition", "d": "Access-Control-Allow-Origin" },
-      "correctOptionIds": ["a"],
-      "explanation": "WWW-Authenticate carries the server's challenge. Authorization carries credentials sent by a client."
+      "question": "Which response header carries an authentication challenge for a 401 response?",
+      "options": { "a": "Authorization", "b": "WWW-Authenticate", "c": "Cookie", "d": "Proxy-Authorization" },
+      "correctOptionIds": ["b"],
+      "explanation": "WWW-Authenticate advertises how the client can authenticate to the origin server."
     },
     {
       "id": "http-api-10",
-      "question": "Which HTTP methods have idempotent semantics? Select all that apply.",
-      "options": { "a": "POST", "b": "PUT", "c": "DELETE", "d": "PATCH" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "Repeating the same PUT or DELETE has the same intended server effect as applying it once. Response status can differ."
+      "question": "Among these methods, which are defined as idempotent by HTTP? Select all that apply.",
+      "options": { "a": "PUT", "b": "POST", "c": "PATCH", "d": "DELETE" },
+      "correctOptionIds": ["a", "d"],
+      "explanation": "Repeating an identical PUT or DELETE has the same intended effect as sending it once."
     },
     {
       "id": "http-api-11",
-      "question": "A client cached a response with ETag \"v1\". Which request header can it send to ask for the resource only if that tag no longer matches?",
-      "options": { "a": "If-Match: \"v1\"", "b": "ETag: \"v1\"", "c": "If-None-Match: \"v1\"", "d": "Cache-Control: \"v1\"" },
+      "question": "A browser has a saved ETag and wants the server to send the representation only if that tag no longer matches. Which request header fits?",
+      "options": { "a": "If-Match", "b": "Range", "c": "If-None-Match", "d": "Vary" },
       "correctOptionIds": ["c"],
-      "explanation": "If-None-Match makes the GET conditional. A matching validator can result in 304 Not Modified."
+      "explanation": "If-None-Match makes the request conditional on the representation not matching a supplied tag."
     },
     {
       "id": "http-api-12",
-      "question": "Two clients edit the same document. What status should the API return when a supplied If-Match validator no longer matches and the server therefore rejects the update?",
-      "options": { "a": "412 Precondition Failed", "b": "304 Not Modified", "c": "428 Precondition Required", "d": "204 No Content" },
+      "question": "A client sends PUT with If-Match, and the supplied validator no longer matches. The server rejects the update. Which status fits?",
+      "options": { "a": "412 Precondition Failed", "b": "404 Not Found", "c": "201 Created", "d": "429 Too Many Requests" },
       "correctOptionIds": ["a"],
-      "explanation": "412 signals that a supplied request precondition failed. It lets the client fetch the new state before attempting another update."
+      "explanation": "412 indicates the server rejected the request because a stated precondition was false."
     },
     {
       "id": "http-api-13",
-      "question": "A browser wants to send a cross-origin request that requires a CORS preflight. Which method does the browser use for the preflight request?",
-      "options": { "a": "HEAD", "b": "GET", "c": "POST", "d": "OPTIONS" },
+      "question": "Which HTTP method does a browser use for a CORS preflight?",
+      "options": { "a": "HEAD", "b": "POST", "c": "TRACE", "d": "OPTIONS" },
       "correctOptionIds": ["d"],
-      "explanation": "A CORS preflight uses OPTIONS and includes information about the planned method and relevant request headers."
+      "explanation": "A preflight is an OPTIONS request that asks whether the cross-origin request is allowed."
     },
     {
       "id": "http-api-14",
-      "question": "A service accepts a long report-generation job but has not finished it. Which response best reflects that state?",
-      "options": { "a": "201 Created for the completed report", "b": "202 Accepted with a job status URL in the response", "c": "204 No Content because the report completed", "d": "206 Partial Content because the computation is unfinished" },
+      "question": "A server queued a lengthy export and plans to process it later. Which response conveys acceptance while the export remains pending?",
+      "options": { "a": "201 Created with the finished export", "b": "202 Accepted with a job status URL", "c": "204 No Content to report a finished download", "d": "409 Conflict" },
       "correctOptionIds": ["b"],
-      "explanation": "202 means processing was accepted but is incomplete. A job status URL lets the client follow progress."
+      "explanation": "202 signals that the server accepted the request for processing and may provide a status resource."
     },
     {
       "id": "http-api-15",
-      "question": "A client may retry a create-payment POST after a timeout. Which API design choices help prevent duplicate payments? Select all that apply.",
-      "options": { "a": "Require the same idempotency key for retries of one logical operation", "b": "Generate a fresh key for every retry", "c": "Record the key and outcome atomically with the payment record", "d": "Assume every timeout means the server did not process the request" },
+      "question": "A POST starts a payment. Which design choices help prevent a duplicate charge if the client retries after a timeout? Select all that apply.",
+      "options": { "a": "Reuse the same idempotency key for the same logical operation", "b": "Generate a new key on every retry", "c": "Record the key and payment outcome atomically", "d": "Use the payment amount alone as a unique key" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "Reusing the same key identifies the same operation, and atomic persistence prevents a retry from repeating a payment that already committed."
+      "explanation": "A stable request key plus atomic persistence ties retries to the original outcome."
     },
     {
       "id": "http-api-16",
-      "question": "Which directive tells caches not to store a response containing a user's sensitive account details?",
-      "options": { "a": "Cache-Control: public", "b": "Cache-Control: max-age=600", "c": "Cache-Control: no-cache", "d": "Cache-Control: no-store" },
-      "correctOptionIds": ["d"],
-      "explanation": "no-store instructs caches not to store the response. no-cache permits storage but requires validation before reuse."
+      "question": "Which Cache-Control directive tells caches to avoid storing the response?",
+      "options": { "a": "no-cache", "b": "max-age=0", "c": "no-store", "d": "must-revalidate" },
+      "correctOptionIds": ["c"],
+      "explanation": "no-store forbids storing the response. no-cache requires validation before reuse."
     },
     {
       "id": "http-api-17",
-      "question": "A listing changes frequently, and each result has a stable sort key. Which pagination approach can continue after the last seen key without relying on how many rows precede it?",
-      "options": { "a": "Increase an offset by the number of returned rows", "b": "Always request the first page", "c": "Use a cursor encoding the last seen sort position", "d": "Sort each page independently after retrieving it" },
-      "correctOptionIds": ["c"],
-      "explanation": "A position-based cursor can resume from the last sort key, using a tie-breaker when needed."
+      "question": "A feed uses a stable sort order and needs to continue after the last result without an offset. Which pagination input fits?",
+      "options": { "a": "A cursor identifying the last sort position", "b": "The browser's time zone", "c": "The total number of rows only", "d": "A page index interpreted as a row offset" },
+      "correctOptionIds": ["a"],
+      "explanation": "A cursor captures the continuation position in the sort order."
     },
     {
       "id": "http-api-18",
-      "question": "A request sends XML to an endpoint that accepts only JSON request content. Which status signals that the request's media type is unsupported?",
-      "options": { "a": "415 Unsupported Media Type", "b": "406 Not Acceptable", "c": "409 Conflict", "d": "429 Too Many Requests" },
-      "correctOptionIds": ["a"],
-      "explanation": "415 concerns an unsupported format for the request content. 406 concerns available response representations."
+      "question": "An endpoint accepts only JSON and receives an XML body. Which response specifically reports unsupported request content type?",
+      "options": { "a": "400 Bad Request", "b": "406 Not Acceptable", "c": "422 Unprocessable Content", "d": "415 Unsupported Media Type" },
+      "correctOptionIds": ["d"],
+      "explanation": "415 means the server rejected the request content format."
     },
     {
       "id": "http-api-19",
-      "question": "Which response header tells a cache that representations can vary based on the request's Accept-Language header?",
-      "options": { "a": "Content-Language: Accept-Language", "b": "Vary: Accept-Language", "c": "Allow: Accept-Language", "d": "Accept: Accept-Language" },
+      "question": "Which response header tells caches that content selection depends on Accept-Language?",
+      "options": { "a": "Content-Language: en", "b": "Vary: Accept-Language", "c": "Accept-Language: en", "d": "Accept: application/json" },
       "correctOptionIds": ["b"],
-      "explanation": "Vary names request headers that affect representation selection and must be considered when reusing a cached response."
+      "explanation": "Vary identifies request header fields that affect selection of the cached response."
     },
     {
       "id": "http-api-20",
-      "question": "Which request scenarios should generally be tested separately for an authenticated write endpoint? Select all that apply.",
-      "options": { "a": "A valid request by a caller with permission", "b": "Only requests made through the UI's happy path", "c": "A valid request by a signed-in caller without permission", "d": "A request with invalid input from a caller with permission" },
-      "correctOptionIds": ["a", "c", "d"],
-      "explanation": "Success, authorization failure, and input validation exercise different server behaviors."
+      "question": "Which authenticated write cases should be tested separately to exercise distinct server behavior? Select all that apply.",
+      "options": { "a": "A valid request from a permitted caller", "b": "A valid request from a caller without permission", "c": "Invalid input from a permitted caller", "d": "Only repeated runs of the same successful request" },
+      "correctOptionIds": ["a", "b", "c"],
+      "explanation": "These cases exercise success, authorization failure, and input validation separately."
     }
   ]
 }

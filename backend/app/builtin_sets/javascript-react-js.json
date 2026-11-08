@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "id": "javascript-react-js",
+  "title": "JavaScript / React.js",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q01",
+      "question": "A JavaScript function has a block-local counter that it increments. Which declaration fits?",
+      "options": { "a": "const count = 0", "b": "let count = 0", "c": "export default count", "d": "import count from 'counter'" },
+      "correctOptionIds": ["b"],
+      "explanation": "A let binding can be reassigned and has block scope."
+    },
+    {
+      "id": "q02",
+      "question": "Which JavaScript expression returns a new array with each price doubled?",
+      "options": { "a": "prices.forEach(price => price * 2)", "b": "prices.filter(price => price * 2)", "c": "prices.find(price => price * 2)", "d": "prices.map(price => price * 2)" },
+      "correctOptionIds": ["d"],
+      "explanation": "map collects one returned value for each visited item."
+    },
+    {
+      "id": "q03",
+      "question": "A React child needs a label supplied by its parent. How should the parent pass it?",
+      "options": { "a": "Render <Badge label={label} />", "b": "Write to document.title", "c": "Set a module-level variable during render", "d": "Call the Badge function inside an event handler" },
+      "correctOptionIds": ["a"],
+      "explanation": "A JSX attribute becomes a prop of the child component."
+    },
+    {
+      "id": "q04",
+      "question": "A React list can be reordered. Which key stays tied to each row through a reorder?",
+      "options": { "a": "The current array index", "b": "A random value generated on every render", "c": "The row's stable unique ID", "d": "The total number of rows" },
+      "correctOptionIds": ["c"],
+      "explanation": "A stable key lets React identify the same row across renders."
+    },
+    {
+      "id": "q05",
+      "question": "A React button must remember a counter and update the display when clicked. Which Hook fits?",
+      "options": { "a": "useRef", "b": "useState", "c": "useEffect", "d": "useContext with no provider" },
+      "correctOptionIds": ["b"],
+      "explanation": "A state update asks React to render with the updated counter."
+    },
+    {
+      "id": "q21",
+      "question": "What does const same = (5 === '5') assign to same?",
+      "options": { "a": "true", "b": "'false'", "c": "5", "d": "false" },
+      "correctOptionIds": ["d"],
+      "explanation": "Strict equality does not coerce a string into a number."
+    },
+    {
+      "id": "q22",
+      "question": "In a JavaScript module, which of these lines are valid comments? Select all that apply.",
+      "options": { "a": "// Read the current value", "b": "/* Read the current value */", "c": "# Read the current value", "d": "<!-- Read the current value -->" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "JavaScript modules allow line and block comments. The legacy HTML-like syntax is excluded from modules."
+    },
+    {
+      "id": "q23",
+      "question": "Given const letters = ['a', 'b'], what does letters.includes('c') return?",
+      "options": { "a": "false", "b": "undefined", "c": "-1", "d": "'c'" },
+      "correctOptionIds": ["a"],
+      "explanation": "includes returns a boolean that reports whether the value is present."
+    },
+    {
+      "id": "q37",
+      "question": "A React component displays a sum that can be calculated directly from its current props. Where should it calculate the sum?",
+      "options": { "a": "In a timeout", "b": "In an Effect that copies props into state", "c": "During render", "d": "In browser storage" },
+      "correctOptionIds": ["c"],
+      "explanation": "Calculating from current props during render avoids a second source of truth."
+    },
+    {
+      "id": "q40",
+      "question": "Which operations are appropriate during the render of a React component? Select all that apply.",
+      "options": { "a": "Update a shared module variable", "b": "Calculate a local total from props", "c": "Send a POST request", "d": "Create JSX from current state" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "Pure calculations and JSX creation are safe during render. Shared mutations and requests are side effects."
+    },
+    {
+      "id": "q41",
+      "question": "A React Effect subscribes to an external event source. What should its cleanup do?",
+      "options": { "a": "Register the same listener again", "b": "Remove the listener added by that Effect", "c": "Set the dependency array to empty", "d": "Force the entire app to reload" },
+      "correctOptionIds": ["b"],
+      "explanation": "Cleanup releases the subscription owned by that Effect."
+    }
+  ]
+}

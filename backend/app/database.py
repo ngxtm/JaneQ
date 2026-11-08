@@ -1,13 +1,10 @@
 import json
-import re
 import sqlite3
 from contextlib import closing
 from pathlib import Path
-from string import ascii_lowercase
 
-SOURCE_FILE = Path(__file__).with_name("questions_en.json")
 BUILTIN_SETS_DIR = Path(__file__).with_name("builtin_sets")
-SEED_NAME = "builtin_questions_v2"
+SEED_NAME = "builtin_catalog"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS study_sets (
@@ -74,82 +71,50 @@ def initialize_database(path: Path) -> None:
         if already_seeded:
             return
 
-        seed_legacy_sets(connection)
-        for source_path in sorted(BUILTIN_SETS_DIR.glob("*.json")):
+        if connection.execute("SELECT 1 FROM study_sets LIMIT 1").fetchone():
+            raise RuntimeError("The MVP catalog requires a fresh SQLite file. Set JANEQ_DB_PATH to a new path.")
+
+        source_paths = sorted(BUILTIN_SETS_DIR.glob("*.json"))
+        if not source_paths:
+            raise RuntimeError("The built-in question bank is missing.")
+
+        for source_path in source_paths:
             study_set = json.loads(source_path.read_text(encoding="utf-8"))
             connection.execute(
                 "INSERT INTO study_sets (id, title, source_kind) VALUES (?, ?, 'builtin')",
                 (study_set["id"], study_set["title"]),
             )
             for position, row in enumerate(study_set["questions"], start=1):
-                seed_question(connection, study_set["id"], row["id"], position, row, row["options"])
+                seed_question(connection, study_set["id"], position, row)
         connection.execute("INSERT INTO seed_history (name) VALUES (?)", (SEED_NAME,))
 
 
-def seed_legacy_sets(connection: sqlite3.Connection) -> None:
-    rows = json.loads(SOURCE_FILE.read_text(encoding="utf-8-sig"))["questions"]
-    existing_sets = set()
-    changed_sets = set()
-    set_ids = {}
-    for index, row in enumerate(rows, start=1):
-        title = row["type"]
-        if title not in set_ids:
-            set_id = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-            set_ids[title] = set_id
-            inserted = connection.execute(
-                """
-                INSERT INTO study_sets (id, title, source_kind) VALUES (?, ?, 'builtin')
-                ON CONFLICT (id) DO NOTHING
-                """,
-                (set_id, title),
-            )
-            if inserted.rowcount == 0:
-                existing_sets.add(set_id)
-
-        # Keep the IDs and positions used by existing Learn sessions.
-        set_id = set_ids[title]
-        options = dict(zip(ascii_lowercase, row["options"]))
-        if seed_question(connection, set_id, f"q{index:02d}", index, row, options):
-            changed_sets.add(set_id)
-
-    connection.executemany(
-        "UPDATE study_sets SET revision = revision + 1 WHERE id = ?",
-        [(set_id,) for set_id in sorted(existing_sets & changed_sets)],
-    )
-
-
 def seed_question(
-    connection: sqlite3.Connection, set_id: str, question_id: str, position: int, row: dict,
-    options: dict[str, str],
-) -> bool:
+    connection: sqlite3.Connection, set_id: str, position: int, row: dict,
+) -> None:
+    question_id = row["id"]
     prompt = row["question"]
+    options = row["options"]
     correct_ids = set(row["correctOptionIds"])
     if (
         not prompt.strip() or len(options) < 2 or any(not text.strip() for text in options.values())
         or not correct_ids or not correct_ids.issubset(options)
     ):
         raise ValueError(f"Invalid built-in question: {question_id}")
-    question = connection.execute(
-        """
-        INSERT INTO questions (id, study_set_id, prompt, position) VALUES (?, ?, ?, ?)
-        ON CONFLICT (id) DO UPDATE SET prompt = excluded.prompt
-        WHERE questions.prompt <> excluded.prompt
-        """,
+    connection.execute(
+        "INSERT INTO questions (id, study_set_id, prompt, position) VALUES (?, ?, ?, ?)",
         (question_id, set_id, prompt, position),
     )
-    answers = connection.executemany(
+    connection.executemany(
         """
         INSERT INTO answer_options (id, question_id, text, position, is_correct)
         VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT (id) DO UPDATE SET text = excluded.text, is_correct = excluded.is_correct
-        WHERE answer_options.text <> excluded.text OR answer_options.is_correct <> excluded.is_correct
         """,
         (
             (f"{question_id}-{option_id}", question_id, text, index, option_id in correct_ids)
             for index, (option_id, text) in enumerate(options.items())
         ),
     )
-    return question.rowcount > 0 or answers.rowcount > 0
 
 
 def list_study_sets(path: Path) -> list[sqlite3.Row]:

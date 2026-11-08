@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "nextjs-01",
-      "question": "Which file defines the page at /products in the Next.js App Router?",
-      "options": { "a": "app/products/layout.tsx", "b": "app/products/page.tsx", "c": "app/products/loading.tsx", "d": "app/products/template.tsx" },
-      "correctOptionIds": ["b"],
-      "explanation": "A page file defines the UI for its route segment. The products folder contributes /products to the URL."
+      "question": "Which App Router file renders the /reports page?",
+      "options": { "a": "app/reports/layout.tsx", "b": "app/reports/loading.tsx", "c": "app/reports/page.tsx", "d": "app/reports/route.ts" },
+      "correctOptionIds": ["c"],
+      "explanation": "A page file supplies the route's public UI."
     },
     {
       "id": "nextjs-02",
-      "question": "Which App Router path represents a page such as /products/42, where 42 is a route parameter?",
-      "options": { "a": "app/products/id/page.tsx", "b": "app/products/(id)/page.tsx", "c": "app/products/{id}/page.tsx", "d": "app/products/[id]/page.tsx" },
-      "correctOptionIds": ["d"],
-      "explanation": "Square brackets define a dynamic route segment. In this example the segment is named id."
+      "question": "Which directory name makes the order ID dynamic in app/orders/.../page.tsx?",
+      "options": { "a": "[orderId]", "b": "(orderId)", "c": "@orderId", "d": "_orderId" },
+      "correctOptionIds": ["a"],
+      "explanation": "Square brackets declare a dynamic route segment."
     },
     {
       "id": "nextjs-03",
-      "question": "An App Router page needs to read a private database credential and display a query result. Where should the database query run?",
-      "options": { "a": "In a Server Component or a server-only data module it calls", "b": "In a Client Component's click handler", "c": "In a public JavaScript file", "d": "In a browser worker using a public environment variable" },
-      "correctOptionIds": ["a"],
-      "explanation": "Keeping data access on the server lets the UI receive the intended result without sending database credentials to the browser."
+      "question": "A route page needs a server-only credential to query the database. Where should that query run?",
+      "options": { "a": "Inside a click handler in the browser", "b": "In a module referenced by a public script tag", "c": "In a Client Component with the credential passed as a prop", "d": "In server-side code used by the Server Component" },
+      "correctOptionIds": ["d"],
+      "explanation": "Server-side code can access the credential without shipping it to the browser."
     },
     {
       "id": "nextjs-04",
-      "question": "A component imported directly by a Server Component needs useState and an onClick handler. Which directive marks its file as a client entry point?",
-      "options": { "a": "'use server'", "b": "'use strict'", "c": "'use client'", "d": "'use browser'" },
-      "correctOptionIds": ["c"],
-      "explanation": "The use client directive marks the boundary for code that requires client-side React features."
+      "question": "A module is the entry point of an interactive counter imported into a Server Component. Which directive belongs at the top?",
+      "options": { "a": "'use strict'", "b": "'use client'", "c": "'use cache'", "d": "'use server'" },
+      "correctOptionIds": ["b"],
+      "explanation": "use client marks a module as a client entry point."
     },
     {
       "id": "nextjs-05",
-      "question": "Which file conventions can customize what users see when an App Router segment is loading or encounters an uncaught error? Select all that apply.",
-      "options": { "a": "loading.tsx for a loading fallback", "b": "middleware.tsx for a React error fallback", "c": "error.tsx for an error boundary fallback", "d": "route.ts for a loading skeleton" },
-      "correctOptionIds": ["a", "c"],
-      "explanation": "loading supplies a Suspense fallback and error supplies a client error boundary fallback for the segment's nested content."
+      "question": "Which App Router files can provide a loading UI and a segment error boundary respectively? Select all that apply.",
+      "options": { "a": "loading.tsx", "b": "error.tsx", "c": "template.tsx", "d": "sitemap.ts" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "loading provides a loading fallback, and error provides the segment error boundary UI."
     },
     {
       "id": "nextjs-06",
-      "question": "Which App Router file can export a GET function to implement /api/health?",
-      "options": { "a": "app/api/health/page.tsx", "b": "app/api/health/route.ts", "c": "app/api/health/layout.tsx", "d": "app/api/health/loading.tsx" },
-      "correctOptionIds": ["b"],
-      "explanation": "A route file defines an HTTP Route Handler through named exports such as GET or POST."
+      "question": "An App Router endpoint needs to handle GET /api/ping. Where should the GET export go?",
+      "options": { "a": "app/ping.ts", "b": "app/api/ping/page.tsx", "c": "app/api/ping/route.ts", "d": "app/api/route/ping.ts" },
+      "correctOptionIds": ["c"],
+      "explanation": "A route.ts file defines HTTP method handlers at its segment path."
     },
     {
       "id": "nextjs-07",
-      "question": "Which App Router convention places a navigation bar around every page under /account?",
-      "options": { "a": "app/account/layout.tsx rendering children", "b": "app/account/page.tsx rendering only the overview", "c": "app/account/route.ts returning JSON", "d": "app/account/not-found.tsx displaying a 404" },
-      "correctOptionIds": ["a"],
-      "explanation": "A layout wraps the UI of its segment and descendants using the children prop."
+      "question": "Which file supplies shared UI around all pages inside the dashboard segment?",
+      "options": { "a": "app/dashboard/page.tsx", "b": "app/dashboard/layout.tsx", "c": "app/dashboard/route.ts", "d": "app/dashboard/error.tsx" },
+      "correctOptionIds": ["b"],
+      "explanation": "A segment layout renders shared UI around its children."
     },
     {
       "id": "nextjs-08",
-      "question": "Which import provides Next.js client-side navigation for a link to an internal route?",
-      "options": { "a": "Image from next/image", "b": "Script from next/script", "c": "Link from next/router", "d": "Link from next/link" },
+      "question": "Which component is the usual choice for an internal link that participates in Next.js client-side navigation?",
+      "options": { "a": "Head from next/head", "b": "Image from next/image", "c": "Script from next/script", "d": "Link from next/link" },
       "correctOptionIds": ["d"],
-      "explanation": "The Link component from next/link extends anchor navigation with framework-aware client-side transitions."
+      "explanation": "Link integrates internal anchors with Next.js routing."
     },
     {
       "id": "nextjs-09",
-      "question": "What is the URL for app/(shop)/products/page.tsx?",
-      "options": { "a": "/shop/products", "b": "/(shop)/products", "c": "/products", "d": "/shop" },
-      "correctOptionIds": ["c"],
-      "explanation": "A parenthesized folder is a route group for organizing routes and layouts. Its name is omitted from the URL."
+      "question": "What URL corresponds to app/(shop)/cart/page.tsx?",
+      "options": { "a": "/cart", "b": "/shop/cart", "c": "/(shop)/cart", "d": "/app/cart" },
+      "correctOptionIds": ["a"],
+      "explanation": "A route group organizes files without adding a URL segment."
     },
     {
       "id": "nextjs-10",
-      "question": "Which tasks belong on the server in a Next.js application? Select all that apply.",
-      "options": { "a": "Read a secret payment service key", "b": "Read window.innerWidth", "c": "Handle a local slider's onChange event", "d": "Check a user's permission before changing a protected database record" },
-      "correctOptionIds": ["a", "d"],
-      "explanation": "Secrets and authoritative access checks belong on the server. Browser viewport values and interaction handlers belong on the client."
+      "question": "Which tasks belong on the server when an app processes orders? Select all that apply.",
+      "options": { "a": "Read a private payment credential", "b": "Run the user's checkbox animation", "c": "Verify permission before writing the order", "d": "Read window.matchMedia to change a local UI animation" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Credentials and authoritative write authorization belong on the server."
     },
     {
       "id": "nextjs-11",
-      "question": "An App Router product page looks up a slug and finds no corresponding product. Which function can trigger the route's not-found UI?",
-      "options": { "a": "router.refresh()", "b": "notFound() from next/navigation", "c": "revalidatePath() from next/cache", "d": "generateStaticParams()" },
-      "correctOptionIds": ["b"],
-      "explanation": "notFound ends rendering of the affected segment and selects the relevant not-found UI."
+      "question": "A page requested by slug has no corresponding record. Which helper can show the route's not-found UI?",
+      "options": { "a": "redirect('/login')", "b": "revalidatePath('/')", "c": "notFound()", "d": "usePathname()" },
+      "correctOptionIds": ["c"],
+      "explanation": "notFound interrupts rendering and selects the not-found UI."
     },
     {
       "id": "nextjs-12",
-      "question": "A Server Component needs to generate a page title from the requested product. Which route export is intended for that?",
-      "options": { "a": "generateStaticParams", "b": "getInitialProps", "c": "generateMetadata", "d": "GET" },
-      "correctOptionIds": ["c"],
-      "explanation": "generateMetadata can use route data to return metadata such as the page title."
+      "question": "Which export computes route metadata from loaded data?",
+      "options": { "a": "generateMetadata", "b": "generateViewport", "c": "generateStaticParams", "d": "metadataBase" },
+      "correctOptionIds": ["a"],
+      "explanation": "generateMetadata produces metadata dynamically for a segment."
     },
     {
       "id": "nextjs-13",
-      "question": "Which hook can a Client Component import from next/navigation to read the current pathname without its query string?",
-      "options": { "a": "usePathname", "b": "useSearchParams", "c": "useParams", "d": "useSelectedLayoutSegments" },
-      "correctOptionIds": ["a"],
-      "explanation": "usePathname reads the pathname. useSearchParams reads the URL query parameters."
+      "question": "Which App Router client Hook reads the current URL's query parameters?",
+      "options": { "a": "usePathname", "b": "useRouter", "c": "useSelectedLayoutSegment", "d": "useSearchParams" },
+      "correctOptionIds": ["d"],
+      "explanation": "useSearchParams exposes read-only query parameter access in client code."
     },
     {
       "id": "nextjs-14",
-      "question": "Which export supplies known parameter values for static generation of an App Router dynamic segment?",
-      "options": { "a": "generateMetadata", "b": "useParams", "c": "getServerSideProps", "d": "generateStaticParams" },
-      "correctOptionIds": ["d"],
-      "explanation": "generateStaticParams returns parameter objects that Next.js can use to generate matching routes during the build."
+      "question": "Which export can provide parameters to prerender dynamic routes at build time?",
+      "options": { "a": "generateMetadata", "b": "generateStaticParams", "c": "getServerSideProps", "d": "generateViewport" },
+      "correctOptionIds": ["b"],
+      "explanation": "generateStaticParams returns parameter values for the dynamic segments."
     },
     {
       "id": "nextjs-15",
-      "question": "Which props can cross a Server Component to Client Component boundary in the forms shown? Select all that apply.",
-      "options": { "a": "A live database connection instance", "b": "A plain object containing strings and numbers", "c": "A string containing a product name", "d": "An ordinary inline function with no Server Function designation" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "Simple data such as strings and plain data objects can cross the boundary. Ordinary functions and live database connections cannot."
+      "question": "Which values can cross a Server Component to Client Component boundary as ordinary props? Select all that apply.",
+      "options": { "a": "A plain string", "b": "An arbitrary ordinary closure", "c": "A plain array of numbers", "d": "A live database connection" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "React can serialize strings and arrays of numbers. Ordinary closures and live connection objects are not serializable props."
     },
     {
       "id": "nextjs-16",
-      "question": "A Next.js environment variable holds a secret API key. Which naming choice avoids the framework's explicit public-variable prefix?",
-      "options": { "a": "NEXT_PUBLIC_PAYMENT_KEY", "b": "PAYMENT_KEY", "c": "NEXT_PUBLIC_SERVER_PAYMENT_KEY", "d": "NEXT_PUBLIC_INTERNAL_PAYMENT_KEY" },
-      "correctOptionIds": ["b"],
-      "explanation": "NEXT_PUBLIC_ marks values intended for browser bundles. The unprefixed secret should be accessed only in server-side code."
+      "question": "Which name keeps a private key outside Next.js's public environment variable convention?",
+      "options": { "a": "NEXT_PUBLIC_PAYMENT_KEY", "b": "NEXT_PUBLIC_SECRET_KEY", "c": "PAYMENT_SERVER_KEY", "d": "NEXT_PUBLIC_PRIVATE_KEY" },
+      "correctOptionIds": ["c"],
+      "explanation": "The NEXT_PUBLIC_ prefix is for values that may be exposed to client bundles."
     },
     {
       "id": "nextjs-17",
-      "question": "Why might a developer use next/image for a product photo?",
-      "options": { "a": "It gives all visitors permission to access the image source", "b": "It converts every image to an SVG", "c": "It can optimize image delivery and reserve layout space from known dimensions", "d": "It stores the image in a database automatically" },
-      "correctOptionIds": ["c"],
-      "explanation": "The Image component supports optimized responsive delivery and uses known dimensions to help avoid layout shifts."
+      "question": "Which Next.js component can provide image optimization and reserve space using image dimensions?",
+      "options": { "a": "Link", "b": "Script", "c": "Form", "d": "Image" },
+      "correctOptionIds": ["d"],
+      "explanation": "Image can optimize image delivery and use dimensions to reserve layout space."
     },
     {
       "id": "nextjs-18",
-      "question": "A Server Action accepts a form submission that updates an order. Where should authorization be checked?",
-      "options": { "a": "Only when rendering the page that displays the form", "b": "Only in a client-side disabled attribute", "c": "Only after the database write completes", "d": "On the server as part of handling the action, before the write" },
-      "correctOptionIds": ["d"],
-      "explanation": "A mutation must verify permissions on the server even when the UI conditionally hides its form."
+      "question": "A form calls a Server Action to update an order. Where must the action verify the caller's authority?",
+      "options": { "a": "In the server-side action before writing", "b": "In the browser's field placeholder", "c": "In the layout's CSS", "d": "In the submit button label" },
+      "correctOptionIds": ["a"],
+      "explanation": "The code performing the protected write must verify authorization server-side."
     },
     {
       "id": "nextjs-19",
-      "question": "A server-side mutation changes data used by a cached /products page. Which API explicitly targets that path for revalidation?",
-      "options": { "a": "revalidatePath('/products')", "b": "generateMetadata('/products')", "c": "notFound('/products')", "d": "usePathname('/products')" },
-      "correctOptionIds": ["a"],
-      "explanation": "revalidatePath invalidates cached data for the specified path. When it takes effect depends on where it is called."
+      "question": "Which server API invalidates cached data associated with a particular page or layout path?",
+      "options": { "a": "usePathname()", "b": "revalidatePath()", "c": "useSearchParams()", "d": "notFound()" },
+      "correctOptionIds": ["b"],
+      "explanation": "revalidatePath marks the supplied path for revalidation."
     },
     {
       "id": "nextjs-20",
-      "question": "Which responsibilities can a Next.js Route Handler perform? Select all that apply.",
-      "options": { "a": "Run a browser onClick handler", "b": "Return a JSON HTTP response", "c": "Define a React layout around all pages in a segment", "d": "Receive and validate a webhook request" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "A Route Handler processes HTTP requests and returns responses. Layout rendering and browser event handlers are separate responsibilities."
+      "question": "Which responsibilities fit an App Router Route Handler? Select all that apply.",
+      "options": { "a": "Process a JSON POST request", "b": "Act as a React layout for its children", "c": "Return a JSON response", "d": "Render the application's loading fallback" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Route Handlers implement HTTP endpoints and can read request bodies and return JSON."
     }
   ]
 }

@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
     app.state.demo_username = required_env("JANEQ_DEMO_USERNAME")
     app.state.demo_password = required_env("JANEQ_DEMO_PASSWORD")
     app.state.database_path = BACKEND_DIR / os.getenv(
-        "JANEQ_DB_PATH", "data/janeq.sqlite3"
+        "JANEQ_DB_PATH", "data/janeq-mvp.sqlite3"
     )
     app.add_middleware(
         SessionMiddleware,

@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "python-django-fastapi",
+  "title": "Python / Django / FastAPI",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q06",
+      "question": "Which Python expression creates an empty set?",
+      "options": { "a": "{}", "b": "[]", "c": "()", "d": "set()" },
+      "correctOptionIds": ["d"],
+      "explanation": "set() creates an empty set. Empty braces create a dictionary."
+    },
+    {
+      "id": "q07",
+      "question": "Which Python expression returns the length of a list named records?",
+      "options": { "a": "len(records)", "b": "records.size()", "c": "count(records)", "d": "records.length" },
+      "correctOptionIds": ["a"],
+      "explanation": "Python uses len() to obtain the number of items in a list."
+    },
+    {
+      "id": "q08",
+      "question": "Which FastAPI decorator handles POST requests sent to /reports?",
+      "options": { "a": "@app.get('/reports')", "b": "@app.post('/reports')", "c": "@app.put('/reports')", "d": "@app.delete('/reports')" },
+      "correctOptionIds": ["b"],
+      "explanation": "app.post registers a handler for the POST method."
+    },
+    {
+      "id": "q09",
+      "question": "In Django, which file commonly declares the URL patterns for an application?",
+      "options": { "a": "models.py", "b": "forms.py", "c": "urls.py", "d": "admin.py" },
+      "correctOptionIds": ["c"],
+      "explanation": "A URL configuration commonly lives in urls.py and exposes urlpatterns."
+    },
+    {
+      "id": "q10",
+      "question": "Which pair correctly matches each framework to a common routing API?",
+      "options": { "a": "Django path() and FastAPI @app.get()", "b": "Django Depends() and FastAPI models.Model", "c": "Django @app.get() and FastAPI urlpatterns", "d": "Django Query() and FastAPI get_object_or_404()" },
+      "correctOptionIds": ["a"],
+      "explanation": "Django routes via URL patterns. FastAPI commonly declares routes with method decorators."
+    },
+    {
+      "id": "q26",
+      "question": "What does enumerate(['red', 'blue'], start=1) produce when consumed into a list?",
+      "options": { "a": "[(0, 'red'), (1, 'blue')]", "b": "[('red', 1), ('blue', 2)]", "c": "[1, 2]", "d": "[(1, 'red'), (2, 'blue')]" },
+      "correctOptionIds": ["d"],
+      "explanation": "enumerate pairs each item with a counter that begins at the given start value."
+    },
+    {
+      "id": "q27",
+      "question": "A Django queryset should keep Product rows priced above 50. Which expression fits?",
+      "options": { "a": "Product.objects.get(price=50)", "b": "Product.objects.filter(price__gt=50)", "c": "Product.objects.exclude(price__gt=50)", "d": "Product.objects.order_by('price')" },
+      "correctOptionIds": ["b"],
+      "explanation": "filter with the gt lookup selects rows whose field is greater than the value."
+    },
+    {
+      "id": "q28",
+      "question": "Which Django model field expresses a many-to-one relation to another model?",
+      "options": { "a": "TextField", "b": "DecimalField", "c": "ForeignKey", "d": "DateTimeField" },
+      "correctOptionIds": ["c"],
+      "explanation": "A ForeignKey lets many source rows reference one target row."
+    },
+    {
+      "id": "q29",
+      "question": "A FastAPI POST handler accepts an argument typed as a Pydantic model. Where do the model's values normally come from?",
+      "options": { "a": "The JSON request body", "b": "The response headers", "c": "The server log", "d": "The path template regardless of its name" },
+      "correctOptionIds": ["a"],
+      "explanation": "FastAPI treats a Pydantic model parameter as a request body by default."
+    },
+    {
+      "id": "q30",
+      "question": "Which FastAPI object can mark a missing record with status 404 inside a handler?",
+      "options": { "a": "A returned plain dict with a status_code key", "b": "A new APIRouter instance", "c": "A request body model", "d": "HTTPException raised with status_code=404" },
+      "correctOptionIds": ["d"],
+      "explanation": "Raising HTTPException tells FastAPI to send the specified HTTP error."
+    },
+    {
+      "id": "q31",
+      "question": "Which two Python expressions construct tuples? Select all that apply.",
+      "options": { "a": "(42,)", "b": "[42]", "c": "(42)", "d": "tuple([42])" },
+      "correctOptionIds": ["a", "d"],
+      "explanation": "A single-item tuple literal needs a comma. tuple() can also build a tuple from an iterable."
+    },
+    {
+      "id": "q32",
+      "question": "What does sorted([3, 1, 2]) return?",
+      "options": { "a": "[3, 1, 2]", "b": "[1, 2, 3]", "c": "[3, 2, 1]", "d": "None" },
+      "correctOptionIds": ["b"],
+      "explanation": "sorted builds a new list in ascending order by default."
+    },
+    {
+      "id": "q33",
+      "question": "Which built-in exception does int('apple') normally raise?",
+      "options": { "a": "KeyError", "b": "IndexError", "c": "ValueError", "d": "AttributeError" },
+      "correctOptionIds": ["c"],
+      "explanation": "A string of the right type with an invalid integer value raises ValueError."
+    },
+    {
+      "id": "q34",
+      "question": "What is the value of result after result = {'a': 1}.get('b', 0)?",
+      "options": { "a": "0", "b": "1", "c": "None", "d": "A KeyError is raised" },
+      "correctOptionIds": ["a"],
+      "explanation": "dict.get returns the supplied default when the key is absent."
+    },
+    {
+      "id": "q35",
+      "question": "What does with open(path) as stream handle when the block exits?",
+      "options": { "a": "Turning the path into a directory", "b": "Making every read asynchronous", "c": "Rewriting the file as JSON", "d": "Closing the stream" },
+      "correctOptionIds": ["d"],
+      "explanation": "A file context manager closes the file on normal exit and when an exception leaves the block."
+    },
+    {
+      "id": "q38",
+      "question": "Which operations can add an item to an existing Python list named queue? Select all that apply.",
+      "options": { "a": "queue.append(item)", "b": "queue.extend([item])", "c": "queue.count(item)", "d": "queue.index(item)" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "append adds one item and extend adds the items of an iterable."
+    },
+    {
+      "id": "q39",
+      "question": "Which argument declares HTTP 201 as the normal success status of a FastAPI route?",
+      "options": { "a": "response_model=201", "b": "default=201", "c": "status_code=201", "d": "include_in_schema=201" },
+      "correctOptionIds": ["c"],
+      "explanation": "The route's status_code argument declares the success response status."
+    }
+  ]
+}

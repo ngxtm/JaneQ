@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "java-01",
-      "question": "Two distinct String objects contain the same text. Which operation compares their text content?",
-      "options": { "a": "Compare their identity hash codes", "b": "Use == on the two references", "c": "Compare their lengths", "d": "Call equals on one with the other as its argument" },
-      "correctOptionIds": ["d"],
-      "explanation": "String.equals compares character content. Reference equality checks whether both references point to the same object."
+      "question": "Given String a = new String(\"red\") and String b = new String(\"red\"), which expression tests their text content?",
+      "options": { "a": "a == b", "b": "a.equals(b)", "c": "a.getClass() == b.getClass()", "d": "a.length() == b.length()" },
+      "correctOptionIds": ["b"],
+      "explanation": "String.equals compares text. Reference identity and matching lengths do not establish equal content."
     },
     {
       "id": "java-02",
-      "question": "Which collection best fits a mutable sequence that keeps insertion order, permits duplicates, and supports indexed access?",
-      "options": { "a": "HashSet", "b": "ArrayList", "c": "HashMap", "d": "TreeSet" },
-      "correctOptionIds": ["b"],
-      "explanation": "ArrayList is a resizable list. Its elements have indexes, and equal values can appear more than once."
+      "question": "Which standard implementation provides a mutable, indexed list with duplicates?",
+      "options": { "a": "HashSet", "b": "TreeMap", "c": "ArrayDeque", "d": "ArrayList" },
+      "correctOptionIds": ["d"],
+      "explanation": "ArrayList implements List and supports positional access and duplicate elements."
     },
     {
       "id": "java-03",
-      "question": "A HashMap already contains the key 7 with the value A. What is the value for key 7 after map.put(7, \"B\")?",
-      "options": { "a": "B", "b": "A", "c": "A and B as a list", "d": "null" },
+      "question": "What does a HashMap do when put is called with a key that already has a mapping?",
+      "options": { "a": "Replace the mapped value", "b": "Keep both values under that key", "c": "Delete the key and ignore the new value", "d": "Throw an exception for any duplicate key" },
       "correctOptionIds": ["a"],
-      "explanation": "A map has one mapping for each key. The put call replaces the existing value."
+      "explanation": "A map associates a key with one value, so put replaces its previous mapping."
     },
     {
       "id": "java-04",
-      "question": "Which exception is checked and must be caught or declared when a method can throw it directly?",
-      "options": { "a": "IllegalArgumentException", "b": "NullPointerException", "c": "IOException", "d": "IndexOutOfBoundsException" },
+      "question": "Which exception is checked in Java?",
+      "options": { "a": "NullPointerException", "b": "IllegalArgumentException", "c": "IOException", "d": "IndexOutOfBoundsException" },
       "correctOptionIds": ["c"],
-      "explanation": "IOException is a checked exception. The other choices extend RuntimeException."
+      "explanation": "IOException must be caught or declared when it can escape a method."
     },
     {
       "id": "java-05",
-      "question": "Which resources can be declared in a Java try-with-resources statement? Select all that apply.",
-      "options": { "a": "A BufferedReader", "b": "A StringBuilder", "c": "A JDBC Connection", "d": "An ArrayList" },
+      "question": "Which types can be used as resources in a Java try-with-resources declaration? Select all that apply.",
+      "options": { "a": "java.io.BufferedReader", "b": "java.util.ArrayList", "c": "java.sql.Connection", "d": "java.lang.String" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "BufferedReader and Connection implement AutoCloseable. The statement calls close when leaving the try block."
+      "explanation": "BufferedReader and Connection implement AutoCloseable."
     },
     {
       "id": "java-06",
-      "question": "Animal pet = new Dog(); calls pet.speak(). Dog overrides Animal's public instance method speak(). Which implementation runs?",
-      "options": { "a": "Animal.speak because pet is declared as Animal", "b": "Dog.speak because the object is a Dog", "c": "Both methods automatically", "d": "Neither until the variable is cast" },
+      "question": "Shape shape = new Circle(); Circle overrides the public instance method draw. Which draw implementation runs on shape.draw()?",
+      "options": { "a": "Shape.draw because Shape is the variable's declared type", "b": "Circle.draw because Circle is the runtime type", "c": "Both methods automatically run in that order", "d": "A compile-time overload picks the return type" },
       "correctOptionIds": ["b"],
-      "explanation": "Java dispatches overridden instance methods according to the actual type of the object."
+      "explanation": "Instance-method dispatch uses the runtime type to select an override."
     },
     {
       "id": "java-07",
-      "question": "Which list declaration lets a method read elements as Number from a List<Integer> or a List<Double>?",
-      "options": { "a": "List<Number>", "b": "List<? super Number>", "c": "List<Object>", "d": "List<? extends Number>" },
+      "question": "A function should read Number values from either List<Integer> or List<Double>. Which parameter type fits?",
+      "options": { "a": "List<Number>", "b": "List<Object>", "c": "List<? super Number>", "d": "List<? extends Number>" },
       "correctOptionIds": ["d"],
-      "explanation": "The upper-bounded wildcard accepts lists whose element type is Number or a subtype of Number."
+      "explanation": "The upper-bounded wildcard permits lists whose element types extend Number."
     },
     {
       "id": "java-08",
-      "question": "What does List.of(1, 2, 3).stream().filter(n -> n > 1).map(n -> n * 10).toList() produce in Java 17?",
-      "options": { "a": "[10, 20, 30]", "b": "[2, 3]", "c": "[20, 30]", "d": "[30, 20]" },
-      "correctOptionIds": ["c"],
-      "explanation": "The filter keeps 2 and 3. The map multiplies each by 10, preserving encounter order."
+      "question": "In Java 17, what is the result of List.of(1, 2, 3, 4).stream().filter(n -> n % 2 == 0).map(n -> n + 1).toList()?",
+      "options": { "a": "[3, 5]", "b": "[2, 4]", "c": "[2, 3, 4, 5]", "d": "[1, 3]" },
+      "correctOptionIds": ["a"],
+      "explanation": "The filter keeps 2 and 4. The map adds 1 to each."
     },
     {
       "id": "java-09",
-      "question": "Which Stream operation is terminal?",
-      "options": { "a": "count()", "b": "filter(predicate)", "c": "map(function)", "d": "limit(5)" },
-      "correctOptionIds": ["a"],
-      "explanation": "count starts evaluation of the pipeline and returns a long. The other operations return a stream."
+      "question": "Which Stream method is terminal?",
+      "options": { "a": "filter(...)", "b": "map(...)", "c": "count()", "d": "distinct()" },
+      "correctOptionIds": ["c"],
+      "explanation": "count consumes the stream and returns the number of elements."
     },
     {
       "id": "java-10",
-      "question": "For a Java class that overrides equals and will be used as a HashMap key, which statements apply? Select all that apply.",
-      "options": { "a": "Unequal objects must always have different hash codes", "b": "Equal objects must have equal hash codes", "c": "Equal hash codes are sufficient to prove equality", "d": "Changing fields used by equals and hashCode can break lookup while the key is stored" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "Equal keys need matching hash codes. Mutating key fields can make an existing entry unreachable by a normal lookup."
+      "question": "Which statements matter for an object used as a HashMap key? Select all that apply.",
+      "options": { "a": "Two objects that are equal must have the same hashCode", "b": "Unequal objects are required to have different hashCode values", "c": "Changing fields used for equality while the key is stored can break lookup", "d": "A key's hashCode must be the object's memory address" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Equality and hashing must agree, and changing either can invalidate lookup of a stored key."
     },
     {
       "id": "java-11",
-      "question": "What is guaranteed after final List<String> names = new ArrayList<>();?",
-      "options": { "a": "names.add is disallowed", "b": "The list is safe for concurrent writes", "c": "The list rejects duplicate values", "d": "The names variable cannot be reassigned" },
-      "correctOptionIds": ["d"],
-      "explanation": "final prevents reassignment of the reference. The ArrayList itself remains mutable."
+      "question": "Given final List<String> tags = new ArrayList<>(), what does final prevent?",
+      "options": { "a": "Adding items to the list", "b": "Reassigning tags to another list", "c": "Removing an item from the list", "d": "Reading tags from a method" },
+      "correctOptionIds": ["b"],
+      "explanation": "final fixes the variable binding. It does not make the referenced list immutable."
     },
     {
       "id": "java-12",
-      "question": "What is the result of 7 / 2 when both operands are Java int values?",
-      "options": { "a": "3.5", "b": "4", "c": "3", "d": "A division exception" },
-      "correctOptionIds": ["c"],
-      "explanation": "Integer division truncates toward zero."
+      "question": "What is the result of 11 / 4 when both Java operands are int?",
+      "options": { "a": "2.75", "b": "3", "c": "2.0", "d": "2" },
+      "correctOptionIds": ["d"],
+      "explanation": "Integer division truncates toward zero and returns an integer."
     },
     {
       "id": "java-13",
-      "question": "Which return type expresses that a Java lookup may produce one Customer or no Customer?",
-      "options": { "a": "Optional<Customer>", "b": "Stream<Integer>", "c": "Comparable<Customer>", "d": "Class<Customer>" },
+      "question": "Which return type represents a lookup that may yield one Order or no result?",
+      "options": { "a": "Optional<Order>", "b": "Order[]", "c": "Stream<String>", "d": "Class<Order>" },
       "correctOptionIds": ["a"],
-      "explanation": "Optional can represent a present value or an empty result."
+      "explanation": "Optional represents one present value or an empty result."
     },
     {
       "id": "java-14",
-      "question": "Multiple threads must increment a counter using one atomic read-modify-write operation. Which call provides that behavior?",
-      "options": { "a": "counter++ on a volatile int", "b": "incrementAndGet() on an AtomicInteger", "c": "set(get() + 1) on an AtomicInteger", "d": "counter++ on an ordinary int" },
-      "correctOptionIds": ["b"],
-      "explanation": "incrementAndGet updates the value atomically. A separate read and write can lose updates."
+      "question": "Which call atomically adds one to a shared AtomicInteger counter and returns the new value?",
+      "options": { "a": "counter.get() + 1", "b": "counter.set(counter.get() + 1)", "c": "counter.incrementAndGet()", "d": "counter.getAndSet(1)" },
+      "correctOptionIds": ["c"],
+      "explanation": "incrementAndGet performs the read-modify-write as a single atomic operation."
     },
     {
       "id": "java-15",
-      "question": "Which declarations are legal members of a Java interface? Select all that apply.",
-      "options": { "a": "A default method with a body", "b": "A public constructor", "c": "An abstract method declaration", "d": "A mutable instance field" },
-      "correctOptionIds": ["a", "c"],
-      "explanation": "Interfaces can declare abstract and default methods. Interface fields are static constants, and interfaces have no constructors."
+      "question": "Which methods are valid in a Java interface when declared as shown? Select all that apply.",
+      "options": { "a": "void process();", "b": "default void reset() {}", "c": "protected void close();", "d": "final void clear() {}" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "Interfaces support abstract declarations and default methods with bodies."
     },
     {
       "id": "java-16",
-      "question": "Which method prepares a Runnable for execution by an ExecutorService and returns a Future for tracking completion?",
-      "options": { "a": "shutdown()", "b": "awaitTermination()", "c": "execute()", "d": "submit()" },
+      "question": "Which Java collection interface models adding and removing elements at both ends?",
+      "options": { "a": "ListIterator", "b": "SortedSet", "c": "Map", "d": "Deque" },
       "correctOptionIds": ["d"],
-      "explanation": "submit schedules the task and returns a Future. execute accepts a Runnable but returns void."
+      "explanation": "Deque represents a double-ended queue."
     },
     {
       "id": "java-17",
-      "question": "A JDBC query accepts a user-supplied customer ID. What keeps the ID separate from the SQL structure?",
-      "options": { "a": "Append the ID to a Statement's SQL string", "b": "Use a PreparedStatement with a placeholder and bind the ID", "c": "Call getMetaData before executing a Statement", "d": "Put the ID in the connection URL" },
+      "question": "A record named Point declares components int x and int y. Which method reads its x component?",
+      "options": { "a": "getX()", "b": "x()", "c": "readX()", "d": "Point.x()" },
       "correctOptionIds": ["b"],
-      "explanation": "PreparedStatement parameter setters bind values to placeholders without incorporating them as SQL syntax."
+      "explanation": "The compiler supplies an instance accessor named after the record component."
     },
     {
       "id": "java-18",
-      "question": "An application builds a large string by appending fragments in a single thread. Which Java class provides a mutable text buffer for that work?",
-      "options": { "a": "String", "b": "Character", "c": "StringBuilder", "d": "StringTokenizer" },
-      "correctOptionIds": ["c"],
-      "explanation": "StringBuilder supports repeated mutation through append, followed by conversion to a String."
+      "question": "Which String method checks whether text starts with the prefix 'api/'?",
+      "options": { "a": "text.startsWith(\"api/\")", "b": "text.indexOf(\"api/\") > 0", "c": "text.contains(\"api/\")", "d": "text.endsWith(\"api/\")" },
+      "correctOptionIds": ["a"],
+      "explanation": "startsWith tests the prefix at the start of the string."
     },
     {
       "id": "java-19",
-      "question": "For a Java record Point(int x, int y), which generated method exposes the x component when no custom implementation is supplied?",
-      "options": { "a": "x()", "b": "getX()", "c": "readX()", "d": "component(0)" },
-      "correctOptionIds": ["a"],
-      "explanation": "A record generates public accessor methods named after its components."
+      "question": "A Java array contains exactly three values. What is the last valid index?",
+      "options": { "a": "1", "b": "3", "c": "2", "d": "4" },
+      "correctOptionIds": ["c"],
+      "explanation": "Array indexes begin at zero, so the last index is length minus one."
     },
     {
       "id": "java-20",
-      "question": "Which Java collection choices fit the stated requirements? Select all that apply.",
-      "options": { "a": "TreeSet for preserving the insertion order of arbitrary elements", "b": "ArrayDeque as a stack for non-null elements", "c": "HashMap for naturally sorted key iteration", "d": "TreeMap for naturally sorted String keys" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "ArrayDeque supports stack operations and TreeMap orders keys by natural ordering by default. HashMap does not guarantee iteration order."
+      "question": "Which actions are valid for an ArrayList<String> named names? Select all that apply.",
+      "options": { "a": "names.add(\"Ada\")", "b": "names.add(42)", "c": "names.isEmpty()", "d": "names.put(\"Ada\", 1)" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "ArrayList<String> accepts strings and supports isEmpty. put belongs to map types."
     }
   ]
 }

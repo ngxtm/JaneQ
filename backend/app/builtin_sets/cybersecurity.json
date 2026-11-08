@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "cybersecurity-01",
-      "question": "A hospital discovers that someone changed lab results without permission. Which security property was directly violated?",
-      "options": { "a": "Availability", "b": "Integrity", "c": "Confidentiality", "d": "Authenticity of the patient's identity" },
+      "question": "A warehouse system accepts an unauthorized change to a stock record. Which security property is directly compromised?",
+      "options": { "a": "Availability", "b": "Integrity", "c": "Confidentiality", "d": "Latency" },
       "correctOptionIds": ["b"],
-      "explanation": "Integrity concerns unauthorized modification. The incident describes altered records."
+      "explanation": "Integrity protects records against unauthorized alteration."
     },
     {
       "id": "cybersecurity-02",
-      "question": "A user has signed in successfully and asks to download a report. What decision is authorization responsible for?",
-      "options": { "a": "Whether the password matches", "b": "Whether the TLS certificate is valid", "c": "Whether the session token was issued recently", "d": "Whether that user may download the report" },
+      "question": "A user has proved their identity and wants to export a private report. Which control decides if the export is allowed?",
+      "options": { "a": "Compression", "b": "Authentication again", "c": "Serialization", "d": "Authorization" },
       "correctOptionIds": ["d"],
-      "explanation": "Authorization checks whether an authenticated identity has permission to perform a specific action."
+      "explanation": "Authorization decides what an authenticated caller is allowed to do."
     },
     {
       "id": "cybersecurity-03",
-      "question": "Which approach is designed for storing passwords so the server can verify them without recovering the original password?",
-      "options": { "a": "Argon2id with a unique salt per password", "b": "Base64 encoding with a unique prefix", "c": "AES encryption using a shared application key", "d": "A single SHA-256 operation with a unique salt" },
+      "question": "Which technique is appropriate for storing passwords for verification?",
+      "options": { "a": "A salted Argon2id password hash", "b": "Reversible Base64 encoding", "c": "A shared encrypted file with the key beside it", "d": "Plain SHA-256 with no salt" },
       "correctOptionIds": ["a"],
-      "explanation": "Argon2id is a password hashing algorithm designed to make offline guesses costly. A unique salt prevents identical passwords from sharing the same stored hash."
+      "explanation": "A dedicated password hash and unique salt raise the cost of offline guessing."
     },
     {
       "id": "cybersecurity-04",
-      "question": "An attacker submits an email address crafted to change the meaning of a SQL query. Which change addresses the cause?",
-      "options": { "a": "Reject long email addresses in the browser", "b": "Escape HTML before showing the email", "c": "Bind the email as a query parameter", "d": "Encrypt the database connection" },
+      "question": "A web form's username is used in a SQL query. Which change prevents the value from becoming SQL syntax?",
+      "options": { "a": "Remove whitespace from usernames", "b": "Rename the column", "c": "Bind the username as a query parameter", "d": "Hide errors from the UI alone" },
       "correctOptionIds": ["c"],
-      "explanation": "Parameter binding separates the query's SQL structure from the supplied email value."
+      "explanation": "Parameter binding separates SQL instructions from user-provided values."
     },
     {
       "id": "cybersecurity-05",
-      "question": "A support agent needs to read orders. Which permissions follow least privilege for that job? Select all that apply.",
-      "options": { "a": "Read orders assigned to the agent", "b": "Delete orders from every team", "c": "Read only the order fields the job needs", "d": "Grant the agent database administrator privileges" },
+      "question": "A support role should read assigned tickets. Which permissions follow least privilege? Select all that apply.",
+      "options": { "a": "Read ticket rows assigned to that role", "b": "Read the entire user database", "c": "See only ticket fields needed for the job", "d": "Delete audit records" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "Limiting both which records and which fields the agent may read narrows access to the job's requirements."
+      "explanation": "Least privilege limits both row access and the data fields the role needs."
     },
     {
       "id": "cybersecurity-06",
-      "question": "A saved comment executes attacker-controlled JavaScript in other users' browsers when they view it. What is this vulnerability?",
-      "options": { "a": "Server-side request forgery", "b": "Session fixation", "c": "Cross-site request forgery", "d": "Stored cross-site scripting" },
-      "correctOptionIds": ["d"],
-      "explanation": "Stored XSS occurs when saved attacker-controlled content later runs as script in a victim's browser."
+      "question": "A stored profile bio injects JavaScript into the page whenever another user views it. What is the attack called?",
+      "options": { "a": "Stored cross-site scripting", "b": "SQL injection", "c": "Session fixation", "d": "Cross-site request forgery" },
+      "correctOptionIds": ["a"],
+      "explanation": "Stored XSS persists malicious input and later executes it in visitors' browsers."
     },
     {
       "id": "cybersecurity-07",
-      "question": "A site uses cookie authentication. Which control checks that a state-changing form submission includes a secret issued for the current session?",
-      "options": { "a": "The HttpOnly flag alone", "b": "A server-validated CSRF token bound to the session", "c": "A hidden field containing the account's public ID", "d": "A redirect after submission" },
-      "correctOptionIds": ["b"],
-      "explanation": "An unpredictable token bound to the session lets the server distinguish a legitimate form submission from a forged cross-site request."
+      "question": "A cookie-authenticated app checks a secret tied to the current session on every state-changing form submission. What is the secret used for?",
+      "options": { "a": "Content compression", "b": "SQL query planning", "c": "CSRF protection", "d": "Password recovery" },
+      "correctOptionIds": ["c"],
+      "explanation": "A session-bound CSRF token lets the server verify that a form request includes a value a foreign origin should not know."
     },
     {
       "id": "cybersecurity-08",
-      "question": "A signed-in customer can access a different customer's invoice by changing the ID in the URL. Which check should the server add?",
-      "options": { "a": "Verify that the invoice ID is numeric", "b": "Verify that the account exists", "c": "Verify that the caller may access the specific invoice", "d": "Verify that the URL was loaded over HTTPS" },
-      "correctOptionIds": ["c"],
-      "explanation": "Object-level authorization evaluates the caller's permission for the requested invoice on every request."
+      "question": "A signed-in caller changes the invoice ID in a URL and receives another customer's invoice. What server check is missing?",
+      "options": { "a": "Whether the ID is a positive integer", "b": "Whether the caller can read that specific invoice", "c": "Whether the response is compressed", "d": "Whether the invoice uses the newest format" },
+      "correctOptionIds": ["b"],
+      "explanation": "Object-level authorization checks the caller's access to the requested resource."
     },
     {
       "id": "cybersecurity-09",
-      "question": "Which cookie attribute tells a browser to withhold that cookie from document.cookie?",
-      "options": { "a": "HttpOnly", "b": "Secure", "c": "SameSite", "d": "Path" },
-      "correctOptionIds": ["a"],
-      "explanation": "HttpOnly excludes the cookie from JavaScript's cookie API. The browser can still attach it to eligible requests."
+      "question": "Which cookie flag blocks access to the cookie through document.cookie?",
+      "options": { "a": "Domain", "b": "Path", "c": "SameSite", "d": "HttpOnly" },
+      "correctOptionIds": ["d"],
+      "explanation": "HttpOnly marks the cookie as inaccessible to JavaScript through ordinary browser cookie APIs."
     },
     {
       "id": "cybersecurity-10",
-      "question": "A public endpoint fetches an image from a user-supplied URL. Which controls help reduce SSRF risk? Select all that apply.",
-      "options": { "a": "Require the client to use HTTPS when submitting the URL", "b": "Allow only approved destination hosts", "c": "Disable automatic redirects or revalidate every destination", "d": "Trust destinations ending in an image file extension" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "Restricting destinations and handling redirects explicitly reduces the chance of server requests reaching unauthorized hosts."
+      "question": "A server downloads files from a small set of approved external hosts. Which measures help prevent server-side request forgery? Select all that apply.",
+      "options": { "a": "Validate destinations against an explicit allowlist", "b": "Trust a URL if its displayed text contains 'https'", "c": "Disable redirects or validate each new destination", "d": "Return all fetched bytes before validating the URL" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Destination validation and redirect handling constrain which servers can be reached."
     },
     {
       "id": "cybersecurity-11",
-      "question": "What does certificate validation help an HTTPS client establish when connecting to an API?",
-      "options": { "a": "That the API has no application vulnerabilities", "b": "That the API can authorize the caller", "c": "That the API encrypts all stored records", "d": "That the server certificate is trusted and valid for the expected hostname" },
-      "correctOptionIds": ["d"],
-      "explanation": "Trust-chain and hostname checks help authenticate the server for the hostname the client intended to reach."
+      "question": "What does a normal TLS hostname check verify?",
+      "options": { "a": "That the server certificate covers the hostname the client requested", "b": "That every HTTP response contains JSON", "c": "That the user has permission to edit the server", "d": "That the server stores encrypted backups" },
+      "correctOptionIds": ["a"],
+      "explanation": "Hostname verification binds the certificate identity to the server name being contacted."
     },
     {
       "id": "cybersecurity-12",
-      "question": "An API key was accidentally committed to a public repository. What should the team do first to make the exposed key unusable?",
-      "options": { "a": "Remove the key from the current branch", "b": "Revoke the exposed key and issue a replacement", "c": "Rename the environment variable that holds it", "d": "Move the repository to a different organization" },
-      "correctOptionIds": ["b"],
-      "explanation": "Revocation invalidates copies already obtained. Replacing the key lets legitimate users regain access."
+      "question": "A public repository exposed a live credential. Which action makes that credential unusable?",
+      "options": { "a": "Delete the local git branch only", "b": "Update the repository README", "c": "Revoke the credential at its issuer", "d": "Rename the variable that holds it" },
+      "correctOptionIds": ["c"],
+      "explanation": "Revocation invalidates copies of the exposed credential, including copies outside the repository."
     },
     {
       "id": "cybersecurity-13",
-      "question": "An attacker tries passwords leaked from unrelated websites against your sign-in page. What is this attack called?",
-      "options": { "a": "Credential stuffing", "b": "Password spraying", "c": "Session hijacking", "d": "Directory traversal" },
-      "correctOptionIds": ["a"],
-      "explanation": "Credential stuffing reuses previously leaked username and password pairs across services."
+      "question": "An attacker signs in with username and password pairs leaked by a different service. What is this attack called?",
+      "options": { "a": "Password spraying with one guessed password", "b": "Credential stuffing", "c": "Clickjacking", "d": "DNS rebinding" },
+      "correctOptionIds": ["b"],
+      "explanation": "Credential stuffing reuses previously leaked credential pairs across services."
     },
     {
       "id": "cybersecurity-14",
-      "question": "What is the primary security purpose of checking an artifact's digital signature against a trusted release key?",
-      "options": { "a": "Hide the artifact contents from downloaders", "b": "Scan the artifact for known malware", "c": "Verify the signer and detect changes to the signed content", "d": "Ensure the artifact works on the current platform" },
-      "correctOptionIds": ["c"],
-      "explanation": "A valid signature links the signed bytes to the holder of the corresponding private key and fails if those bytes are modified."
+      "question": "What does verifying a release signature with a trusted public key establish?",
+      "options": { "a": "That the package has no bugs", "b": "That the package runs on every system", "c": "That the download was encrypted", "d": "That the signed content verifies against the trusted key" },
+      "correctOptionIds": ["d"],
+      "explanation": "A matching signature establishes integrity and links the signed content to possession of the signing key."
     },
     {
       "id": "cybersecurity-15",
-      "question": "Which changes help keep uploaded files from being executed as application code? Select all that apply.",
-      "options": { "a": "Keep the original filename as the storage path", "b": "Store uploads outside the executable web root", "c": "Trust the MIME type supplied by the browser", "d": "Serve downloads through a handler that streams file bytes" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "Separating uploads from executable paths and streaming bytes through a download handler prevents the web server from treating those files as application code."
+      "question": "Which practices help prevent user uploads from executing as application code? Select all that apply.",
+      "options": { "a": "Keep upload storage outside executable application directories", "b": "Treat uploaded scripts as server templates", "c": "Serve uploads as data through a controlled download handler", "d": "Choose executability based only on the file's name" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Separating uploads from executable code and streaming them as data avoids invoking interpreters."
     },
     {
       "id": "cybersecurity-16",
-      "question": "Which logging choice supports incident investigation while avoiding unnecessary exposure of credentials?",
-      "options": { "a": "Log raw request headers for every sign-in", "b": "Log all session tokens in a separate debug stream", "c": "Keep only a daily aggregate count of login requests", "d": "Log sign-in outcomes, timestamps, and account identifiers without passwords or tokens" },
-      "correctOptionIds": ["d"],
-      "explanation": "Structured authentication events support correlation without storing reusable secrets in logs."
+      "question": "Which log entry supports a sign-in investigation while minimizing credential exposure?",
+      "options": { "a": "Outcome, timestamp, and account ID", "b": "Username and plaintext password", "c": "Session cookie and recovery token", "d": "Full Authorization header" },
+      "correctOptionIds": ["a"],
+      "explanation": "Outcomes and account IDs can support investigation without logging secrets."
     },
     {
       "id": "cybersecurity-17",
-      "question": "Which technique provides an authentication code for a message using a shared secret key?",
-      "options": { "a": "An unkeyed SHA-256 digest", "b": "HMAC", "c": "Base64 encoding", "d": "A CRC checksum" },
-      "correctOptionIds": ["b"],
-      "explanation": "HMAC combines a cryptographic hash with a secret key so parties with that key can authenticate the message."
+      "question": "Which construction authenticates a message with a shared secret key?",
+      "options": { "a": "CRC32", "b": "Base64", "c": "HMAC", "d": "A public SHA-256 digest alone" },
+      "correctOptionIds": ["c"],
+      "explanation": "HMAC combines a secret key with a hash function to produce a message authentication code."
     },
     {
       "id": "cybersecurity-18",
-      "question": "A website uses HTTPS. What further control helps protect database backups if the backup storage is copied?",
-      "options": { "a": "Enable HTTP compression", "b": "Set the session cookie to Secure", "c": "Encrypt backups and protect the keys separately", "d": "Require a CSRF token for account changes" },
-      "correctOptionIds": ["c"],
-      "explanation": "Backup encryption protects stored bytes when the corresponding keys are kept out of the compromised storage."
+      "question": "If an attacker copies the backup storage, which practice helps protect backup contents?",
+      "options": { "a": "Store all backup files next to a plaintext copy of their key", "b": "Encrypt the backups and protect the keys separately", "c": "Use shorter backup filenames", "d": "Compress the backups without encryption" },
+      "correctOptionIds": ["b"],
+      "explanation": "Backup encryption protects confidentiality when keys are kept separate from copied data."
     },
     {
       "id": "cybersecurity-19",
-      "question": "What is a software bill of materials most useful for during a dependency incident?",
-      "options": { "a": "Identifying shipped components and versions to check for impact", "b": "Revoking application sessions automatically", "c": "Validating whether a patch preserves runtime behavior", "d": "Decrypting signed deployment artifacts" },
-      "correctOptionIds": ["a"],
-      "explanation": "An SBOM inventories components and versions, which helps responders locate releases that may contain an affected dependency."
+      "question": "What does a software bill of materials help a team identify during a dependency incident?",
+      "options": { "a": "The list of currently signed-in users", "b": "The time a feature flag was created", "c": "The production signing key", "d": "The components and versions shipped in an artifact" },
+      "correctOptionIds": ["d"],
+      "explanation": "An SBOM inventories dependencies and versions that can be checked for exposure."
     },
     {
       "id": "cybersecurity-20",
-      "question": "After deploying a fix for a known vulnerability, which actions help verify the exposure is closed? Select all that apply.",
-      "options": { "a": "Confirm running instances use the fixed build", "b": "Confirm the patch branch still exists", "c": "Repeat the authorized check that demonstrated the vulnerable behavior", "d": "Use the release notes alone as evidence of deployment" },
+      "question": "After deploying a vulnerability fix, which checks help verify that the original exposure is closed? Select all that apply.",
+      "options": { "a": "Confirm the running service uses the fixed build", "b": "Rely only on the commit message", "c": "Repeat the authorized test that reproduced the vulnerability", "d": "Disable incident logs" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "Checking the live build and rerunning an authorized reproduction provide deployment and behavioral evidence."
+      "explanation": "Deployment verification and a targeted reproduction together test the fix on the running service."
     }
   ]
 }

@@ -101,7 +101,7 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 | Multi-select and retry | Set a second correct option on `q15` and increment the revision in the disposable fixture. Select both, go offline, press **Check answer**, reconnect, and retry. | The failed request preserves both selections. Retry advances after correct feedback. Missing or extra valid choices are incorrect. Duplicate or foreign option IDs return `422`. | Pass · browser and API |
 | Settings and reset | Open Settings during a round summary and dismiss it. Turn on shuffle and reopen Settings after a reload. After completion, select **Reset progress** and confirm. | Settings opens and closes. Shuffle stays enabled after reload. Reset returns to question 1 in a new round 1. | Pass · browser |
 | Keyboard, mobile, and motion | Select options with number keys, continue with Enter, view the round summary at 360 px, and emulate reduced motion. | Keyboard actions work. The summary fits with no horizontal overflow. The progress bar stops animating with reduced motion. | Pass · browser |
-| Existing database | Reopen the v1 fixture with saved Learn progress. | Unchanged sets resume and changed sets start a new session on their new revision. | Pass · API |
+| Database restart | Reopen an MVP database with saved Learn feedback. | The same set and feedback are available after restart. | Pass · API |
 | Automated checks | Run backend `uv run --locked --no-sync python -m unittest discover -s tests -v`, then frontend `npm run lint` and `npm run build`. | Backend tests pass. Lint and build complete. | Pass · CLI |
 
 Browser checks used Chromium through Vite, FastAPI, and a disposable SQLite file.

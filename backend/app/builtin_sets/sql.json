@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "sql-01",
-      "question": "Which clause filters individual rows before a GROUP BY groups them?",
-      "options": { "a": "HAVING", "b": "WHERE", "c": "ORDER BY", "d": "SELECT DISTINCT" },
-      "correctOptionIds": ["b"],
-      "explanation": "WHERE removes rows before aggregation. HAVING filters the resulting groups."
+      "question": "Which clause keeps only order rows with status = 'paid' before grouping?",
+      "options": { "a": "ORDER BY", "b": "HAVING", "c": "WHERE", "d": "GROUP BY" },
+      "correctOptionIds": ["c"],
+      "explanation": "WHERE filters individual input rows before grouping and aggregation."
     },
     {
       "id": "sql-02",
-      "question": "Which clause keeps only groups with at least five matching rows?",
-      "options": { "a": "WHERE COUNT(*) >= 5", "b": "GROUP BY COUNT(*) >= 5", "c": "ORDER BY COUNT(*) >= 5", "d": "HAVING COUNT(*) >= 5" },
-      "correctOptionIds": ["d"],
-      "explanation": "HAVING can test the aggregate COUNT for each group."
+      "question": "A report groups orders by customer and should return only customers with at least three orders. Which clause fits?",
+      "options": { "a": "HAVING COUNT(*) >= 3", "b": "WHERE COUNT(*) >= 3", "c": "ORDER BY COUNT(*) >= 3", "d": "LIMIT 3" },
+      "correctOptionIds": ["a"],
+      "explanation": "HAVING applies a condition to each group after aggregation."
     },
     {
       "id": "sql-03",
-      "question": "The column discount contains 10, NULL, and 0 across three rows. What does COUNT(discount) return?",
-      "options": { "a": "2", "b": "3", "c": "10", "d": "NULL" },
-      "correctOptionIds": ["a"],
-      "explanation": "COUNT(column) counts non-null values. Both 10 and 0 are counted."
+      "question": "A column holds NULL, 0, NULL, and 12 across four rows. What is COUNT(column_name)?",
+      "options": { "a": "0", "b": "1", "c": "4", "d": "2" },
+      "correctOptionIds": ["d"],
+      "explanation": "COUNT(expression) counts the rows whose expression is non-null."
     },
     {
       "id": "sql-04",
-      "question": "A report must include every customer, even those without orders. Which join fits when customers is on the left?",
-      "options": { "a": "INNER JOIN orders", "b": "CROSS JOIN orders", "c": "LEFT JOIN orders", "d": "RIGHT JOIN orders" },
-      "correctOptionIds": ["c"],
-      "explanation": "LEFT JOIN keeps left rows with no match and supplies nulls for the right-side columns."
+      "question": "A report must show every team even if it has no players. With teams on the left, which join keeps unmatched teams?",
+      "options": { "a": "INNER JOIN players", "b": "LEFT JOIN players", "c": "CROSS JOIN players", "d": "JOIN players with the same equality condition" },
+      "correctOptionIds": ["b"],
+      "explanation": "A left join preserves all rows on the left and fills unmatched right-side columns with NULL."
     },
     {
       "id": "sql-05",
-      "question": "Which SQL predicates test for missing values in standard SQL? Select all that apply.",
-      "options": { "a": "email IS NULL", "b": "email = NULL", "c": "NOT (email IS NOT NULL)", "d": "email <> NULL" },
+      "question": "Which predicates are true when middle_name is SQL NULL? Select all that apply.",
+      "options": { "a": "middle_name IS NULL", "b": "middle_name = NULL", "c": "NOT (middle_name IS NOT NULL)", "d": "middle_name <> NULL" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "IS NULL and negated IS NOT NULL test nullness. Ordinary comparisons against NULL yield unknown."
+      "explanation": "IS NULL checks nullness directly. Comparisons to NULL produce unknown."
     },
     {
       "id": "sql-06",
-      "question": "Which constraint on orders.customer_id ensures a non-null customer ID refers to a row in customers?",
-      "options": { "a": "DEFAULT", "b": "FOREIGN KEY", "c": "NOT NULL alone", "d": "UNIQUE alone" },
-      "correctOptionIds": ["b"],
-      "explanation": "The foreign key checks the value against a referenced key in the customers table."
+      "question": "Which constraint lets an invoice reference an existing customer record?",
+      "options": { "a": "A CHECK on invoice.amount", "b": "A DEFAULT on invoice.customer_id", "c": "A UNIQUE constraint on invoice.number", "d": "A FOREIGN KEY on invoice.customer_id" },
+      "correctOptionIds": ["d"],
+      "explanation": "The foreign key checks non-null references against the target key."
     },
     {
       "id": "sql-07",
-      "question": "Which PostgreSQL ordering puts the newest order first and breaks timestamp ties deterministically, assuming created_at is non-null and id is a primary key?",
-      "options": { "a": "ORDER BY created_at DESC", "b": "ORDER BY id DESC, created_at DESC", "c": "ORDER BY created_at ASC, id ASC", "d": "ORDER BY created_at DESC, id DESC" },
-      "correctOptionIds": ["d"],
-      "explanation": "created_at sets the primary order. The unique id provides a tie-breaker for equal timestamps."
+      "question": "In PostgreSQL, created_at is non-null and id is the primary key. Which order shows newest rows first and breaks timestamp ties consistently?",
+      "options": { "a": "ORDER BY id, created_at", "b": "ORDER BY created_at DESC, id DESC", "c": "ORDER BY created_at ASC", "d": "ORDER BY created_at DESC alone" },
+      "correctOptionIds": ["b"],
+      "explanation": "The timestamp sets the main order, and the unique ID supplies a tie-breaker."
     },
     {
       "id": "sql-08",
-      "question": "Which expression returns the first non-null value from nickname, display_name, and the fallback 'Guest'?",
-      "options": { "a": "NULLIF(nickname, display_name)", "b": "COUNT(nickname)", "c": "COALESCE(nickname, display_name, 'Guest')", "d": "TRIM(nickname)" },
-      "correctOptionIds": ["c"],
-      "explanation": "COALESCE evaluates its arguments in order and returns the first one that is not null."
+      "question": "What does COALESCE(NULL, 'Guest', 'Unknown') return?",
+      "options": { "a": "'Guest'", "b": "NULL", "c": "'Unknown'", "d": "An error" },
+      "correctOptionIds": ["a"],
+      "explanation": "COALESCE returns the first non-null argument."
     },
     {
       "id": "sql-09",
-      "question": "Two SELECT queries return compatible columns. Which operator combines their results while retaining duplicate rows?",
-      "options": { "a": "UNION ALL", "b": "UNION", "c": "INTERSECT", "d": "EXCEPT" },
-      "correctOptionIds": ["a"],
-      "explanation": "UNION ALL keeps duplicates. UNION alone removes duplicates."
+      "question": "Two SELECT statements have compatible output columns. Which operator concatenates their rows and retains duplicates?",
+      "options": { "a": "INTERSECT", "b": "UNION", "c": "UNION ALL", "d": "EXCEPT" },
+      "correctOptionIds": ["c"],
+      "explanation": "UNION ALL combines the inputs without a duplicate-removal step."
     },
     {
       "id": "sql-10",
-      "question": "A transfer should subtract funds from one account and add them to another as one unit. Which steps support this? Select all that apply.",
-      "options": { "a": "Commit each update before starting the next one", "b": "Run both updates in one database transaction", "c": "Roll back the transaction if an update fails", "d": "Run each update using an unrelated autocommit connection" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "A single transaction groups the updates, and rollback discards the partial changes if the operation fails."
+      "question": "A transfer debits one account and credits another. Which practices support atomicity? Select all that apply.",
+      "options": { "a": "Perform both writes inside one transaction", "b": "Commit after the debit and before the credit", "c": "Roll back if either write fails", "d": "Run the statements in unrelated sessions" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "One transaction makes the writes a unit that can be committed or rolled back together."
     },
     {
       "id": "sql-11",
-      "question": "Which expression counts only matching orders when grouping a LEFT JOIN from customers to orders, assuming orders.id is non-null?",
-      "options": { "a": "COUNT(*)", "b": "COUNT(customers.id)", "c": "COUNT(orders.id)", "d": "SUM(customers.id)" },
-      "correctOptionIds": ["c"],
-      "explanation": "Unmatched customers still have a joined row, but orders.id is null on that row and is excluded by COUNT(orders.id)."
+      "question": "After a left join from users to orders, which aggregate counts matched orders per user if orders.id is non-null on real orders?",
+      "options": { "a": "COUNT(*)", "b": "COUNT(users.id)", "c": "SUM(users.id)", "d": "COUNT(orders.id)" },
+      "correctOptionIds": ["d"],
+      "explanation": "Unmatched rows have NULL in orders.id and contribute zero to COUNT of that column."
     },
     {
       "id": "sql-12",
-      "question": "A query must keep each order row and display the total order amount for that row's customer. Which expression does that without grouping away individual rows?",
-      "options": { "a": "SUM(amount) OVER (PARTITION BY customer_id)", "b": "SUM(amount) GROUP BY customer_id", "c": "COUNT(amount) OVER (PARTITION BY customer_id)", "d": "DISTINCT customer_id" },
+      "question": "Keep one result row per sale and include its store's total sales on each row. Which expression fits?",
+      "options": { "a": "SUM(amount) OVER (PARTITION BY store_id)", "b": "SUM(amount) with GROUP BY store_id only", "c": "COUNT(*) OVER ()", "d": "MAX(amount) OVER ()" },
       "correctOptionIds": ["a"],
-      "explanation": "The window aggregate computes a total per partition while keeping all input rows."
+      "explanation": "A windowed sum computes totals within each store without collapsing the detail rows."
     },
     {
       "id": "sql-13",
-      "question": "Which window function assigns distinct consecutive numbers within a partition, even when two rows have equal ordering values?",
-      "options": { "a": "RANK()", "b": "DENSE_RANK()", "c": "LAG()", "d": "ROW_NUMBER()" },
-      "correctOptionIds": ["d"],
-      "explanation": "ROW_NUMBER assigns a separate number to every row. Use a unique tie-breaker if the assignment must be deterministic."
+      "question": "Which window function assigns a different sequential number to every row within a partition, even if sort keys tie?",
+      "options": { "a": "RANK()", "b": "DENSE_RANK()", "c": "ROW_NUMBER()", "d": "PERCENT_RANK()" },
+      "correctOptionIds": ["c"],
+      "explanation": "ROW_NUMBER assigns a distinct ordinal to each row. Tied rows may need an extra sort key for deterministic assignment."
     },
     {
       "id": "sql-14",
-      "question": "Which constraint makes the database reject duplicate non-null email addresses even when two clients try to insert the same address concurrently?",
-      "options": { "a": "CHECK (email IS NOT NULL)", "b": "UNIQUE (email)", "c": "DEFAULT 'unknown'", "d": "FOREIGN KEY (email) referencing a non-unique address column" },
+      "question": "Which constraint prevents two concurrent inserts from creating the same non-null email value?",
+      "options": { "a": "NOT NULL on email", "b": "UNIQUE on email", "c": "DEFAULT on email", "d": "A CHECK that email contains '@'" },
       "correctOptionIds": ["b"],
-      "explanation": "The database enforces a unique constraint across concurrent inserts."
+      "explanation": "A unique constraint checks uniqueness as part of the database write."
     },
     {
       "id": "sql-15",
-      "question": "Which statements describe ordinary database indexes? Select all that apply.",
-      "options": { "a": "An index can reduce work for a selective lookup", "b": "Indexes require no storage space", "c": "Indexes can add maintenance work when indexed data changes", "d": "The optimizer must use every index mentioned by a query's columns" },
+      "question": "Which statements describe conventional indexes? Select all that apply.",
+      "options": { "a": "Indexes can accelerate selective lookups", "b": "Every query always becomes faster when an index is added", "c": "Indexes can add work when rows are inserted or updated", "d": "Indexes make transactions unnecessary" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "An index can speed reads but consumes storage and can add work to writes. The optimizer chooses when to use it."
+      "explanation": "An index trades storage and maintenance for possible query speed."
     },
     {
       "id": "sql-16",
-      "question": "In PostgreSQL, which command displays the planned operations for a SELECT without executing the SELECT itself?",
-      "options": { "a": "EXPLAIN ANALYZE SELECT ...", "b": "VACUUM ANALYZE", "c": "ANALYZE SELECT ...", "d": "EXPLAIN SELECT ..." },
+      "question": "In PostgreSQL, which command displays the planned operations for SELECT * FROM orders without running that SELECT?",
+      "options": { "a": "EXPLAIN ANALYZE SELECT * FROM orders", "b": "SELECT * FROM orders LIMIT 0", "c": "ANALYZE orders", "d": "EXPLAIN SELECT * FROM orders" },
       "correctOptionIds": ["d"],
-      "explanation": "Plain EXPLAIN shows the plan. The ANALYZE option to EXPLAIN actually executes the query to collect measurements."
+      "explanation": "Plain EXPLAIN plans the statement. EXPLAIN ANALYZE executes it to collect timing."
     },
     {
       "id": "sql-17",
-      "question": "Which condition returns customers with no matching order, even if some orders have a null customer_id?",
-      "options": { "a": "c.id NOT IN (SELECT customer_id FROM orders)", "b": "NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)", "c": "EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)", "d": "c.id IN (SELECT customer_id FROM orders)" },
-      "correctOptionIds": ["b"],
-      "explanation": "The correlated NOT EXISTS tests for the absence of a matching row. Nulls in unrelated orders do not affect that result."
+      "question": "Which condition finds customers with no matching orders even if orders.customer_id can be NULL?",
+      "options": { "a": "NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)", "b": "c.id NOT IN (SELECT customer_id FROM orders) with no NULL filter", "c": "c.id = NULL", "d": "EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)" },
+      "correctOptionIds": ["a"],
+      "explanation": "A correlated NOT EXISTS tests for matching rows without relying on NOT IN's behavior with NULL."
     },
     {
       "id": "sql-18",
-      "question": "Which expression preserves customers without active orders when selecting all customers and joining only active orders?",
-      "options": { "a": "LEFT JOIN orders o ON o.customer_id = c.id WHERE o.status = 'active'", "b": "INNER JOIN orders o ON o.customer_id = c.id AND o.status = 'active'", "c": "LEFT JOIN orders o ON o.customer_id = c.id AND o.status = 'active'", "d": "CROSS JOIN orders o WHERE o.status = 'active'" },
+      "question": "Which join keeps users that have no active subscription while attaching active subscriptions when available?",
+      "options": { "a": "INNER JOIN subscriptions s ON s.user_id = u.id", "b": "LEFT JOIN subscriptions s ON s.user_id = u.id followed by WHERE s.active = true", "c": "LEFT JOIN subscriptions s ON s.user_id = u.id AND s.active = true", "d": "CROSS JOIN subscriptions s" },
       "correctOptionIds": ["c"],
-      "explanation": "Placing the status test in ON limits the matching order rows while preserving unmatched customers."
+      "explanation": "Putting the right-side filter in ON limits matches while preserving unmatched users."
     },
     {
       "id": "sql-19",
-      "question": "Which statement removes all rows for inactive users while preserving the users table?",
-      "options": { "a": "DELETE FROM users WHERE active = false", "b": "DROP TABLE users", "c": "TRUNCATE TABLE users", "d": "ALTER TABLE users DROP COLUMN active" },
-      "correctOptionIds": ["a"],
-      "explanation": "A DELETE with WHERE removes matching rows. TRUNCATE removes all rows and DROP TABLE removes the table."
+      "question": "Which statement removes rows where archived is true and keeps the table?",
+      "options": { "a": "DROP TABLE messages", "b": "DELETE FROM messages WHERE archived = true", "c": "TRUNCATE TABLE messages", "d": "SELECT * FROM messages WHERE archived = true" },
+      "correctOptionIds": ["b"],
+      "explanation": "DELETE with a WHERE clause removes only matching rows."
     },
     {
       "id": "sql-20",
-      "question": "Which statements about a conventional relational table's primary key are true? Select all that apply.",
-      "options": { "a": "A table may declare multiple independent primary keys", "b": "It can consist of multiple columns", "c": "It allows two rows with the same complete primary-key value", "d": "Its column values are required to be non-null" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "A primary key can be composite, but its combined value must be unique and each key column must be non-null."
+      "question": "Which statements about a PostgreSQL primary key are true? Select all that apply.",
+      "options": { "a": "It can cover more than one column", "b": "It permits NULL in every key column", "c": "It enforces uniqueness across the key columns", "d": "A table can declare multiple separate primary keys" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "A primary key identifies a row with a unique non-null key, which can be composite."
     }
   ]
 }

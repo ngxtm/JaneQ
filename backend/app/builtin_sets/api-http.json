@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "api-http",
+  "title": "API / HTTP",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q11",
+      "question": "A client reads the current inventory count without requesting a state change. Which method expresses that intent?",
+      "options": { "a": "GET", "b": "POST", "c": "PATCH", "d": "DELETE" },
+      "correctOptionIds": ["a"],
+      "explanation": "GET requests a representation with read-only semantics."
+    },
+    {
+      "id": "q12",
+      "question": "In https://shop.example/orders?page=2, which part is the path?",
+      "options": { "a": "https", "b": "shop.example", "c": "/orders", "d": "page=2" },
+      "correctOptionIds": ["c"],
+      "explanation": "The path identifies the resource location before the query string."
+    },
+    {
+      "id": "q25",
+      "question": "A request has a JSON body. Which header describes the format of that body?",
+      "options": { "a": "Accept: application/json", "b": "Content-Type: application/json", "c": "Content-Length: application/json", "d": "Authorization: application/json" },
+      "correctOptionIds": ["b"],
+      "explanation": "Content-Type describes the message body. Accept describes preferred response media types."
+    }
+  ]
+}

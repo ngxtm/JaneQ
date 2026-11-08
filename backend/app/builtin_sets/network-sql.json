@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "network-sql",
+  "title": "Network / SQL",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q13",
+      "question": "A browser knows an HTTPS server's hostname but has no cached address. Which service normally resolves the hostname before connecting?",
+      "options": { "a": "An HTTP proxy", "b": "A TLS certificate authority", "c": "DNS", "d": "An SQL database" },
+      "correctOptionIds": ["c"],
+      "explanation": "DNS can return address records for a hostname."
+    },
+    {
+      "id": "q14",
+      "question": "An orders table should reference existing customers through customer_id. Which SQL constraint enforces that reference?",
+      "options": { "a": "CHECK (customer_id > 0)", "b": "UNIQUE (customer_id)", "c": "DEFAULT 1", "d": "FOREIGN KEY (customer_id) REFERENCES customers(id)" },
+      "correctOptionIds": ["d"],
+      "explanation": "The foreign key checks that a non-null customer ID exists in the referenced table."
+    }
+  ]
+}

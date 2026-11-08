@@ -92,7 +92,7 @@ JaneQ uses its own mark and session-specific copy so users know what they can re
 | Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
 | Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
 | Home on a narrow screen | Open Home at 360 px. Focus the account menu, press Enter, press Escape to return focus to the trigger, then reopen it and use End and Enter to sign out. | The menu fits the viewport, Escape restores focus, and keyboard selection returns to Sign in. | **Pass · browser** in Chromium. |
-| Seed persistence | Start with a disposable v1 database and reopen it twice. | Home lists 18 Ready built-in sets after both restarts. | **Pass · API**. [Catalog upgrade check](builtin-sets.md#acceptance-checks) |
+| Seed persistence | Start with a fresh disposable MVP database and reopen it twice. | Home lists 18 Ready built-in sets after both restarts. | **Pass · API**. [Catalog restart check](builtin-sets.md#acceptance-checks) |
 | Frontend lint and build | Run `npm run lint` and `npm run build` from `frontend/`. | Both commands exit successfully. | **Pass · CLI (Motion verification)**. |
 
 From `backend/`, run the [API regression checks](../../backend/tests/test_login_home.py) with:

@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "react-01",
-      "question": "A parent renders <Badge label=\"New\" />. How should Badge receive the label?",
-      "options": { "a": "By reading its props", "b": "By looking for a DOM element named label", "c": "By creating an effect with no dependencies", "d": "By reading the parent's state object directly" },
+      "question": "A parent renders <Price amount={12} />. How does Price receive 12?",
+      "options": { "a": "As the amount prop", "b": "As a global variable", "c": "As a context value automatically", "d": "As the first array element in state" },
       "correctOptionIds": ["a"],
-      "explanation": "The parent passes label as a prop. Badge reads it from its props parameter."
+      "explanation": "JSX attributes become properties on the component's props object."
     },
     {
       "id": "react-02",
-      "question": "Which key should be used for rows that can be reordered and have a stable unique database ID?",
-      "options": { "a": "The current array index", "b": "A random value generated on every render", "c": "The row's database ID", "d": "The number of rows in the list" },
-      "correctOptionIds": ["c"],
-      "explanation": "A stable key lets React match a row to the same component identity across reorders."
+      "question": "A list may be sorted in either direction. Which key should its row component use?",
+      "options": { "a": "The current index", "b": "The row's persistent unique ID", "c": "A new random string each render", "d": "The current sort direction" },
+      "correctOptionIds": ["b"],
+      "explanation": "Stable keys preserve row identity through reorderings."
     },
     {
       "id": "react-03",
-      "question": "Starting with count = 0, one click handler calls setCount(count + 1) twice. What is count after React processes those updates?",
-      "options": { "a": "0", "b": "2", "c": "3", "d": "1" },
+      "question": "A handler calls setCount(n => n + 1) twice while count is 0. What will the next count be?",
+      "options": { "a": "0", "b": "1", "c": "3", "d": "2" },
       "correctOptionIds": ["d"],
-      "explanation": "Both calls read the handler's snapshot of count and request replacement with 1."
+      "explanation": "React applies both updater functions in sequence to the pending state."
     },
     {
       "id": "react-04",
-      "question": "Which handler reliably adds two to the latest pending count with two state updates?",
-      "options": { "a": "setCount(count + 1); setCount(count + 1);", "b": "setCount(n => n + 1); setCount(n => n + 1);", "c": "setCount(count++); setCount(count);", "d": "setCount(1); setCount(1);" },
-      "correctOptionIds": ["b"],
-      "explanation": "Each updater receives the state produced by the preceding queued update."
+      "question": "Where should code that saves a form after a user clicks Submit usually run?",
+      "options": { "a": "In the component body", "b": "In a memo calculation", "c": "In the submit event handler", "d": "In a render prop that runs every render" },
+      "correctOptionIds": ["c"],
+      "explanation": "Submitting is a response to a specific event, so the handler owns it."
     },
     {
       "id": "react-05",
-      "question": "Which operations are appropriate inside the render of a React component? Select all that apply.",
-      "options": { "a": "Calculate a filtered list from props", "b": "Send an analytics event for each render", "c": "Mutate a shared object imported from another module", "d": "Create JSX from current state" },
-      "correctOptionIds": ["a", "d"],
-      "explanation": "Pure calculations and JSX belong in render. Sending events and mutating external state are side effects."
+      "question": "Which operations are safe during render when they only read the current props? Select all that apply.",
+      "options": { "a": "Filter an array into a new array", "b": "Start a network request", "c": "Create JSX", "d": "Register a window listener" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Local calculations and JSX creation are pure operations during render."
     },
     {
       "id": "react-06",
-      "question": "An input must display React state and update that state when a user types. Which pair makes it a controlled text input?",
-      "options": { "a": "defaultValue and onBlur", "b": "name and ref", "c": "value and onChange", "d": "placeholder and onFocus" },
-      "correctOptionIds": ["c"],
-      "explanation": "The value prop controls what is displayed, and onChange updates the state backing that prop."
+      "question": "What should an onChange handler do for an input controlled by React state?",
+      "options": { "a": "Update the state used for the input's value", "b": "Remove the value prop after the first edit", "c": "Update only the defaultValue prop", "d": "Read the value and discard it" },
+      "correctOptionIds": ["a"],
+      "explanation": "The controlled input displays the supplied value, so its state must follow the edit."
     },
     {
       "id": "react-07",
-      "question": "Sibling components need to display and edit the same selected tab. Where should that shared state usually live?",
-      "options": { "a": "Their nearest common parent", "b": "A separate useState in each sibling", "c": "A random sibling selected on each render", "d": "The selected tab's DOM node" },
-      "correctOptionIds": ["a"],
-      "explanation": "Lifting state to a common parent gives both siblings one shared source of truth through props."
+      "question": "Two sibling panels must display the same selected row. Where should that shared state normally live?",
+      "options": { "a": "In one of the siblings only", "b": "In a random module variable", "c": "Inside the row's CSS class", "d": "In their nearest common parent" },
+      "correctOptionIds": ["d"],
+      "explanation": "Their common parent can own the selection and pass it to both panels."
     },
     {
       "id": "react-08",
-      "question": "A useEffect connects to a chat room and returns a disconnect function. What happens when roomId changes and roomId is a dependency?",
-      "options": { "a": "Only the old connection is closed", "b": "The old effect cleans up before the new effect sets up", "c": "Both connections remain until the page unloads", "d": "The effect never runs after the first render" },
+      "question": "An Effect subscribes to a chat room and includes roomId in its dependencies. What happens when roomId changes?",
+      "options": { "a": "Both subscriptions remain active", "b": "React cleans up the old subscription and runs the new setup", "c": "React ignores the new roomId until reload", "d": "React remounts every parent component" },
       "correctOptionIds": ["b"],
-      "explanation": "When a dependency changes, React runs cleanup for the previous effect before running the replacement setup."
+      "explanation": "A changed dependency triggers cleanup for the previous setup before the next setup."
     },
     {
       "id": "react-09",
-      "question": "A button should submit an order only when clicked. Where should the submission call normally go?",
-      "options": { "a": "In the function component body", "b": "In a useMemo calculation", "c": "In an effect that runs on mount", "d": "In the button's event handler" },
-      "correctOptionIds": ["d"],
-      "explanation": "The submission is a consequence of the user's click, so the event handler is the direct trigger."
+      "question": "A component needs to retain a timer handle across renders without triggering a render when it changes. Which Hook fits?",
+      "options": { "a": "useRef", "b": "useMemo with a mutable object dependency", "c": "useId", "d": "useContext" },
+      "correctOptionIds": ["a"],
+      "explanation": "A ref persists across renders and changing its current property does not request a render."
     },
     {
       "id": "react-10",
-      "question": "Which actions fit the normal rules for built-in Hooks such as useState and useEffect? Select all that apply.",
-      "options": { "a": "Call useState inside an event handler", "b": "Call useState unconditionally at the top level of a component", "c": "Call useEffect at the top level of a custom Hook", "d": "Call useEffect inside an array map callback" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "These Hooks are called at the top level of components or custom Hooks so their call order is consistent."
+      "question": "Which places are valid for calling the built-in useState Hook? Select all that apply.",
+      "options": { "a": "Inside an event handler", "b": "At the top level of a function component", "c": "Inside a conditional branch", "d": "At the top level of a custom Hook" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "Hooks such as useState must be called in a consistent order from components or custom Hooks."
     },
     {
       "id": "react-11",
-      "question": "A component needs to remember a timeout ID between renders. Changing the ID does not need to update the UI. Which Hook fits?",
-      "options": { "a": "useRef", "b": "useContext", "c": "useMemo", "d": "useId" },
-      "correctOptionIds": ["a"],
-      "explanation": "A ref persists across renders. Changing its current value does not request a render."
+      "question": "What happens when a component's context provider receives a new context value?",
+      "options": { "a": "Readers must call setState manually to see it", "b": "The value becomes a prop of every DOM element", "c": "Consumers that read that context receive the new value", "d": "React converts it into session storage" },
+      "correctOptionIds": ["c"],
+      "explanation": "Components that read the context subscribe to its value."
     },
     {
       "id": "react-12",
-      "question": "A component displays a total that can be calculated from its current items prop. What is the simplest way to avoid storing stale totals?",
-      "options": { "a": "Initialize local total state once from items", "b": "Copy each total into a mutable global object", "c": "Compute the total from items during render", "d": "Update the total only when the component unmounts" },
-      "correctOptionIds": ["c"],
-      "explanation": "Calculating the total from current props avoids a second value that could fall out of sync."
+      "question": "Which output should a component return when it intentionally renders nothing?",
+      "options": { "a": "The string 'null'", "b": "An empty div with a visible border", "c": "true", "d": "null" },
+      "correctOptionIds": ["d"],
+      "explanation": "React treats null as empty output."
     },
     {
       "id": "react-13",
-      "question": "A profile editor should reset its local form state when it switches from one user to another. Which parent change directly gives each user a different component identity?",
-      "options": { "a": "Change a className on the same editor", "b": "Pass a different key based on user ID", "c": "Wrap the editor in React.memo", "d": "Pass a fresh object as a prop on each render" },
+      "question": "Switching from one customer's editor to another should reset its form state. Which prop can force a different component identity?",
+      "options": { "a": "title", "b": "key", "c": "className", "d": "role" },
       "correctOptionIds": ["b"],
-      "explanation": "A different key makes React replace the previous instance and initialize fresh local state."
+      "explanation": "A changed key makes React treat the editor as a different component instance."
     },
     {
       "id": "react-14",
-      "question": "A child uses useContext(ThemeContext). Which value does it read when the same context has two nested providers above it?",
-      "options": { "a": "The default value passed to createContext", "b": "The outermost provider's value", "c": "An object merging both providers", "d": "The closest matching provider's value" },
-      "correctOptionIds": ["d"],
-      "explanation": "React looks upward from the consumer and uses the nearest matching provider."
+      "question": "A list held in state needs one item appended. Which updater returns a new array?",
+      "options": { "a": "setItems(items => [...items, newItem])", "b": "setItems(items => items.push(newItem))", "c": "setItems(items => { items.push(newItem); return items })", "d": "setItems(items => items)" },
+      "correctOptionIds": ["a"],
+      "explanation": "Spread creates a new array with the added item without changing the previous state."
     },
     {
       "id": "react-15",
-      "question": "Which updates preserve React state immutability for a list of objects? Select all that apply.",
-      "options": { "a": "Replace one row with a new object using map", "b": "Call push directly on the existing state array", "c": "Assign to stateRows[0].name in place", "d": "Build a new array with the spread operator when appending a row" },
-      "correctOptionIds": ["a", "d"],
-      "explanation": "map and spread can construct new arrays. The changed row should also be represented by a new object."
+      "question": "Which values can usually be derived during render from props alone? Select all that apply.",
+      "options": { "a": "The current width of an element measured from the DOM", "b": "The price sum of the supplied cart items", "c": "The number of supplied items that match a search prop", "d": "The next value of a persistent timer" },
+      "correctOptionIds": ["b", "c"],
+      "explanation": "The sum and filtered count are calculations over the current props."
     },
     {
       "id": "react-16",
-      "question": "What does useReducer return to the calling component?",
-      "options": { "a": "The current state and a dispatch function", "b": "The current state and a function to replace the reducer", "c": "The reducer's source code and its dependency list", "d": "A mutable ref and an effect cleanup function" },
-      "correctOptionIds": ["a"],
-      "explanation": "Dispatch sends actions to the reducer, which computes the next state."
+      "question": "What are the two values returned by useReducer?",
+      "options": { "a": "A reducer and the initial state", "b": "A ref and a cleanup function", "c": "A selector and a provider", "d": "The current state and a dispatch function" },
+      "correctOptionIds": ["d"],
+      "explanation": "dispatch sends actions to the reducer, and state reflects the latest result."
     },
     {
       "id": "react-17",
-      "question": "Which value can a React component return when it should render no visible output?",
-      "options": { "a": "A plain object with an empty props field", "b": "A DOM node created by document.createElement", "c": "null", "d": "A function that returns undefined" },
-      "correctOptionIds": ["c"],
-      "explanation": "Returning null tells React to render nothing for that component."
+      "question": "When passing a handler to a JSX button, which expression waits for a click before calling save?",
+      "options": { "a": "onClick={save()}", "b": "onClick={save}", "c": "onClick={Promise.resolve(save())}", "d": "onClick={Boolean(save())}" },
+      "correctOptionIds": ["b"],
+      "explanation": "Passing the function reference lets React call it when the event occurs."
     },
     {
       "id": "react-18",
-      "question": "What is useMemo intended to cache between renders while its dependencies stay unchanged?",
-      "options": { "a": "The current browser URL", "b": "The result of a calculation", "c": "A server response automatically across all users", "d": "An effect cleanup's side effects" },
-      "correctOptionIds": ["b"],
-      "explanation": "useMemo caches a calculation result as a performance optimization."
+      "question": "What is the usual role of useMemo?",
+      "options": { "a": "Store persistent application data after closing the browser", "b": "Make every render run asynchronously", "c": "Cache a calculation result while its dependencies stay unchanged", "d": "Replace state updates with DOM mutations" },
+      "correctOptionIds": ["c"],
+      "explanation": "useMemo is a performance tool for reusing a calculation result."
     },
     {
       "id": "react-19",
-      "question": "An effect starts a window event listener. What should its cleanup do?",
-      "options": { "a": "Render the component again", "b": "Add an identical listener", "c": "Clear all event listeners on the page", "d": "Remove the listener that this effect registered" },
-      "correctOptionIds": ["d"],
-      "explanation": "Cleanup reverses the setup so old listeners do not accumulate across updates or after unmounting."
+      "question": "Which JSX expression gives a button an accessible visible name of Save?",
+      "options": { "a": "<button>Save</button>", "b": "<button name='Save' />", "c": "<button className='Save' />", "d": "<button value='Save' />" },
+      "correctOptionIds": ["a"],
+      "explanation": "Text content supplies the accessible name for an ordinary button."
     },
     {
       "id": "react-20",
-      "question": "Which values are good candidates to derive during render from existing state? Select all that apply.",
-      "options": { "a": "A cart total computed from cart items", "b": "The text a user has typed but has not yet submitted", "c": "The count of items matching a stored search query", "d": "An independently selected sort direction" },
-      "correctOptionIds": ["a", "c"],
-      "explanation": "The total and filtered count are calculations from existing inputs. The input text and sort choice can change independently."
+      "question": "Which changes help an Effect release a subscription when appropriate? Select all that apply.",
+      "options": { "a": "Return a cleanup function from setup", "b": "Remove the exact listener that setup added", "c": "Ignore the resource ID in the dependency list", "d": "Register another listener in cleanup" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "Cleanup lets React release the listener when the Effect stops using it."
     }
   ]
 }

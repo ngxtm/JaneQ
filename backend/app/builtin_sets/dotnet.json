@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "dotnet-01",
-      "question": "Which .NET component executes managed code and provides services such as garbage collection?",
-      "options": { "a": "NuGet", "b": "MSBuild", "c": "The Common Language Runtime", "d": "Kestrel" },
-      "correctOptionIds": ["c"],
-      "explanation": "The CLR provides the runtime environment for managed code, including memory management."
+      "question": "Which .NET runtime component executes managed code and provides garbage collection?",
+      "options": { "a": "NuGet", "b": "The Common Language Runtime", "c": "MSBuild", "d": "The C# preprocessor" },
+      "correctOptionIds": ["b"],
+      "explanation": "The CLR provides the execution environment and memory management for managed code."
     },
     {
       "id": "dotnet-02",
-      "question": "A C# local variable is declared as var count = 3;. What is its compile-time type?",
-      "options": { "a": "int", "b": "dynamic", "c": "object", "d": "decimal" },
-      "correctOptionIds": ["a"],
-      "explanation": "The compiler infers int from the integer literal. The type remains fixed."
+      "question": "What compile-time type does C# infer for var retryCount = 3;?",
+      "options": { "a": "object", "b": "decimal", "c": "dynamic", "d": "int" },
+      "correctOptionIds": ["d"],
+      "explanation": "A literal such as 3 fits int, and var infers that static type."
     },
     {
       "id": "dotnet-03",
-      "question": "Which type represents a C# asynchronous operation that eventually returns an Order?",
-      "options": { "a": "Action<Order>", "b": "IEnumerable<Order>", "c": "Task", "d": "Task<Order>" },
-      "correctOptionIds": ["d"],
-      "explanation": "Task<Order> represents an operation whose result, when awaited successfully, is an Order."
+      "question": "Which return type represents a C# asynchronous operation that produces an Invoice?",
+      "options": { "a": "Task<Invoice>", "b": "Task", "c": "IEnumerable<Invoice>", "d": "Action<Invoice>" },
+      "correctOptionIds": ["a"],
+      "explanation": "Task<T> represents eventual completion with a value of type T."
     },
     {
       "id": "dotnet-04",
-      "question": "Given string? name = null;, what does name ?? \"Guest\" evaluate to?",
-      "options": { "a": "An empty string", "b": "\"Guest\"", "c": "null", "d": "false" },
-      "correctOptionIds": ["b"],
-      "explanation": "The null-coalescing operator uses the right operand when the left operand is null."
+      "question": "Given string? city = null;, what does city ?? \"Unknown\" evaluate to?",
+      "options": { "a": "null", "b": "\"\"", "c": "\"Unknown\"", "d": "false" },
+      "correctOptionIds": ["c"],
+      "explanation": "The null-coalescing operator returns its right operand if the left operand is null."
     },
     {
       "id": "dotnet-05",
-      "question": "Which C# statements assign the value 5 to a variable declared as int? value;? Select all that apply.",
-      "options": { "a": "value = 5;", "b": "value = \"5\";", "c": "value = null;", "d": "value = int.Parse(\"5\");" },
-      "correctOptionIds": ["a", "d"],
-      "explanation": "Both the integer literal and int.Parse return an int that can be assigned to int?. The null assignment is legal but does not store 5."
+      "question": "Which assignments are valid for a variable declared int? count;? Select all that apply.",
+      "options": { "a": "count = 3;", "b": "count = null;", "c": "count = \"3\";", "d": "count = 3.5;" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "A nullable int can hold an int value or null."
     },
     {
       "id": "dotnet-06",
-      "question": "What is the purpose of using var stream = File.OpenRead(path); in a C# scope?",
-      "options": { "a": "Reopen the stream on every read", "b": "Automatically run the reads on a background thread", "c": "Dispose the stream when execution leaves the scope", "d": "Load the entire file into memory immediately" },
-      "correctOptionIds": ["c"],
-      "explanation": "A using declaration arranges for Dispose to run at scope exit, including when an exception leaves that scope."
+      "question": "What happens to stream declared with using var stream = File.OpenRead(path); when its scope exits?",
+      "options": { "a": "The file is deleted", "b": "The stream is disposed", "c": "The stream becomes a singleton", "d": "The contents are copied to a global variable" },
+      "correctOptionIds": ["b"],
+      "explanation": "A using declaration disposes the object at the end of its scope."
     },
     {
       "id": "dotnet-07",
-      "question": "Given a List<int> containing 1, 2, and 3, what sequence does values.Where(n => n > 1).Select(n => n * 2) produce when enumerated?",
-      "options": { "a": "2, 4, 6", "b": "4, 6", "c": "2, 3", "d": "3, 5" },
-      "correctOptionIds": ["b"],
-      "explanation": "Where first keeps 2 and 3. Select then doubles each remaining value."
+      "question": "What does new[] { 2, 4, 6 }.Where(n => n > 2).Select(n => n + 1) yield when enumerated?",
+      "options": { "a": "2, 4, 6", "b": "3, 5, 7", "c": "4, 6", "d": "5, 7" },
+      "correctOptionIds": ["d"],
+      "explanation": "Where keeps 4 and 6, then Select adds 1 to each."
     },
     {
       "id": "dotnet-08",
-      "question": "An ASP.NET Core service must share one instance among consumers within a request and use a separate instance in each request. Which built-in lifetime fits?",
-      "options": { "a": "Transient", "b": "Singleton", "c": "Static", "d": "Scoped" },
-      "correctOptionIds": ["d"],
-      "explanation": "ASP.NET Core normally creates a dependency-injection scope per request. A scoped service is reused within that scope."
+      "question": "Which ASP.NET Core service lifetime shares one instance within a request scope?",
+      "options": { "a": "Scoped", "b": "Transient", "c": "Singleton", "d": "Static" },
+      "correctOptionIds": ["a"],
+      "explanation": "A scoped registration uses one instance per scope, normally one per web request."
     },
     {
       "id": "dotnet-09",
-      "question": "An ASP.NET Core middleware checks a request and then calls await next(context). What does next represent?",
-      "options": { "a": "The next delegate in the request pipeline", "b": "The next incoming HTTP request", "c": "The method that resets the current dependency scope", "d": "A timer that resumes the request after the response is sent" },
-      "correctOptionIds": ["a"],
-      "explanation": "Calling next passes control to the downstream pipeline. The middleware can resume after the awaited call completes."
+      "question": "In ASP.NET Core middleware, what does await next(context) invoke?",
+      "options": { "a": "The previous handler", "b": "The database connection", "c": "The next delegate in the request pipeline", "d": "Every endpoint concurrently" },
+      "correctOptionIds": ["c"],
+      "explanation": "Middleware calls the next delegate to pass the request down the pipeline."
     },
     {
       "id": "dotnet-10",
-      "question": "A request is canceled while a .NET service is awaiting downstream work. Which steps support cooperative cancellation? Select all that apply.",
-      "options": { "a": "Start a fresh CancellationTokenSource without linking it", "b": "Pass the request's CancellationToken to APIs that accept it", "c": "Check the token inside a long-running loop", "d": "Catch cancellation and restart the canceled work immediately" },
-      "correctOptionIds": ["b", "c"],
-      "explanation": "Cancellation must propagate to downstream operations. A long loop can check the token to stop promptly."
+      "question": "Which actions support cooperative cancellation of an ASP.NET Core request? Select all that apply.",
+      "options": { "a": "Pass the request token to a database API that accepts it", "b": "Ignore the token once the first await starts", "c": "Check the token during a long CPU loop", "d": "Cancel all unrelated requests" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Token propagation and periodic checks give downstream work a chance to stop."
     },
     {
       "id": "dotnet-11",
-      "question": "An EF Core query loads Product entities for a read-only catalog. Which modifier tells EF Core to skip tracking these results?",
-      "options": { "a": "Include(p => p.Category)", "b": "AsQueryable()", "c": "AsNoTracking()", "d": "OrderBy(p => p.Id)" },
-      "correctOptionIds": ["c"],
-      "explanation": "AsNoTracking omits change tracking for entity results of the query, which suits read-only use."
+      "question": "Which EF Core method asks a query to skip tracking returned entities?",
+      "options": { "a": "AsQueryable()", "b": "AsNoTracking()", "c": "Attach()", "d": "Include()" },
+      "correctOptionIds": ["b"],
+      "explanation": "AsNoTracking opts the query out of ordinary change tracking."
     },
     {
       "id": "dotnet-12",
-      "question": "An EF Core DbContext loads a tracked customer entity. The application changes its name and calls SaveChangesAsync(). What does EF Core normally do?",
-      "options": { "a": "Insert a second customer row", "b": "Persist the tracked change to the existing row", "c": "Modify the database schema", "d": "Detach the entity before detecting changes" },
-      "correctOptionIds": ["b"],
-      "explanation": "With normal change detection enabled, EF Core identifies the modified tracked entity and writes the update."
+      "question": "A tracked EF Core entity is edited. Which DbContext method applies the detected change to the database asynchronously?",
+      "options": { "a": "AddAsync()", "b": "FindAsync()", "c": "ToListAsync()", "d": "SaveChangesAsync()" },
+      "correctOptionIds": ["d"],
+      "explanation": "SaveChangesAsync writes pending tracked changes."
     },
     {
       "id": "dotnet-13",
-      "question": "Which C# keyword rethrows the current exception from a catch block while preserving its original stack trace?",
-      "options": { "a": "continue;", "b": "return;", "c": "throw ex;", "d": "throw;" },
-      "correctOptionIds": ["d"],
-      "explanation": "The bare throw statement rethrows the current exception while retaining the original stack trace."
+      "question": "Which C# statement rethrows the active exception from a catch block while preserving the original stack trace?",
+      "options": { "a": "throw;", "b": "throw ex;", "c": "return ex;", "d": "throw new Exception(ex.Message);" },
+      "correctOptionIds": ["a"],
+      "explanation": "A bare throw rethrows the current exception and preserves its original stack trace."
     },
     {
       "id": "dotnet-14",
-      "question": "A C# program awaits Task.WhenAll(loadProfile, loadOrders). When does the returned task complete?",
-      "options": { "a": "After both supplied tasks finish", "b": "As soon as the first supplied task succeeds", "c": "When the tasks are added to a queue", "d": "Only when both operations return the same type of value" },
-      "correctOptionIds": ["a"],
-      "explanation": "WhenAll completes after every supplied task has finished. The final state reflects any fault or cancellation."
+      "question": "What does Task.WhenAll(first, second) represent?",
+      "options": { "a": "Completion of whichever task finishes first", "b": "A cancellation token for both tasks", "c": "A task that completes once both input tasks have completed", "d": "A scheduler that forces the tasks to run sequentially" },
+      "correctOptionIds": ["c"],
+      "explanation": "WhenAll completes after all supplied tasks finish and reflects their faults or cancellations."
     },
     {
       "id": "dotnet-15",
-      "question": "Which statements describe standard .NET collection behavior? Select all that apply.",
-      "options": { "a": "A Queue<T> removes items in insertion order", "b": "A Stack<T> removes items in insertion order", "c": "A List<T> can contain duplicate elements", "d": "A HashSet<T> keeps repeated equal entries as separate items" },
+      "question": "Which claims about standard .NET collections are true? Select all that apply.",
+      "options": { "a": "A Queue<T> dequeues the earliest enqueued item that remains", "b": "A Stack<T> pops the oldest pushed item first", "c": "A List<T> may contain duplicate values", "d": "A HashSet<T> deliberately stores every duplicate insertion" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "A queue is FIFO and a list allows duplicates. A stack is LIFO, while a hash set keeps one entry per equality class."
+      "explanation": "Queues are FIFO, and lists permit duplicates."
     },
     {
       "id": "dotnet-16",
-      "question": "How can an ASP.NET Core application give a service strongly typed access to a section of configuration?",
-      "options": { "a": "Store the configuration section as a static int", "b": "Register the service as a background worker", "c": "Bind the section to an options class and inject IOptions<T>", "d": "Convert the settings into route parameters" },
-      "correctOptionIds": ["c"],
-      "explanation": "The options pattern binds configuration to a typed object and makes it available through dependency injection."
+      "question": "Which dependency commonly gives an ASP.NET Core consumer strongly typed access to an options object named MailOptions?",
+      "options": { "a": "IOptions<MailOptions>", "b": "IEnumerable<string>", "c": "ILogger<MailOptions>", "d": "CancellationToken" },
+      "correctOptionIds": ["a"],
+      "explanation": "The options pattern binds configuration to a type and exposes it through options interfaces."
     },
     {
       "id": "dotnet-17",
-      "question": "Which C# declaration allows a derived class to replace an ordinary base method's implementation through an override?",
-      "options": { "a": "Declare the base method static", "b": "Declare the base method virtual", "c": "Declare the base method private", "d": "Declare the base method as an extension method" },
-      "correctOptionIds": ["b"],
-      "explanation": "A virtual instance method can be overridden. Runtime dispatch then selects the implementation for the actual object."
+      "question": "Which C# modifier on an ordinary base-class method permits a derived class to override it?",
+      "options": { "a": "sealed", "b": "static", "c": "readonly", "d": "virtual" },
+      "correctOptionIds": ["d"],
+      "explanation": "virtual marks the base method as overridable."
     },
     {
       "id": "dotnet-18",
-      "question": "A LINQ query over a List<T> must be evaluated now so later list additions do not change which items the result contains. Which method materializes the result into a list?",
-      "options": { "a": "Where()", "b": "Select()", "c": "AsEnumerable()", "d": "ToList()" },
-      "correctOptionIds": ["d"],
-      "explanation": "ToList enumerates the source and stores the resulting items immediately. Where and Select typically defer enumeration."
+      "question": "Which LINQ method immediately materializes a query into a list?",
+      "options": { "a": "Where()", "b": "ToList()", "c": "Select()", "d": "OrderBy()" },
+      "correctOptionIds": ["b"],
+      "explanation": "ToList enumerates the query and collects the results now."
     },
     {
       "id": "dotnet-19",
-      "question": "Which ASP.NET Core component can use a route template such as /products/{id} to select a handler?",
-      "options": { "a": "Endpoint routing", "b": "The configuration binder", "c": "The JSON serializer", "d": "The logging provider" },
-      "correctOptionIds": ["a"],
-      "explanation": "Endpoint routing matches the incoming request to registered endpoints using route patterns and other constraints."
+      "question": "Which ASP.NET Core feature matches request paths against endpoint route templates?",
+      "options": { "a": "The options pattern", "b": "Dependency injection scopes", "c": "Endpoint routing", "d": "Garbage collection" },
+      "correctOptionIds": ["c"],
+      "explanation": "Routing selects endpoints using metadata such as path templates."
     },
     {
       "id": "dotnet-20",
-      "question": "Which actions are appropriate when handling an asynchronous database call from ASP.NET Core? Select all that apply.",
-      "options": { "a": "Block on the task with .Result to release the request thread", "b": "Await the database operation", "c": "Run concurrent operations through the same EF Core DbContext", "d": "Pass the request cancellation token if the API accepts it" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "Await avoids synchronous blocking and the token propagates cancellation. A single DbContext does not support concurrent operations."
+      "question": "Which practices fit an asynchronous database operation inside an ASP.NET Core handler? Select all that apply.",
+      "options": { "a": "Await the returned task", "b": "Propagate the request cancellation token if the API accepts it", "c": "Use .Result to block until every I/O operation finishes", "d": "Start the write and ignore its outcome" },
+      "correctOptionIds": ["a", "b"],
+      "explanation": "Await observes completion and errors, and a propagated token allows cancellation."
     }
   ]
 }

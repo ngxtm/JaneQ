@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "html-css",
+  "title": "HTML / CSS",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q15",
+      "question": "A page lists three ingredients whose order does not matter. Which element should wrap the list items?",
+      "options": { "a": "<ul>", "b": "<ol>", "c": "<dl>", "d": "<menuitem>" },
+      "correctOptionIds": ["a"],
+      "explanation": "An unordered list groups items whose order carries no meaning."
+    },
+    {
+      "id": "q16",
+      "question": "Which CSS declaration sets the foreground text color of a paragraph to navy?",
+      "options": { "a": "background-color: navy", "b": "border-color: navy", "c": "color: navy", "d": "fill: navy" },
+      "correctOptionIds": ["c"],
+      "explanation": "The color property sets the foreground color used for ordinary text."
+    },
+    {
+      "id": "q24",
+      "question": "A photo conveys information that is missing from the surrounding text. Where should its concise text alternative go?",
+      "options": { "a": "The img element's alt attribute", "b": "The img element's width attribute", "c": "A CSS class name", "d": "The image URL's query string" },
+      "correctOptionIds": ["a"],
+      "explanation": "The alt attribute gives assistive technology a text alternative when the image conveys meaning."
+    }
+  ]
+}

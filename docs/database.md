@@ -2,9 +2,9 @@
 
 ## Location and source of truth
 
-JaneQ uses SQLite through Python's `sqlite3` module. The default file is `backend/data/janeq.sqlite3`. `JANEQ_DB_PATH` can point to another file. Relative values are resolved from `backend/`. [App configuration](../backend/app/main.py)
+JaneQ uses SQLite through Python's `sqlite3` module. The default file is `backend/data/janeq-mvp.sqlite3`. `JANEQ_DB_PATH` can point to another file. Relative values are resolved from `backend/`. [App configuration](../backend/app/main.py)
 
-`SCHEMA` in [database.py](../backend/app/database.py) defines the tables. `connect()` enables foreign key enforcement on each application connection. During FastAPI startup, `initialize_database()` creates missing tables and seeds the built-in sets. Changes to an existing table will require an explicit migration because startup uses `CREATE TABLE IF NOT EXISTS`.
+`SCHEMA` in [database.py](../backend/app/database.py) defines the tables. `connect()` enables foreign key enforcement on each application connection. During FastAPI startup, `initialize_database()` creates missing tables and seeds the built-in sets in a fresh file.
 
 ## Tables and relationships
 
@@ -19,16 +19,16 @@ seed_history tracks completed seed runs independently.
 | `study_sets` | `id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `revision INTEGER` | `id` is the primary key. `title`, `description`, `source_kind`, and `revision` are required. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. |
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
-| `seed_history` | `name TEXT` | `name` is the primary key. `builtin_questions_v2` marks completion of the current built-in seed. Upgraded files can also contain `builtin_questions_v1`. |
+| `seed_history` | `name TEXT` | `name` is the primary key. `builtin_catalog` marks completion of the MVP seed. |
 | `learn_progress` | `username TEXT`, `study_set_id TEXT`, `revision INTEGER`, `state_json TEXT` | All columns are required. The composite primary key is `(username, study_set_id)`. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. |
 
 Deleting a study set cascades to its questions and their answer options when foreign keys are enabled. The schema allows several options for a question to be marked correct.
 
 ## Built-in data and startup
 
-- JaneQ groups the 41 reviewed questions in [questions_en.json](../backend/app/questions_en.json) by `type` into six built-in sets. Set IDs are slugs of the topic titles. Question IDs follow source order (`q01`, `q02`, …) and option IDs follow option order (`q01-a`, `q01-b`, …).
-- The [expanded catalog](../backend/app/builtin_sets) adds 12 sets with 20 questions each. Each file supplies its set and question IDs. Option IDs join the question ID and its local choice ID. Both sources list the correct choices in `correctOptionIds`. The seed sets the matching `answer_options.is_correct` flags, so all 18 sets start Ready.
-- Startup acquires a write lock before checking `seed_history`. The seed rows and completion marker commit in the same transaction. On an existing v1 database, the upgrade updates the original prompts, options, and keys in place. It increments the revision once for each existing set whose content or key changed. Subsequent startups skip the completed seed. [Built-in study sets](features/builtin-sets.md)
+- The [catalog](../backend/app/builtin_sets) has one JSON file per set. Each file supplies its set and question IDs. Question and option positions follow source order. Option IDs join the question ID and its local choice ID. The seed sets `answer_options.is_correct` for each choice listed in `correctOptionIds`, so all 18 sets start Ready.
+- Startup acquires a write lock before checking `seed_history`. The seed inserts the catalog and records completion in the same transaction. Subsequent startups skip the completed seed and preserve saved progress.
+- The MVP uses a fresh file for a catalog reset. If startup finds study sets in a file without the MVP seed marker, it asks for a new `JANEQ_DB_PATH`. The previous demo database stays available as a separate file. [Built-in study sets](features/builtin-sets.md)
 
 ## Study set status on Home
 
@@ -60,7 +60,7 @@ uv run --locked --no-sync python
 import sqlite3
 from pathlib import Path
 
-uri = Path("data/janeq.sqlite3").resolve().as_uri() + "?mode=ro"
+uri = Path("data/janeq-mvp.sqlite3").resolve().as_uri() + "?mode=ro"
 db = sqlite3.connect(uri, uri=True)
 db.execute("SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name").fetchall()
 db.execute("PRAGMA table_info(answer_options)").fetchall()
@@ -71,4 +71,4 @@ db.execute("SELECT COUNT(*) FROM questions JOIN study_sets ON study_sets.id = qu
 db.close()
 ```
 
-For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, 18 built-in sets, and 281 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify the fresh seed and the effect of reopening an existing database with saved keys and progress. Both cases passed using disposable SQLite files. [Built-in catalog acceptance checks](features/builtin-sets.md#acceptance-checks)
+For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, 18 built-in sets, and 281 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify the fresh seed and reopen an MVP database with saved Learn progress. Both cases passed using disposable SQLite files. [Built-in catalog acceptance checks](features/builtin-sets.md#acceptance-checks)

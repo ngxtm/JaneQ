@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from app.database import connect
+from app.database import connect, initialize_database
 
 
 class LearnTests(TestCase):
@@ -108,51 +108,29 @@ class LearnTests(TestCase):
         self.assertTrue(refreshed["revision_changed"])
         self.assertEqual((refreshed["revision"], refreshed["round"], refreshed["mastered"]), (2, 1, 0))
 
-    def test_upgrade_replaces_changed_keys_once_and_preserves_unaffected_progress(self) -> None:
+    def test_restart_keeps_catalog_and_progress(self) -> None:
         self.sign_in()
-        with closing(connect(self.database)) as connection, connection:
-            # Model v1 with a manually saved key and progress in two existing sets.
-            connection.execute(
-                """
-                DELETE FROM study_sets WHERE id NOT IN (
-                    SELECT study_set_id FROM questions WHERE id GLOB 'q[0-9][0-9]'
-                )
-                """,
-            )
-            connection.execute("UPDATE seed_history SET name = 'builtin_questions_v1'")
-            connection.execute("UPDATE answer_options SET is_correct = (id = 'q16-a') WHERE question_id = 'q16'")
-            connection.execute("UPDATE questions SET prompt = 'Old prompt' WHERE id = 'q01'")
-            connection.execute("INSERT INTO study_sets (id, title, source_kind) VALUES ('custom', 'Custom', 'custom')")
-        html = self.command(self.client.get(self.path).json(), "check", selected_ids=["q15-a"])
-
-        api_path = "/api/study-sets/api-http/learn"
-        api = self.client.get(api_path).json()
-        self.assertEqual(self.client.post(api_path, json={
-            "action": "check", "revision": api["revision"], "version": api["version"], "selected_ids": ["q11-a"],
-        }).status_code, 200)
+        catalog = self.client.get("/api/study-sets").json()
+        feedback = self.command(self.client.get(self.path).json(), "check", selected_ids=["q15-a"])
 
         for _ in range(2):
             with TestClient(self.app, cookies=self.client.cookies) as reopened:
-                sets = reopened.get("/api/study-sets").json()
-                builtins = [item for item in sets if item["source_kind"] == "builtin"]
-                self.assertEqual(len(builtins), 18)
-                self.assertEqual(sum(item["question_count"] for item in builtins), 281)
-                self.assertTrue(all(item["status"] == "ready" for item in builtins))
-                self.assertIn("custom", {item["id"] for item in sets})
-                updated = reopened.get(self.path).json()
-                self.assertEqual((updated["revision"], updated["phase"]), (html["revision"] + 1, "question"))
-                self.assertTrue(updated["revision_changed"])
-                unaffected = reopened.get(api_path).json()
-                self.assertEqual((unaffected["revision"], unaffected["phase"]), (api["revision"], "feedback"))
-                self.assertFalse(unaffected["revision_changed"])
+                self.assertEqual(reopened.get("/api/study-sets").json(), catalog)
+                self.assertEqual(reopened.get(self.path).json(), feedback)
         with closing(connect(self.database)) as connection:
             self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
-            self.assertEqual(connection.execute(
-                "SELECT id FROM answer_options WHERE question_id = 'q16' AND is_correct = 1",
-            ).fetchone()["id"], "q16-c")
-            self.assertNotEqual(connection.execute(
-                "SELECT prompt FROM questions WHERE id = 'q01'",
-            ).fetchone()["prompt"], "Old prompt")
+
+    def test_old_database_requires_a_new_path(self) -> None:
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("UPDATE seed_history SET name = 'builtin_questions_v2'")
+
+        with self.assertRaisesRegex(RuntimeError, "JANEQ_DB_PATH"):
+            initialize_database(self.database)
+
+        with closing(connect(self.database)) as connection:
+            self.assertEqual(connection.execute("SELECT name FROM seed_history").fetchone()["name"],
+                             "builtin_questions_v2")
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM questions").fetchone()[0], 281)
 
     def test_all_built_in_sets_open_without_an_editor(self) -> None:
         self.sign_in()

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "general-tech-knowledge",
+  "title": "General tech knowledge",
+  "language": "en",
+  "questions": [
+    {
+      "id": "q17",
+      "question": "Which storage component usually loses its contents when the machine loses power?",
+      "options": { "a": "An SSD", "b": "RAM", "c": "A magnetic hard disk", "d": "A USB flash drive" },
+      "correctOptionIds": ["b"],
+      "explanation": "Ordinary RAM is volatile and requires power to retain its contents."
+    },
+    {
+      "id": "q18",
+      "question": "A process wants to retain a text report after it exits. Where should it write the report?",
+      "options": { "a": "A CPU register", "b": "A local variable", "c": "A file on persistent storage", "d": "The process stack" },
+      "correctOptionIds": ["c"],
+      "explanation": "A file on persistent storage can outlive the process that wrote it."
+    },
+    {
+      "id": "q19",
+      "question": "An application repeatedly computes the same costly result. Which technique can reuse a recent result to reduce work?",
+      "options": { "a": "Caching", "b": "Encoding the result in Base64", "c": "Compressing every request", "d": "Replacing the network cable" },
+      "correctOptionIds": ["a"],
+      "explanation": "A cache can store a result under a key for later reuse."
+    },
+    {
+      "id": "q20",
+      "question": "A laptop needs a copy of a project that can be recovered if its drive fails. Which practice addresses that need?",
+      "options": { "a": "Keep a second tab open", "b": "Rename the project folder", "c": "Store a verified backup on separate storage", "d": "Move files to another folder on the same drive" },
+      "correctOptionIds": ["c"],
+      "explanation": "A verified backup on separate storage can survive failure of the original drive."
+    },
+    {
+      "id": "q36",
+      "question": "What allows two independent programs on one computer to have separate virtual address spaces?",
+      "options": { "a": "A larger monitor", "b": "Operating system process isolation", "c": "A shared keyboard layout", "d": "The file extension of each program" },
+      "correctOptionIds": ["b"],
+      "explanation": "Operating systems isolate processes by giving each its own virtual address space."
+    }
+  ]
+}

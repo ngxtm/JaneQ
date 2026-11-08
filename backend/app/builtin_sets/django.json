@@ -6,143 +6,143 @@
   "questions": [
     {
       "id": "django-01",
-      "question": "Which Django class is the usual base class for declaring a database-backed model?",
-      "options": { "a": "django.forms.Form", "b": "django.http.HttpRequest", "c": "django.db.models.Model", "d": "django.views.View" },
-      "correctOptionIds": ["c"],
-      "explanation": "A subclass of models.Model declares fields and relationships managed by the ORM."
+      "question": "Which Django object defines fields that map to a database table?",
+      "options": { "a": "A model subclass", "b": "A URL converter", "c": "A template filter", "d": "A middleware callable" },
+      "correctOptionIds": ["a"],
+      "explanation": "Models describe the fields and relations that Django manages through its ORM."
     },
     {
       "id": "django-02",
-      "question": "Which command generates migration files from changes in Django models?",
-      "options": { "a": "python manage.py makemigrations", "b": "python manage.py migrate", "c": "python manage.py collectstatic", "d": "python manage.py createsuperuser" },
-      "correctOptionIds": ["a"],
-      "explanation": "makemigrations creates migration files. migrate applies the pending migrations to a database."
+      "question": "After adding a field to a model, which management command generates a migration file?",
+      "options": { "a": "runserver", "b": "migrate", "c": "makemigrations", "d": "collectstatic" },
+      "correctOptionIds": ["c"],
+      "explanation": "makemigrations records model changes in a migration file."
     },
     {
       "id": "django-03",
-      "question": "Which path converter in path('orders/<int:order_id>/', view) controls the Python type passed to view for order_id?",
-      "options": { "a": "str", "b": "path", "c": "slug", "d": "int" },
-      "correctOptionIds": ["d"],
-      "explanation": "The int path converter matches decimal digits and passes the converted value as an integer."
+      "question": "Which command applies pending Django migrations to the configured database?",
+      "options": { "a": "python manage.py makemigrations", "b": "python manage.py migrate", "c": "python manage.py check", "d": "python manage.py shell" },
+      "correctOptionIds": ["b"],
+      "explanation": "migrate applies the migration operations to the database."
     },
     {
       "id": "django-04",
-      "question": "Which queryset call fetches a single Product by primary key and raises Product.DoesNotExist if none matches?",
-      "options": { "a": "Product.objects.filter(pk=42)", "b": "Product.objects.get(pk=42)", "c": "Product.objects.filter(pk=42).first()", "d": "Product.objects.filter(pk=42).exists()" },
-      "correctOptionIds": ["b"],
-      "explanation": "get returns exactly one matching object and raises the model's DoesNotExist exception for no matches."
+      "question": "Which URL converter captures a positive or zero numeric order ID and passes an integer to the view?",
+      "options": { "a": "<slug:order_id>", "b": "<str:order_id>", "c": "<path:order_id>", "d": "<int:order_id>" },
+      "correctOptionIds": ["d"],
+      "explanation": "The int converter matches non-negative integers and converts them to int."
     },
     {
       "id": "django-05",
-      "question": "Starting from an unevaluated, ordinary queryset qs, which operations normally evaluate it? Select all that apply.",
-      "options": { "a": "list(qs)", "b": "qs.filter(active=True)", "c": "len(qs)", "d": "qs.order_by('id')" },
-      "correctOptionIds": ["a", "c"],
-      "explanation": "Building a list or requesting length evaluates the queryset. filter and order_by build new querysets lazily."
+      "question": "Given an unevaluated ordinary queryset qs, which operations evaluate its results? Select all that apply.",
+      "options": { "a": "qs.filter(active=True)", "b": "list(qs)", "c": "qs.order_by('pk')", "d": "len(qs)" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "list and len consume the queryset results. filter and order_by build another queryset."
     },
     {
       "id": "django-06",
-      "question": "A loop lists books and accesses each book.author, a ForeignKey. Which queryset change can fetch each author using the same SQL query?",
-      "options": { "a": "Book.objects.defer('author')", "b": "Book.objects.order_by('author')", "c": "Book.objects.prefetch_related('author')", "d": "Book.objects.select_related('author')" },
-      "correctOptionIds": ["d"],
-      "explanation": "select_related joins the single-valued relation in the main SQL query. prefetch_related generally runs a separate query."
+      "question": "A page lists invoices and accesses each invoice.customer foreign key. Which method can fetch the customers in the same SQL query?",
+      "options": { "a": "select_related('customer')", "b": "prefetch_related('customer')", "c": "values('customer_id')", "d": "distinct('customer')" },
+      "correctOptionIds": ["a"],
+      "explanation": "select_related follows single-valued relations using SQL joins."
     },
     {
       "id": "django-07",
-      "question": "A list of books displays each book's many-to-many tags. Which method can load those tags in batches before the loop?",
-      "options": { "a": "select_related('tags')", "b": "prefetch_related('tags')", "c": "only('tags')", "d": "order_by('tags')" },
-      "correctOptionIds": ["b"],
-      "explanation": "prefetch_related loads related objects in additional queries and attaches them to the corresponding instances in Python."
+      "question": "A page lists articles and displays each article's many-to-many tags. Which method loads the tags in a separate batched query?",
+      "options": { "a": "select_related('tags')", "b": "only('tags')", "c": "prefetch_related('tags')", "d": "defer('tags')" },
+      "correctOptionIds": ["c"],
+      "explanation": "prefetch_related retrieves related rows separately and attaches them to the objects."
     },
     {
       "id": "django-08",
-      "question": "Which Django shortcut returns a model object and raises Http404 when no matching object exists?",
-      "options": { "a": "get_object_or_404", "b": "redirect", "c": "render", "d": "reverse" },
-      "correctOptionIds": ["a"],
-      "explanation": "get_object_or_404 performs a lookup and translates the missing-object case into an HTTP 404."
+      "question": "Which shortcut looks up a model instance and raises Http404 if it does not exist?",
+      "options": { "a": "render", "b": "get_object_or_404", "c": "redirect", "d": "reverse" },
+      "correctOptionIds": ["b"],
+      "explanation": "get_object_or_404 translates a missing model object into an HTTP 404 response."
     },
     {
       "id": "django-09",
-      "question": "A view creates an invoice and its line items in the same database. Which construct rolls back those writes if an exception leaves the block?",
-      "options": { "a": "with connection.cursor():", "b": "with override_settings(DEBUG=False):", "c": "with transaction.atomic():", "d": "with timezone.override('UTC'):" },
-      "correctOptionIds": ["c"],
-      "explanation": "transaction.atomic defines an atomic database block. An exception propagating out rolls back its changes."
+      "question": "Two related writes must roll back together if an exception escapes their block. Which context manager fits?",
+      "options": { "a": "timezone.override(...)", "b": "override_settings(...)", "c": "redirect(...)", "d": "transaction.atomic()" },
+      "correctOptionIds": ["d"],
+      "explanation": "An atomic block rolls back the database transaction or savepoint when it exits with an error."
     },
     {
       "id": "django-10",
-      "question": "A bound Django Form is validated and form.is_valid() returns True. Which statements apply? Select all that apply.",
-      "options": { "a": "The form automatically inserts a database row", "b": "Validated values are available through form.cleaned_data", "c": "request.POST is replaced with the cleaned values", "d": "A valid IntegerField value is normalized to a Python int" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "A validated form exposes cleaned Python values. Validation does not replace request.POST or persist a row."
+      "question": "A bound form is valid and has an IntegerField named quantity. Which statements apply? Select all that apply.",
+      "options": { "a": "form.cleaned_data contains the normalized quantity", "b": "form.data is rewritten as an integer dictionary", "c": "cleaned_data['quantity'] is an int when a quantity was supplied", "d": "Calling is_valid saves a model instance" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Validation exposes normalized values through cleaned_data. It does not save a model."
     },
     {
       "id": "django-11",
-      "question": "Which tag should appear inside a same-site Django template form using method='post' and Django's normal CSRF protection?",
-      "options": { "a": "{% csrf_token %}", "b": "{% static %}", "c": "{% autoescape off %}", "d": "{% load i18n %}" },
+      "question": "Which template tag places the standard CSRF token in a same-site POST form?",
+      "options": { "a": "{% csrf_token %}", "b": "{% load static %}", "c": "{% url 'csrf' %}", "d": "{% include csrf %}" },
       "correctOptionIds": ["a"],
-      "explanation": "The csrf_token tag renders a hidden token that Django can validate when the form is submitted."
+      "explanation": "The csrf_token tag renders the hidden token input used for form verification."
     },
     {
       "id": "django-12",
-      "question": "Which setting lists trusted host or domain names against which Django validates the HTTP Host header?",
-      "options": { "a": "INSTALLED_APPS", "b": "STATIC_URL", "c": "CSRF_COOKIE_NAME", "d": "ALLOWED_HOSTS" },
+      "question": "Which setting lists the hostnames the app accepts in HTTP Host validation?",
+      "options": { "a": "INSTALLED_APPS", "b": "STATIC_URL", "c": "ROOT_URLCONF", "d": "ALLOWED_HOSTS" },
       "correctOptionIds": ["d"],
-      "explanation": "ALLOWED_HOSTS defines acceptable hosts for Django's Host header validation."
+      "explanation": "Django checks the request host against ALLOWED_HOSTS."
     },
     {
       "id": "django-13",
-      "question": "Which ORM expression updates a stored counter relative to its database value in a single UPDATE statement?",
-      "options": { "a": "Read the row, add 1 in Python, then call save()", "b": "Item.objects.filter(pk=1).update(count=F('count') + 1)", "c": "Item.objects.filter(pk=1).order_by('count')", "d": "Item.objects.filter(pk=1).count()" },
+      "question": "Which update increments a stored counter directly in the database?",
+      "options": { "a": "Counter.objects.filter(pk=1).update(count=1)", "b": "Counter.objects.filter(pk=1).update(count=F('count') + 1)", "c": "Counter.objects.filter(pk=1).count() + 1", "d": "Counter.objects.filter(pk=1).order_by('count')" },
       "correctOptionIds": ["b"],
-      "explanation": "An F expression refers to the column value and lets the database perform the increment."
+      "explanation": "An F expression refers to the current database value in the update."
     },
     {
       "id": "django-14",
-      "question": "A developer changes a path but keeps its URL pattern name. Which function can build the updated path from the name?",
-      "options": { "a": "resolve", "b": "get_object_or_404", "c": "reverse", "d": "render" },
+      "question": "Which function resolves a named URL pattern into a URL path?",
+      "options": { "a": "path", "b": "include", "c": "reverse", "d": "get_object_or_404" },
       "correctOptionIds": ["c"],
-      "explanation": "reverse uses the configured URL patterns to construct a path from a route name and optional arguments."
+      "explanation": "reverse looks up a pattern by name and fills its URL arguments."
     },
     {
       "id": "django-15",
-      "question": "Which are appropriate uses for Django middleware? Select all that apply.",
-      "options": { "a": "Add a request ID to incoming requests", "b": "Declare a model field for invoices", "c": "Add a common header to outgoing responses", "d": "Generate a model migration file" },
+      "question": "Which are common jobs for Django middleware? Select all that apply.",
+      "options": { "a": "Attach a request ID before the view runs", "b": "Declare database fields", "c": "Add a common response header", "d": "Define a model migration" },
       "correctOptionIds": ["a", "c"],
-      "explanation": "Middleware can wrap request and response handling, making it suitable for cross-cutting HTTP behavior."
+      "explanation": "Middleware runs around views and can process requests and responses."
     },
     {
       "id": "django-16",
-      "question": "An order list needs an item count on each returned Order object. Which queryset operation adds that per-order value?",
-      "options": { "a": "Order.objects.aggregate(item_count=Count('items'))", "b": "Order.objects.annotate(item_count=Count('items'))", "c": "Order.objects.order_by('items')", "d": "Order.objects.count()" },
+      "question": "Which queryset method attaches a computed item count to each Order result?",
+      "options": { "a": "exists()", "b": "annotate(item_count=Count('items'))", "c": "aggregate(item_count=Count('items'))", "d": "count()" },
       "correctOptionIds": ["b"],
-      "explanation": "annotate adds a value to each result. aggregate returns a summary over the queryset as a whole."
+      "explanation": "annotate gives each result its own value. aggregate returns a summary for the queryset."
     },
     {
       "id": "django-17",
-      "question": "What does a ForeignKey with on_delete=models.CASCADE normally do when Django deletes the referenced object?",
-      "options": { "a": "It sets the referencing field to an empty string", "b": "It preserves all referencing objects with their original foreign keys", "c": "It always raises ProtectedError", "d": "It deletes the referencing objects as part of the cascade" },
-      "correctOptionIds": ["d"],
-      "explanation": "Django follows CASCADE relationships during deletion and includes the dependent objects in the operation."
+      "question": "A Customer deletion must remove Invoice rows that reference it through Django's deletion process. Which on_delete value expresses this?",
+      "options": { "a": "models.CASCADE", "b": "models.PROTECT", "c": "models.SET_NULL", "d": "models.DO_NOTHING" },
+      "correctOptionIds": ["a"],
+      "explanation": "CASCADE deletes related objects when the referenced object is deleted through Django."
     },
     {
       "id": "django-18",
-      "question": "Which built-in test helper can issue an in-process request to a Django view using its URL path?",
-      "options": { "a": "django.test.Client", "b": "django.db.models.Manager", "c": "django.urls.reverse", "d": "django.core.signing.Signer" },
-      "correctOptionIds": ["a"],
-      "explanation": "Django's test client exercises URL routing and request processing without starting an external web server."
+      "question": "Which Django helper can send an in-process HTTP-style request through the URL configuration in a test?",
+      "options": { "a": "django.urls.reverse", "b": "django.test.RequestFactory alone", "c": "django.db.connection", "d": "django.test.Client" },
+      "correctOptionIds": ["d"],
+      "explanation": "Client simulates requests through Django's request handling and URL resolution."
     },
     {
       "id": "django-19",
-      "question": "A ModelForm must build an instance so the view can set its owner before the first database write. Which call returns the instance without saving it?",
-      "options": { "a": "form.is_valid()", "b": "form.save()", "c": "form.save(commit=False)", "d": "form.full_clean()" },
+      "question": "A ModelForm is valid. The view needs to set an owner before its first database save. What should it call?",
+      "options": { "a": "form.save() before setting the owner", "b": "form.full_clean()", "c": "form.save(commit=False)", "d": "form.has_changed()" },
       "correctOptionIds": ["c"],
-      "explanation": "On a valid ModelForm, save(commit=False) returns the instance without saving it."
+      "explanation": "commit=False builds an unsaved model instance for the view to modify."
     },
     {
       "id": "django-20",
-      "question": "Which queryset methods can answer the stated question without fetching every full model instance into Python? Select all that apply.",
-      "options": { "a": "len(qs) for counting an unevaluated queryset without loading instances", "b": "qs.exists() to check whether there is a match", "c": "list(qs) to check for a match without loading results", "d": "qs.count() to count matching rows" },
-      "correctOptionIds": ["b", "d"],
-      "explanation": "exists and count can issue focused database queries. len and list evaluate an unevaluated model queryset into results."
+      "question": "Given a fresh queryset with no result cache, which methods answer their stated question without fetching all model objects? Select all that apply.",
+      "options": { "a": "qs.exists() for whether any row matches", "b": "list(qs) for whether any row matches", "c": "qs.count() for the number of matching rows", "d": "len(qs) for the number of matching rows" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "exists and count use targeted queries for an unevaluated queryset."
     }
   ]
 }
