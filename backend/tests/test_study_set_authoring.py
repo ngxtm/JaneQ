@@ -51,6 +51,7 @@ class StudySetAuthoringTests(TestCase):
             self.assertIn(draft, reopened.get(self.catalog).json())
             saved = reopened.get(f"{path}/editor").json()
             self.assertEqual(saved["revision"], 1)
+            self.assertIsNotNone(saved.pop("saved_at"))
             self.assertEqual(saved["questions"][0]["prompt"], "Which methods are safe?")
             self.assertEqual(saved["questions"][0]["options"][-1]["text"], "")
 
@@ -71,6 +72,7 @@ class StudySetAuthoringTests(TestCase):
         self.assertEqual(self.client.post(f"{path}/test", json=submission).json()["score"], 1)
 
         latest = self.client.get(f"{path}/editor").json()
+        latest.pop("saved_at")
         self.assertEqual(self.client.put(f"{path}/editor", json=latest).status_code, 200)
         self.assertEqual(self.client.get(f"{path}/test").json(), paper)
         latest["questions"][0]["options"][1]["is_correct"] = False
@@ -89,10 +91,12 @@ class StudySetAuthoringTests(TestCase):
             for mode in ("editor", "preview", "learn", "test"):
                 self.assertEqual(other.get(f"{path}/{mode}").status_code, 404, mode)
             self.assertEqual(other.put(f"{path}/editor", json=valid_update).status_code, 404)
+            self.assertEqual(other.delete(path, params={"revision": 1}).status_code, 404)
         for method in ("get", "put"):
             response = self.client.request(method, f"{self.catalog}/html-css/editor", json=valid_update)
             self.assertEqual(response.status_code, 404)
         self.assertEqual(self.client.get(f"{self.catalog}/html-css/test").status_code, 200)
+        self.assertEqual(self.client.delete(f"{self.catalog}/html-css", params={"revision": 1}).status_code, 404)
         self.assertEqual(self.client.get(f"{path}/editor").json()["title"], draft["title"])
 
     def test_validation_and_signed_session_contract(self) -> None:
@@ -115,6 +119,7 @@ class StudySetAuthoringTests(TestCase):
         self.assertEqual(self.client.post(self.catalog, json={"title": "Unsigned", "questions": []}).status_code, 401)
         self.assertEqual(self.client.get(path).status_code, 401)
         self.assertEqual(self.client.put(path, json=payload).status_code, 401)
+        self.assertEqual(self.client.delete(path.removesuffix("/editor"), params={"revision": 1}).status_code, 401)
 
     def test_create_retry_reuses_the_same_set(self) -> None:
         headers = {"Idempotency-Key": str(uuid4())}
@@ -127,3 +132,29 @@ class StudySetAuthoringTests(TestCase):
         self.assertEqual(changed.status_code, 409)
         custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
         self.assertEqual(custom, [first.json()])
+
+    def test_revision_checked_delete_cascades_to_questions_and_learn_progress(self) -> None:
+        draft = self.create_set(questions=[{
+            "prompt": "What resolves a hostname?",
+            "options": [{"text": "DNS", "is_correct": True}, {"text": "TLS", "is_correct": False}],
+        }])
+        path = f"{self.catalog}/{draft['id']}"
+        editor = self.client.get(f"{path}/editor").json()
+        self.assertIsNotNone(editor.pop("saved_at"))
+        self.assertEqual(self.client.put(f"{path}/editor", json={**editor, "description": "Updated"}).status_code, 200)
+        self.assertEqual(self.client.delete(path, params={"revision": 1}).status_code, 409)
+
+        learn = self.client.get(f"{path}/learn").json()
+        answer = learn["question"]["options"][0]["id"]
+        response = self.client.post(f"{path}/learn", json={
+            "action": "check", "revision": learn["revision"], "version": learn["version"], "selected_ids": [answer],
+        })
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(self.client.delete(path, params={"revision": 2}).status_code, 204)
+        self.assertEqual(self.client.delete(path, params={"revision": 2}).status_code, 404)
+        self.assertNotIn(draft["id"], [item["id"] for item in self.client.get(self.catalog).json()])
+        self.assertEqual(self.client.get(f"{path}/editor").status_code, 404)
+        with closing(connect(self.database)) as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM questions WHERE study_set_id = ?", (draft["id"],)).fetchone()[0], 0)
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM learn_progress WHERE study_set_id = ?", (draft["id"],)).fetchone()[0], 0)
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])

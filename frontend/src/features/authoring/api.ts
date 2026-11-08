@@ -4,7 +4,7 @@ import { isStudySet } from '../study-sets/api'
 export type OptionContent = { text: string; is_correct: boolean }
 export type QuestionContent = { prompt: string; options: OptionContent[] }
 export type SetContent = { title: string; description: string; questions: QuestionContent[] }
-export type SetRevision = SetContent & { revision: number }
+export type SetRevision = SetContent & { revision: number; saved_at: string | null }
 
 function isOption(value: unknown): value is OptionContent {
   return typeof value === 'object' && value !== null
@@ -22,6 +22,7 @@ function isSetRevision(value: unknown): value is SetRevision {
   if (typeof value !== 'object' || value === null) return false
   const set = value as Partial<SetRevision>
   return typeof set.title === 'string' && typeof set.description === 'string'
+    && (set.saved_at === null || (typeof set.saved_at === 'string' && Number.isFinite(Date.parse(set.saved_at))))
     && typeof set.revision === 'number' && Number.isInteger(set.revision) && set.revision > 0
     && Array.isArray(set.questions) && set.questions.every(isQuestion)
 }
@@ -42,4 +43,8 @@ export async function saveEditor(content: SetContent, destination: { id: string;
     : await http.post<unknown>('/study-sets', content, { headers: { 'Idempotency-Key': destination.creationKey } })
   if (!isStudySet(data) || data.source_kind !== 'custom') throw new Error('Unexpected saved study set.')
   return data
+}
+
+export async function deleteEditorSet(id: string, revision: number) {
+  await http.delete(`/study-sets/${encodeURIComponent(id)}`, { params: { revision } })
 }

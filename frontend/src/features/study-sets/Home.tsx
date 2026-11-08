@@ -182,6 +182,16 @@ export default function Home({ route, username, signingOut, signOutError, onSign
     navigateLibrary(studySetHref(set.id))
   }
 
+  function handleDeleted(id: string) {
+    catalogRequest.current?.abort()
+    previewLoader.clear()
+    setState((current) => current.kind === 'loaded'
+      ? { kind: 'loaded', sets: current.sets.filter((set) => set.id !== id) }
+      : current)
+    setAttempt((current) => current + 1)
+    navigateLibrary(mySetsHref)
+  }
+
   if (viewingSet && !editorId && state.kind === 'loaded' && !selectedSet) {
     return <Suspense fallback={null}><NotFoundPage studySet /></Suspense>
   }
@@ -189,7 +199,7 @@ export default function Home({ route, username, signingOut, signOutError, onSign
   function renderLibrary() {
     if (route.kind === 'create' || editorId) return (
       <Suspense fallback={<VisuallyHidden role="status">Opening editor…</VisuallyHidden>}>
-        <SetEditor key={editorId ?? 'new'} id={editorId} onSaved={handleSaved} onSessionExpired={onSessionExpired} />
+        <SetEditor key={editorId ?? 'new'} id={editorId} onSaved={handleSaved} onDeleted={handleDeleted} onSessionExpired={onSessionExpired} />
       </Suspense>
     )
     if (route.kind === 'my-sets') return (

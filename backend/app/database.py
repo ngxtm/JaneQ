@@ -4,7 +4,7 @@ from contextlib import closing
 from pathlib import Path
 from uuid import UUID, uuid4, uuid5
 
-from .study_set_content import OptionContent, QuestionContent, StudySetContent, StudySetRevision
+from .study_set_content import OptionContent, QuestionContent, StudySetContent, StudySetEditor, StudySetRevision
 
 BUILTIN_SETS_DIR = Path(__file__).with_name("builtin_sets")
 SEED_NAME = "builtin_catalog"
@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS study_sets (
     legacy_id TEXT,
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
+    saved_at TEXT,
     source_kind TEXT NOT NULL CHECK (source_kind IN ('builtin', 'custom')),
     owner_username TEXT,
     revision INTEGER NOT NULL DEFAULT 1
@@ -73,6 +74,8 @@ def upgrade_study_sets(connection: sqlite3.Connection) -> None:
     columns = {row["name"] for row in connection.execute("PRAGMA table_info(study_sets)")}
     if "owner_username" not in columns:
         connection.execute("ALTER TABLE study_sets ADD COLUMN owner_username TEXT")
+    if "saved_at" not in columns:
+        connection.execute("ALTER TABLE study_sets ADD COLUMN saved_at TEXT")
     if "legacy_id" not in columns:
         connection.execute("ALTER TABLE study_sets ADD COLUMN legacy_id TEXT")
         # The parent and both referencing tables must change in the same transaction.
@@ -172,7 +175,7 @@ def read_study_set_summaries(
 def read_study_set(connection: sqlite3.Connection, set_id: str, username: str) -> sqlite3.Row | None:
     return connection.execute(
         f"""
-        SELECT id, title, description, source_kind, revision FROM study_sets
+        SELECT id, title, description, saved_at, source_kind, revision FROM study_sets
         WHERE (id = :id OR legacy_id = :id) AND {VISIBLE_STUDY_SETS}
         ORDER BY id = :id DESC LIMIT 1
         """,
@@ -180,7 +183,7 @@ def read_study_set(connection: sqlite3.Connection, set_id: str, username: str) -
     ).fetchone()
 
 
-def read_study_set_editor(connection: sqlite3.Connection, study_set: sqlite3.Row) -> StudySetRevision:
+def read_study_set_editor(connection: sqlite3.Connection, study_set: sqlite3.Row) -> StudySetEditor:
     rows = connection.execute(
         """
         SELECT q.id, q.prompt, o.id AS option_id, o.text, o.is_correct
@@ -197,8 +200,9 @@ def read_study_set_editor(connection: sqlite3.Connection, study_set: sqlite3.Row
             questions[row["id"]] = QuestionContent(prompt=row["prompt"], options=[])
         if row["option_id"] is not None:
             questions[row["id"]].options.append(OptionContent(text=row["text"], is_correct=bool(row["is_correct"])))
-    return StudySetRevision(
+    return StudySetEditor(
         title=study_set["title"], description=study_set["description"],
+        saved_at=study_set["saved_at"],
         revision=study_set["revision"], questions=list(questions.values()),
     )
 
@@ -213,9 +217,12 @@ def create_study_set(
         existing = read_study_set(connection, set_id, username)
         if existing is not None:
             saved = read_study_set_editor(connection, existing)
-            return set_id if saved.model_dump(exclude={"revision"}) == content.model_dump() else None
+            return set_id if saved.model_dump(exclude={"revision", "saved_at"}) == content.model_dump() else None
     connection.execute(
-        "INSERT INTO study_sets (id, title, description, source_kind, owner_username) VALUES (?, ?, ?, 'custom', ?)",
+        """
+        INSERT INTO study_sets (id, title, description, source_kind, owner_username, saved_at)
+        VALUES (?, ?, ?, 'custom', ?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+        """,
         (set_id, content.title, content.description, username),
     )
     write_study_questions(connection, set_id, content.questions)
@@ -223,18 +230,26 @@ def create_study_set(
 
 
 def update_study_set(
-    connection: sqlite3.Connection, set_id: str, current: StudySetRevision, updated: StudySetRevision,
+    connection: sqlite3.Connection, set_id: str, current: StudySetEditor, updated: StudySetRevision,
 ) -> None:
-    if current == updated:
+    if current.model_dump(exclude={"saved_at"}) == updated.model_dump():
         return
     connection.execute(
-        "UPDATE study_sets SET title = ?, description = ?, revision = revision + 1 WHERE id = ?",
+        """
+        UPDATE study_sets SET title = ?, description = ?, revision = revision + 1,
+            saved_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+        WHERE id = ?
+        """,
         (updated.title, updated.description, set_id),
     )
     if current.questions != updated.questions:
         # Replacing the question tree is atomic and the new revision invalidates older papers.
         connection.execute("DELETE FROM questions WHERE study_set_id = ?", (set_id,))
         write_study_questions(connection, set_id, updated.questions)
+
+
+def delete_study_set(connection: sqlite3.Connection, set_id: str) -> None:
+    connection.execute("DELETE FROM study_sets WHERE id = ?", (set_id,))
 
 
 def write_study_questions(connection: sqlite3.Connection, set_id: str, questions: list[QuestionContent]) -> None:

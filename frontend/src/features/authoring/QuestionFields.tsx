@@ -1,5 +1,5 @@
-import { Button, Checkbox, Field, Flex, Grid, Heading, IconButton, Input, Stack, Text, Textarea, VisuallyHidden } from '@chakra-ui/react'
-import { IconListDetails, IconTrash } from '@tabler/icons-react'
+import { Button, Checkbox, Field, Flex, Grid, Heading, HStack, IconButton, Input, Menu, Portal, Stack, Text, Textarea, VisuallyHidden } from '@chakra-ui/react'
+import { IconArrowDown, IconArrowUp, IconGripHorizontal, IconListDetails, IconTrash } from '@tabler/icons-react'
 import type { OptionContent } from './api'
 
 export type OptionField = OptionContent & { key: string }
@@ -8,13 +8,17 @@ export type QuestionField = { key: string; prompt: string; options: OptionField[
 type QuestionFieldsProps = {
   question: QuestionField
   number: number
+  count: number
   focusKey: string | undefined
   onChange: (question: QuestionField) => void
   onAddOption: () => void
   onRemove: () => void
+  onMove: (key: string, destination: number) => void
 }
 
-export function QuestionFields({ question, number, focusKey, onChange, onAddOption, onRemove }: QuestionFieldsProps) {
+const questionDragType = 'application/x-janeq-question'
+
+export function QuestionFields({ question, number, count, focusKey, onChange, onAddOption, onRemove, onMove }: QuestionFieldsProps) {
   const headingId = `question-${question.key}`
 
   function updateOption(key: string, update: Partial<OptionContent>) {
@@ -22,12 +26,37 @@ export function QuestionFields({ question, number, focusKey, onChange, onAddOpti
   }
 
   return (
-    <Stack as="section" aria-labelledby={headingId} bg="white" rounded="xl" border="1px solid" borderColor="janeq.divider" shadow="sm" gap="0">
-      <Flex align="center" justify="space-between" gap="4" px="5" py="2" borderBottom="1px solid" borderColor="janeq.divider">
-        <Heading as="h3" id={headingId} size="md">Question {number}</Heading>
-        <IconButton type="button" variant="ghost" size="sm" aria-label={`Remove question ${number}`} onClick={onRemove}>
-          <IconTrash size={18} />
-        </IconButton>
+    <Stack as="section" aria-labelledby={headingId} bg="white" rounded="xl" border="2px solid" borderColor="janeq.canvas" shadow="sm" gap="0"
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes(questionDragType)) event.preventDefault()
+      }} onDrop={(event) => {
+        const key = event.dataTransfer.getData(questionDragType)
+        if (!key) return
+        event.preventDefault()
+        onMove(key, number - 1)
+      }}>
+      <Flex align="center" justify="space-between" gap="4" px="5" py="2" borderBottom="2px solid" borderColor="janeq.canvas">
+        <Heading as="h3" id={headingId} size="md"><VisuallyHidden>Question </VisuallyHidden>{number}</Heading>
+        <HStack gap="1">
+          <Menu.Root positioning={{ placement: 'bottom-end' }}>
+            <Menu.Trigger asChild>
+              <IconButton type="button" variant="ghost" size="sm" color="janeq.blue" aria-label={`Reorder question ${number}`}
+                disabled={count < 2} draggable={count > 1} onDragStart={(event) => {
+                  event.dataTransfer.setData(questionDragType, question.key)
+                  event.dataTransfer.effectAllowed = 'move'
+                }}>
+                <IconGripHorizontal size={18} />
+              </IconButton>
+            </Menu.Trigger>
+            <Portal><Menu.Positioner><Menu.Content fontFamily="body">
+              <Menu.Item value="up" disabled={number === 1} onSelect={() => onMove(question.key, number - 2)}><IconArrowUp size={16} /> Move up</Menu.Item>
+              <Menu.Item value="down" disabled={number === count} onSelect={() => onMove(question.key, number)}><IconArrowDown size={16} /> Move down</Menu.Item>
+            </Menu.Content></Menu.Positioner></Portal>
+          </Menu.Root>
+          <IconButton type="button" variant="ghost" size="sm" color="janeq.muted" aria-label={`Remove question ${number}`} onClick={onRemove}>
+            <IconTrash size={18} />
+          </IconButton>
+        </HStack>
       </Flex>
       <Grid templateColumns={{ base: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }} gap="6" p="5">
         <Field.Root>
@@ -35,7 +64,7 @@ export function QuestionFields({ question, number, focusKey, onChange, onAddOpti
             variant="flushed" borderColor="janeq.line"
             onChange={(event) => onChange({ ...question, prompt: event.target.value })}
             rows={2} placeholder="Enter a question" />
-          <Field.Label color="janeq.muted" fontSize="sm">Question {number} prompt</Field.Label>
+          <Field.Label color="janeq.muted" fontSize="sm">Question<VisuallyHidden>{` ${number} prompt`}</VisuallyHidden></Field.Label>
         </Field.Root>
         <Stack gap="3">
           <Text fontSize="sm" fontWeight="medium">Answer options</Text>

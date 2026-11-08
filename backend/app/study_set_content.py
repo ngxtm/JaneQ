@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
@@ -35,3 +36,7 @@ class StudySetContent(BaseModel):
 
 class StudySetRevision(StudySetContent):
     revision: int = Field(strict=True, ge=1, examples=[1])
+
+
+class StudySetEditor(StudySetRevision):
+    saved_at: datetime | None

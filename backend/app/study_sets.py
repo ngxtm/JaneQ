@@ -3,14 +3,15 @@ from sqlite3 import Connection, Row
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import (
-    connect, create_study_set, read_study_set, read_study_set_editor, read_study_set_summaries, update_study_set,
+    connect, create_study_set, delete_study_set, read_study_set, read_study_set_editor, read_study_set_summaries,
+    update_study_set,
 )
-from .study_set_content import StudySetContent, StudySetRevision
+from .study_set_content import StudySetContent, StudySetEditor, StudySetRevision
 
 router = APIRouter(
     prefix="/api/study-sets",
@@ -66,7 +67,7 @@ def post_study_set(
 
 
 @router.get("/{set_id}/editor", responses=EDITOR_NOT_FOUND)
-def get_study_set_editor(set_id: str, request: Request, response: Response, user: SessionUser) -> StudySetRevision:
+def get_study_set_editor(set_id: str, request: Request, response: Response, user: SessionUser) -> StudySetEditor:
     """Read the current revision and complete form, including the answer key."""
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
@@ -93,3 +94,20 @@ def put_study_set_editor(
         current = read_study_set_editor(connection, study_set)
         update_study_set(connection, study_set["id"], current, content)
         return StudySetSummary(**read_study_set_summaries(connection, user.username, study_set["id"])[0])
+
+
+@router.delete("/{set_id}", status_code=204, responses={
+    **EDITOR_NOT_FOUND,
+    409: {"model": AuthError, "description": "The study set changed after the supplied revision was loaded."},
+})
+def remove_study_set(
+    set_id: str, revision: Annotated[int, Query(ge=1)], request: Request, user: SessionUser,
+) -> Response:
+    """Delete a private custom set and its saved Learn progress."""
+    with closing(connect(request.app.state.database_path)) as connection, connection:
+        connection.execute("BEGIN IMMEDIATE")
+        study_set = owned_custom_set(connection, set_id, user.username)
+        if study_set["revision"] != revision:
+            raise HTTPException(409, "This set changed since you opened it. Open the latest version before deleting.")
+        delete_study_set(connection, study_set["id"])
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})

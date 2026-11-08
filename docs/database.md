@@ -16,13 +16,13 @@ seed_history tracks completed seed runs independently.
 
 | Table | Columns | Constraints and purpose |
 | --- | --- | --- |
-| `study_sets` | `id TEXT`, `legacy_id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `owner_username TEXT`, `revision INTEGER` | `id` is the canonical UUID primary key. `legacy_id` is nullable and unique when present. `title` is required and may repeat. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. `owner_username` is nullable and set from the signed session when creating a custom set. |
+| `study_sets` | `id TEXT`, `legacy_id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `owner_username TEXT`, `revision INTEGER`, `saved_at TEXT` | `id` is the canonical UUID primary key. `legacy_id` is nullable and unique when present. `title` is required and may repeat. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. `owner_username` is nullable and set from the signed session when creating a custom set. `saved_at` holds the UTC time of the most recent effective save and defaults to `NULL`. |
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
 | `seed_history` | `name TEXT` | `name` is the primary key. `builtin_catalog` marks completion of the MVP seed. |
 | `learn_progress` | `username TEXT`, `study_set_id TEXT`, `revision INTEGER`, `state_json TEXT` | All columns are required. The composite primary key is `(username, study_set_id)`. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. |
 
-Deleting a study set cascades to its questions and their answer options when foreign keys are enabled. The schema allows several options for a question to be marked correct.
+Deleting a study set cascades to its questions, answer options, and saved Learn progress when foreign keys are enabled. The schema allows several options for a question to be marked correct.
 
 ## Built-in data and startup
 
@@ -37,6 +37,8 @@ A fresh database assigns stable UUIDv5 IDs to the built-in sets using a fixed na
 On startup, a database with the previous `builtin_catalog` schema adds `legacy_id` and updates the set IDs and their references in `questions` and `learn_progress` in one SQLite write transaction. The original keys become aliases. Question and option IDs, revision numbers, and saved Learn state keep their values. Restarting again keeps the same UUIDs. A database from an earlier catalog with a different seed marker still requires its own database path.
 
 The same startup transaction adds `owner_username` when upgrading a database created before authoring. Existing built-in sets keep a null owner. Any custom rows previously inserted outside the app without an owner stay in the database and are inaccessible through the app until assigned an owner. The catalog and the preview, Learn, and Test readers scope custom sets to the session username. The editor requires an owned custom set. Keep `JANEQ_DEMO_USERNAME` stable when reopening a database with private sets.
+
+Startup also adds `saved_at` to older databases. Existing rows keep their content and revision. The editor shows the saved question count for a set with a null timestamp.
 
 The catalog returns `id` as a UUID and `legacy_id` as a nullable string. The preview, Learn, and Test routes accept either key. Learn reads and writes progress under the UUID. The frontend uses the UUID in new links and requests. [OpenAPI](http://127.0.0.1:8000/docs) · [Study set navigation](features/learn.md#study-set-urls-and-preview-loading)
 
@@ -56,9 +58,11 @@ These fields are calculated when Home requests the list. Learn, preview, and Tes
 
 ## Custom study set writes
 
-Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision and IDs. Editor input trims outer whitespace and preserves blank unmarked options for later editing. The study modes omit blank options.
+Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once and updates `saved_at`. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision, IDs, and timestamp. Editor input trims outer whitespace and preserves blank unmarked options for later editing. The study modes omit blank options.
 
-Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `backend/`. The authoring checks create a Draft in a disposable file, reopen it, save it as Ready, and verify grading and an empty `PRAGMA foreign_key_check` result. They also verify a retry with the same creation key and ownership isolation across two configured demo usernames. The legacy upgrade test reopens a database with saved Learn feedback and verifies that the feedback persists. **Pass · API and SQLite**. [Authoring acceptance checks](features/study-set-authoring.md#acceptance-checks)
+Delete locks the database before checking the signed-in owner, custom source, and submitted revision. It removes the set in one transaction. SQLite foreign keys remove its questions, options, and Learn progress.
+
+Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `backend/`. The authoring checks create a Draft in a disposable file, reopen it, save it as Ready, and verify grading. They check that a stale revision cannot delete a set, a current revision removes the set and its saved Learn progress, and `PRAGMA foreign_key_check` is empty. The legacy upgrade test reopens a database with saved Learn feedback and verifies that the feedback persists. **Pass · API and SQLite**. [Authoring acceptance checks](features/study-set-authoring.md#acceptance-checks)
 
 ## Learn progress
 

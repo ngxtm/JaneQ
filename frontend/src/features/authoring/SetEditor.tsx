@@ -1,24 +1,30 @@
-import { Box, Button, chakra, Field, Flex, Heading, HStack, Input, Link, Stack, Text, Textarea, VisuallyHidden } from '@chakra-ui/react'
-import { IconArrowLeft, IconNotebook, IconPencil, IconPlus } from '@tabler/icons-react'
+import { Box, Button, chakra, Heading, HStack, Link, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { IconNotebook, IconPlus } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
-import { useEffect, useRef, useState, type PropsWithChildren, type ReactNode, type SubmitEvent } from 'react'
+import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { httpErrorMessage, httpStatus, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { mySetsHref, studySetHref } from '../navigation/app-location'
 import type { StudySet } from '../study-sets/api'
-import { getEditor, saveEditor, type SetContent, type SetRevision } from './api'
+import { deleteEditorSet, getEditor, saveEditor, type SetRevision } from './api'
+import { DeleteSetDialog } from './DeleteSetDialog'
 import { DiscardChangesDialog } from './DiscardChangesDialog'
+import { EditorDetails, type EditorMetadata } from './EditorDetails'
+import { EditorToolbar } from './EditorToolbar'
+import { EditorTopBar } from './EditorTopBar'
 import { QuestionFields, type QuestionField } from './QuestionFields'
 import './bones/registry'
 
 type EditorProps = {
   id?: string
   onSaved: (set: StudySet) => void
+  onDeleted: (id: string) => void
   onSessionExpired: () => void
 }
 
-type EditorFormState = Omit<SetContent, 'questions'> & { questions: QuestionField[] }
+type EditorFormState = EditorMetadata & { questions: QuestionField[] }
 type EditorLoad = { kind: 'loading'; showSkeleton: boolean } | { kind: 'error'; missing: boolean } | { kind: 'loaded'; data: SetRevision }
+type EditorIssue = { message: string; status?: number }
 
 function initialForm(content?: SetRevision): EditorFormState {
   return {
@@ -39,42 +45,34 @@ function isReady(questions: QuestionField[]) {
   })
 }
 
-function EditorTopBar({ editing, action, children }: PropsWithChildren<{ editing: boolean; action?: ReactNode }>) {
-  const heading = useRef<HTMLHeadingElement>(null)
-  useEffect(() => {
-    if (document.activeElement === document.body) heading.current?.focus({ preventScroll: true })
-  }, [])
-
-  return (
-    <Stack position="sticky" top="2" zIndex="sticky" bg="white" p={{ base: '3', md: '4' }} rounded="xl"
-      border="1px solid" borderColor="janeq.divider" shadow="lg" gap="3">
-      <Flex align="center" justify="space-between" gap="3">
-        <HStack gap="3" minW="0">
-          <Box aria-hidden="true" color="blue.700" display={{ base: 'none', sm: 'block' }}><IconPencil size={22} /></Box>
-          <Stack gap="0">
-            <Heading as="h1" ref={heading} tabIndex={-1} size="lg" _focus={{ outline: 'none' }}>
-              {editing ? 'Edit set' : 'Create set'}
-            </Heading>
-            <Text fontSize="sm" color="janeq.muted">Private study set</Text>
-          </Stack>
-        </HStack>
-        {action}
-      </Flex>
-      {children}
-    </Stack>
-  )
+function questionCountLabel(count: number) {
+  return `${count} ${count === 1 ? 'question' : 'questions'}`
 }
 
-function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> & { data?: SetRevision }) {
+function savedStatus(data: SetRevision) {
+  const count = `${questionCountLabel(data.questions.length)} saved`
+  if (!data.saved_at) return count
+  const minutes = Math.max(0, Math.floor((Date.now() - Date.parse(data.saved_at)) / 60_000))
+  if (!minutes) return `${count} just now`
+  const relative = new Intl.RelativeTimeFormat('en')
+  if (minutes < 60) return `${count} ${relative.format(-minutes, 'minute')}`
+  if (minutes < 1440) return `${count} ${relative.format(-Math.floor(minutes / 60), 'hour')}`
+  return `${count} ${relative.format(-Math.floor(minutes / 1440), 'day')}`
+}
+
+function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | 'onSaved' | 'onDeleted'> & { data?: SetRevision }) {
   const [form, setForm] = useState(() => initialForm(data))
   const [dirty, setDirty] = useState(false)
-  const [saving, setSaving] = useState(false)
+  const [operation, setOperation] = useState<'save' | 'delete' | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [focusKey, setFocusKey] = useState<string>()
-  const [issue, setIssue] = useState<{ message: string; status?: number }>({ message: '' })
+  const [issue, setIssue] = useState<EditorIssue>({ message: '' })
+  const [deleteIssue, setDeleteIssue] = useState<EditorIssue>({ message: '' })
   const title = useRef<HTMLInputElement>(null)
   const nextKey = useRef(0)
-  const savingRequest = useRef(false)
+  const mutationPending = useRef(false)
   const [creationKey] = useState(() => id ? undefined : crypto.randomUUID?.())
+  const busy = operation !== null
 
   function newOption() {
     return { key: `new-${nextKey.current++}`, text: '', is_correct: false }
@@ -101,9 +99,18 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
     setFocusKey(option.key)
   }
 
+  function moveQuestion(key: string, destination: number) {
+    const source = form.questions.findIndex((question) => question.key === key)
+    if (source < 0 || source === destination || destination < 0 || destination >= form.questions.length) return
+    const questions = form.questions.slice()
+    const [question] = questions.splice(source, 1)
+    questions.splice(destination, 0, question)
+    updateForm({ questions })
+  }
+
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (savingRequest.current) return
+    if (mutationPending.current) return
     if (!form.title.trim()) {
       setIssue({ message: 'Enter a title for your study set.' })
       title.current?.focus()
@@ -117,8 +124,8 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
         prompt, options: options.map(({ text, is_correct }) => ({ text, is_correct })),
       })),
     }
-    savingRequest.current = true
-    setSaving(true)
+    mutationPending.current = true
+    setOperation('save')
     setIssue({ message: '' })
     try {
       onSaved(await saveEditor(content, id && data ? { id, revision: data.revision } : { creationKey }))
@@ -129,18 +136,49 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
         : httpErrorMessage(error, 'Could not save your study set. Try again.')
       setIssue({ message, status })
     } finally {
-      savingRequest.current = false
-      setSaving(false)
+      mutationPending.current = false
+      setOperation(null)
+    }
+  }
+
+  async function removeSet() {
+    if (!id || !data || mutationPending.current) return
+    mutationPending.current = true
+    setOperation('delete')
+    setDeleteIssue({ message: '' })
+    try {
+      await deleteEditorSet(id, data.revision)
+      onDeleted(id)
+    } catch (error) {
+      const status = httpStatus(error)
+      if (status === 404) {
+        onDeleted(id)
+      } else {
+        const message = status === 401
+          ? 'Your session expired. Sign in again, then retry deleting here.'
+          : httpErrorMessage(error, 'Could not delete this set. Try again.')
+        setDeleteIssue({ message, status })
+      }
+    } finally {
+      mutationPending.current = false
+      setOperation(null)
     }
   }
 
   return (
     <>
-      <Stack asChild gap="6" css={{ '& :is(input, textarea, button)': { scrollMarginTop: '24' } }}>
-        <form onSubmit={submit} aria-busy={saving || undefined}>
-          <EditorTopBar editing={!!id} action={
-            <PrimaryButton type="submit" fontFamily="body" disabled={saving} flexShrink="0">
-              {isReady(form.questions) ? 'Save set' : 'Save draft'}
+      <Stack asChild gap={{ base: '6', md: '8' }} css={{ '& :is(input, textarea, button)': { scrollMarginTop: '24' } }}>
+        <form onSubmit={submit} aria-busy={busy || undefined} onKeyDown={(event) => {
+          if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)
+            && event.target instanceof Node && event.currentTarget.contains(event.target)) {
+            event.preventDefault()
+            event.currentTarget.requestSubmit()
+          }
+        }}>
+          <EditorTopBar editing={!!id} status={dirty ? 'Unsaved changes' : data ? savedStatus(data) : 'Private study set'}
+            busy={busy} onDelete={id ? () => { setDeleteIssue({ message: '' }); setDeleteOpen(true) } : undefined} action={
+            <PrimaryButton type="submit" fontFamily="body" fontWeight="bold" disabled={busy} flexShrink="0">
+              {id ? 'Done' : isReady(form.questions) ? 'Save set' : 'Save draft'}
             </PrimaryButton>
           }>
             {issue.message ? (
@@ -152,40 +190,25 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
               </Stack>
             ) : null}
           </EditorTopBar>
-          <chakra.fieldset display="flex" flexDirection="column" gap="6" minW="0" border="0" m="0" p="0" disabled={saving}>
-            <Skeleton name="set-editor-details" loading={false}>
-              <Stack gap="4">
-                <Field.Root required>
-                  <VisuallyHidden asChild><Field.Label>Title</Field.Label></VisuallyHidden>
-                  <Input ref={title} value={form.title} required placeholder="Name your study set" h="auto" py="2"
-                    variant="flushed" borderColor="janeq.line" fontFamily="heading"
-                    fontSize={{ base: '2xl', md: '4xl' }} fontWeight="bold"
-                    onChange={(event) => updateForm({ title: event.target.value })} />
-                </Field.Root>
-                <Field.Root>
-                  <Field.Label>Description <Text as="span" color="janeq.muted">(optional)</Text></Field.Label>
-                  <Textarea value={form.description} resize="vertical" rows={2} variant="subtle" bg="janeq.canvas"
-                    rounded="lg" placeholder="What is this set about?"
-                    onChange={(event) => updateForm({ description: event.target.value })} />
-                </Field.Root>
-              </Stack>
-            </Skeleton>
-            <Stack gap="1">
-              <Heading as="h2" size="lg">Questions</Heading>
-              <Text fontSize="sm" color="janeq.muted">Each question needs a prompt, at least two answer options, and one or more correct answers to be ready.</Text>
+          <chakra.fieldset display="flex" flexDirection="column" gap={{ base: '6', md: '8' }} minW="0" border="0" m="0" p="0" disabled={busy}>
+            <EditorDetails metadata={form} titleRef={title} questionCount={questionCountLabel(form.questions.length)} onChange={updateForm} />
+            <EditorToolbar count={form.questions.length} onReverse={() => updateForm({ questions: form.questions.toReversed() })} />
+            <Stack gap="4">
+              <VisuallyHidden as="h2">Questions</VisuallyHidden>
+              {form.questions.length === 0 ? (
+                <HStack align="start" gap="3" bg="white" rounded="xl" border="1px solid" borderColor="janeq.divider" p="5">
+                  <Box aria-hidden="true" color="blue.700" mt="1"><IconNotebook size={24} /></Box>
+                  <Stack gap="1"><Heading as="h3" size="md">Add your first question</Heading>
+                    <Text color="janeq.muted">Write a prompt, add answer options, then mark every correct choice.</Text></Stack>
+                </HStack>
+              ) : null}
+              {form.questions.map((question, index) => (
+                <QuestionFields key={question.key} question={question} number={index + 1} focusKey={focusKey} onChange={updateQuestion}
+                  count={form.questions.length} onMove={moveQuestion}
+                  onAddOption={() => addOption(question)}
+                  onRemove={() => updateForm({ questions: form.questions.filter((item) => item.key !== question.key) })} />
+              ))}
             </Stack>
-            {form.questions.length === 0 ? (
-              <HStack align="start" gap="3" bg="white" rounded="xl" border="1px solid" borderColor="janeq.divider" p="5">
-                <Box aria-hidden="true" color="blue.700" mt="1"><IconNotebook size={24} /></Box>
-                <Stack gap="1"><Heading as="h3" size="md">Add your first question</Heading>
-                  <Text color="janeq.muted">Write a prompt, add answer options, then mark every correct choice.</Text></Stack>
-              </HStack>
-            ) : null}
-            {form.questions.map((question, index) => (
-              <QuestionFields key={question.key} question={question} number={index + 1} focusKey={focusKey} onChange={updateQuestion}
-                onAddOption={() => addOption(question)}
-                onRemove={() => updateForm({ questions: form.questions.filter((item) => item.key !== question.key) })} />
-            ))}
             <Button type="button" variant="outline" fontFamily="body" h={{ base: '14', md: '24' }} rounded="xl"
               bg="white" borderColor="janeq.line" color="janeq.ink" _hover={{ bg: 'janeq.canvas' }} onClick={addQuestion}>
               <IconPlus size={20} /> Add question
@@ -193,12 +216,14 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
           </chakra.fieldset>
         </form>
       </Stack>
-      <DiscardChangesDialog dirty={dirty} saving={saving} />
+      <DiscardChangesDialog dirty={dirty} saving={busy} />
+      {id && data ? <DeleteSetDialog id={id} title={data.title} open={deleteOpen} busy={operation === 'delete'} issue={deleteIssue}
+        onClose={() => setDeleteOpen(false)} onConfirm={() => void removeSet()} /> : null}
     </>
   )
 }
 
-export default function SetEditor({ id, onSaved, onSessionExpired }: EditorProps) {
+export default function SetEditor({ id, onSaved, onDeleted, onSessionExpired }: EditorProps) {
   const [load, setLoad] = useState<EditorLoad>({ kind: 'loading', showSkeleton: false })
   const [attempt, setAttempt] = useState(0)
 
@@ -220,10 +245,9 @@ export default function SetEditor({ id, onSaved, onSessionExpired }: EditorProps
   }, [id, attempt, onSessionExpired])
 
   return (
-    <Stack maxW="6xl" mx="auto" gap="4">
-      <Button asChild variant="ghost" size="sm" fontFamily="body" alignSelf="start"><a href={mySetsHref}><IconArrowLeft size={18} /> Back to My sets</a></Button>
+    <Stack w="full" px={{ base: '2', sm: '0' }}>
       {!id || load.kind === 'loaded' ? (
-        <EditorForm id={id} data={load.kind === 'loaded' ? load.data : undefined} onSaved={onSaved} />
+        <EditorForm id={id} data={load.kind === 'loaded' ? load.data : undefined} onSaved={onSaved} onDeleted={onDeleted} />
       ) : (
         <Stack aria-busy={load.kind === 'loading' || undefined} gap="6">
           <EditorTopBar editing />
@@ -240,10 +264,10 @@ export default function SetEditor({ id, onSaved, onSessionExpired }: EditorProps
                   <Text color="janeq.muted">{load.missing ? 'Open one of your own study sets from My sets.' : 'Try loading the study set again.'}</Text>
                 </Stack>
               </HStack>
-              {!load.missing ? <Button variant="outline" fontFamily="body" onClick={() => {
+              {load.missing ? <Button asChild variant="outline" fontFamily="body"><a href={mySetsHref}>Back to My sets</a></Button> : <Button variant="outline" fontFamily="body" onClick={() => {
                 setLoad({ kind: 'loading', showSkeleton: false })
                 setAttempt((value) => value + 1)
-              }}>Try again</Button> : null}
+              }}>Try again</Button>}
             </Stack>
           )}
         </Stack>
