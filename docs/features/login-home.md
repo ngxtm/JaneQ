@@ -80,7 +80,7 @@ Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and 
 | Login on a narrow screen | At 360 px, use Tab to focus the username and password fields. | The form fits, the fields have accessible names, and each focused field shows a continuous blue ring. | **Pass · browser (Login design verification)**. |
 | Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
 | Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
-| Home on a narrow screen | Open Home at 360 px and use the keyboard to open the account menu. | Cards fit in one column and the account menu can be used to sign out. | **Pass · browser (Home and Motion verification)** for the 360 px layout and menu sign-out. **Pending · browser** for the keyboard-only menu path. |
+| Home on a narrow screen | Open Home at 360 px. Focus the account menu, press Enter, press Escape to return focus to the trigger, then reopen it and use End and Enter to sign out. | The menu fits the viewport, Escape restores focus, and keyboard selection returns to Sign in. | **Pass · browser** in Chromium. |
 | Seed and answer-key persistence | Start with a fresh disposable database. Set `answer_options.is_correct` to `1` for `q15-a`, `q16-c`, and `q24-a`, then restart FastAPI with the same file. | Fresh sets are Draft. HTML / CSS stays Ready with three configured questions, and the source total stays at 41. | **Pass · API** for fresh seeded data. **Pass · persistence (earlier milestone)** for restart and seed concurrency checks. |
 | Frontend lint and build | Run `npm run lint` and `npm run build` from `frontend/`. | Both commands exit successfully. | **Pass · CLI (Motion verification)**. |
 
@@ -107,14 +107,20 @@ The Home layout includes shared navigation, a recent-set grid, study set cards, 
 | Empty dashboard | The illustration uses the JaneQ mark with the same staggered floating motion. The primary action scrolls to Built-in sets because the question bank is already available. |
 | Recent, classes, and news | Recent uses real sets opened by the signed-in demo user. Built-in sets replace What's new. My sets appears when custom sets are available. Classes are outside the JaneQ feature plan. |
 | Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the read-only overview, with editing and testing assigned to their own flows. |
-| Navigation and footer | The header uses JaneQ branding and a compact account menu on mobile. The current actions are Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls are outside this milestone. |
+| Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
 | Navigation state | [library-navigation.ts](../../frontend/src/features/study-sets/library-navigation.ts) handles browser history with hash URLs and stores up to 16 recent set IDs locally per demo username. The current API list supplies the displayed records. |
 
-[LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and menu. [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.
+[LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and renders [AccountMenu](../../frontend/src/features/study-sets/AccountMenu.tsx). [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.
 
 To verify Home, sign in with a fresh browser profile and check the animated empty dashboard. Select **Browse study sets**, open two different cards, and use browser Back and **Back to Home**. Recent should be ordered newest first and survive reload. At 360 px the cards fit in one column and the account menu supports keyboard navigation and sign-out. Enable reduced motion to verify that the illustration and hover lift stay still.
 
 Verified in Chromium at 1320 px and 360 px. Checks covered card dimensions and hover motion, reduced motion, overview focus, browser Back, Recent ordering after reload, an unknown study-set link, retry after a network failure, and sign-out from the account menu.
+
+### Account menu
+
+The JaneQ account menu groups the avatar, name, and rotating chevron above a right-aligned dropdown. It uses a 32 px avatar, 18 px icons, and 40 px rows for Home and Sign out. The demo account uses initials, and the same trigger works on desktop and mobile.
+
+The compact menu measured 224 px wide with 40 px rows in Chromium at 1320 px and 320 px. It fit the narrow viewport without horizontal overflow. Escape returned focus to the trigger and keyboard sign-out returned to the login screen. The earlier menu check confirmed reduced-motion behavior. Frontend lint and build passed.
 
 ### Floating illustration with Motion
 
