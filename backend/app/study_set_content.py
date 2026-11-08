@@ -36,7 +36,7 @@ class CompleteOption(OptionContent):
 
 class CompleteQuestion(QuestionContent):
     prompt: RequiredText
-    options: list[CompleteOption] = Field(min_length=1, description="At least one option must be marked correct.")
+    options: list[CompleteOption] = Field(min_length=2, description="At least one option must be marked correct.")
 
     @model_validator(mode="after")
     def require_correct_answer(self) -> "CompleteQuestion":

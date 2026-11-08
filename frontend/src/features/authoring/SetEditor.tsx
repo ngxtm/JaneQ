@@ -108,6 +108,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
   }
 
   function updateForm(fields: Partial<EditorFormState>) {
+    toaster.dismiss(validationToastId)
     setForm((current) => ({ ...current, ...fields }))
     setDirty(true)
   }
@@ -117,7 +118,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
   }
 
   function addQuestion() {
-    const question = { key: `new-${nextKey.current++}`, prompt: '', options: [newOption()] }
+    const question = { key: `new-${nextKey.current++}`, prompt: '', options: [newOption(), newOption()] }
     updateForm({ questions: [...form.questions, question] })
     setFocusKey(question.key)
   }
@@ -232,7 +233,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
                   <Box aria-hidden="true" color="blue.700" mt="1"><IconNotebook size={24} /></Box>
                   <Stack gap="1"><Heading as="h3" size="md">Add your first question</Heading>
                     <Text id="editor-empty-questions" color={validationFocus ? 'red.700' : 'janeq.muted'}>
-                      {validationFocus ? 'Add at least one question before saving.' : 'Write a prompt, add answer options, then mark every correct choice.'}
+                      {validationFocus ? 'Add at least one question before saving.' : 'Write a prompt, enter at least two options, then mark every correct choice.'}
                     </Text></Stack>
                 </HStack>
               ) : null}

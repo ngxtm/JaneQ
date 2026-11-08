@@ -79,6 +79,7 @@ export function QuestionFields({ question, number, count, focusKey, errors, onCh
               <Field.Root flex="1" minW="28" invalid={errors?.blankOptions.has(option.key)}>
                 <VisuallyHidden asChild><Field.Label>Question {number}, option {index + 1}</Field.Label></VisuallyHidden>
                 <Input value={option.text} autoFocus={focusKey === option.key} placeholder={`Option ${index + 1}`}
+                  data-validation-focus={errors?.missingOptions && question.options.length >= 2 && !option.text.trim() ? '' : undefined}
                   variant="flushed" borderColor={errors?.blankOptions.has(option.key) ? 'red.600' : 'janeq.line'} onChange={(event) => {
                   const text = event.target.value
                   updateOption(option.key, { text, is_correct: Boolean(text.trim()) && option.is_correct })
@@ -100,10 +101,11 @@ export function QuestionFields({ question, number, count, focusKey, errors, onCh
               </IconButton>
             </Flex>
           ))}
-          {errors?.missingOptions ? <Text id={optionsErrorId} fontSize="sm" color="red.700">Add at least one answer.</Text> : null}
+          {errors?.missingOptions ? <Text id={optionsErrorId} fontSize="sm" color="red.700">Enter at least two answer options.</Text> : null}
           {errors?.missingAnswer ? <Text id={answerErrorId} fontSize="sm" color="red.700">Mark at least one option correct.</Text> : null}
           <Button type="button" variant="ghost" size="sm" fontFamily="body" color="janeq.blue" alignSelf="start" onClick={onAddOption}
-            aria-describedby={errors?.missingOptions ? optionsErrorId : undefined} data-validation-focus={errors?.missingOptions ? '' : undefined}>
+            aria-describedby={errors?.missingOptions ? optionsErrorId : undefined}
+            data-validation-focus={errors?.missingOptions && question.options.length < 2 ? '' : undefined}>
             <IconListDetails size={18} /> Add answer option
           </Button>
         </Stack>

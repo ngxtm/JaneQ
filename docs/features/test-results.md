@@ -35,7 +35,7 @@ Results keeps the paper cards for review and adds text labels alongside correct 
 
 ## Single saved answers
 
-In custom sets, a question with just one saved correct answer uses up to three alternatives from other questions in that set. The server draws from single-answer keys of the same basic format (number, word, or phrase). It skips normalized duplicates and keys listed for the same prompt. The order is shuffled and stable for that set revision, so Test and Learn validate against the same choices the learner saw. Questions with two or more authored options use their saved choices.
+Create and Edit now require two or more options. A previously saved custom question with just one correct answer uses up to three alternatives from other questions in that set. The server draws from single-answer keys of the same basic format (number, word, or phrase). It skips normalized duplicates and keys listed for the same prompt. The order is shuffled and stable for that set revision, so Test and Learn validate against the same choices the learner saw. Questions with two or more authored options use their saved choices.
 
 When there are no eligible alternatives, Test and Learn show **Your answer** as a text field. Matching ignores case and whitespace differences and normalizes Unicode composition. The answer key is revealed after submission. Test Results and the PDF show the response and key. [Question bank](../../backend/app/question_bank.py)
 

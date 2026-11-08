@@ -96,7 +96,7 @@ Use the generated [Swagger UI](http://127.0.0.1:8000/docs) or [OpenAPI JSON](htt
 
 Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls go through the [shared Axios client](../../frontend/src/http.ts). The [Learn router](../../backend/app/learn.py) reads the set and answer options from SQLite and stores progress by username and set. [Database reference](../database.md#learn-progress)
 
-For the written fallback, save a one-question set with `DNS` as its only correct answer. Open Learn, enter `HTTP`, and check the answer. Expect the typed response and correct answer below the prompt. **Pass · Chromium and API.** Reloading Learn restored the incorrect response and the answer key.
+To check compatibility with a legacy one-option set, open Learn on a previously saved question with `DNS` as its only option. Enter `HTTP` and check the answer. Expect the typed response and correct answer below the prompt. **Pass · API.** Reloading Learn restored the incorrect response and the answer key. The same scenario passed in Chromium before the minimum changed.
 
 ## Acceptance checks
 
