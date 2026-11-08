@@ -64,7 +64,7 @@ export default function Home({ onSessionExpired }: { onSessionExpired: () => voi
         {state.kind === 'error' ? (
           <div className="retry-panel">
             <p className="error" role="alert">Could not load study sets.</p>
-            <button type="button" onClick={retry}>Try again</button>
+            <button className="plain-button" type="button" onClick={retry}>Try again</button>
           </div>
         ) : null}
         {state.kind === 'loaded' ? (

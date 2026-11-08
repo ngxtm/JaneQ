@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { getUser, signOut, type User } from './features/auth/api'
-import Login from './features/auth/Login'
 import Home from './features/study-sets/Home'
 import { isUnauthorized } from './http'
+
+const Login = lazy(() => import('./features/auth/Login'))
 
 type Session =
   | { kind: 'checking' }
@@ -48,31 +49,31 @@ function App() {
 
   return (
     <>
-      <header className="site-header">
-        <div className="header-inner">
-          <span className="wordmark">JaneQ</span>
-          {session.kind === 'signed-in' ? (
-            <div className="account">
-              <span className="username">{session.user.username}</span>
-              <button type="button" onClick={handleSignOut} disabled={signingOut}>
-                {signingOut ? 'Signing out…' : 'Sign out'}
-              </button>
-            </div>
-          ) : null}
-        </div>
-      </header>
       {session.kind === 'checking' ? <main className="page"><p role="status">Checking your session…</p></main> : null}
       {session.kind === 'unavailable' ? (
         <main className="page">
           <p className="error" role="alert">Could not connect to JaneQ.</p>
-          <button type="button" onClick={retrySession}>Try again</button>
+          <button className="plain-button" type="button" onClick={retrySession}>Try again</button>
         </main>
       ) : null}
       {session.kind === 'signed-out' ? (
-        <Login onSignIn={(user) => setSession({ kind: 'signed-in', user })} />
+        <Suspense fallback={<main className="page"><p role="status">Loading sign-in…</p></main>}>
+          <Login onSignIn={(user) => setSession({ kind: 'signed-in', user })} />
+        </Suspense>
       ) : null}
       {session.kind === 'signed-in' ? (
         <>
+          <header className="site-header">
+            <div className="header-inner">
+              <span className="wordmark">JaneQ</span>
+              <div className="account">
+                <span className="username">{session.user.username}</span>
+                <button className="plain-button" type="button" onClick={handleSignOut} disabled={signingOut}>
+                  {signingOut ? 'Signing out…' : 'Sign out'}
+                </button>
+              </div>
+            </div>
+          </header>
           {signOutError ? <p className="page error" role="alert">{signOutError}</p> : null}
           <Home onSessionExpired={expireSession} />
         </>

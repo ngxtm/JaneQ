@@ -31,12 +31,21 @@ The MCQ research report informed JaneQ's card-based Home and feature-specific Fa
 
 For the later Test and Results flow, JaneQ's backend will own grading. The research report points to [react-quiz-component's hook](https://github.com/wingkwong/react-quiz-component/blob/develop/src/lib/engine/use-quiz.ts) for separating quiz state from presentation.
 
+### Login design
+
+JaneQ's Vite sign-in uses a centered layout, outlined inputs, Outfit headings, Open Sans body text, blue accents, and a demo username and password form.
+
+[The JaneQ theme](../../frontend/src/ui/theme.ts) defines the outline input. On keyboard focus, Chakra uses the same color on the field border and the adjacent ring with zero gap. The sign-in route loads the Chakra components and bundled fonts on demand.
+
+Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and a sign-in, session restore, and sign-out pass.
+
 ## Acceptance checks
 
 | Check | Expected result |
 | --- | --- |
 | Open the app in a fresh browser session. Request `/api/study-sets` before signing in. | The app shows Sign in. The API returns `401`. |
 | Submit an incorrect password, then submit the configured credentials. | The form shows the invalid-credentials error. A valid sign-in opens Home with six sets and 41 questions in total. |
+| Use Tab to focus the username and password fields. Open Login at a 360 px viewport. | Each focused field shows a single continuous blue line. The form fits the viewport and its fields have accessible names. |
 | Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out and the final reload show Sign in. |
 | Block `/api/study-sets` in the browser, then unblock it and select **Try again**. | Home shows a load error and then restores the six cards. |
 | Check a fresh database, then set the HTML / CSS answer key in a disposable database and restart FastAPI. | The fresh sets are Draft. The edited set stays Ready with three configured questions, and the original question count stays at 41. |

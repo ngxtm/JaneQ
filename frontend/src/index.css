@@ -4,7 +4,6 @@
   color: #262238;
   background: #faf9f6;
   --brand: #5334b2;
-  --brand-dark: #40268e;
   --muted: #625b72;
   --border: #e5dfeb;
   --surface: #fff;
@@ -25,7 +24,7 @@ p {
   margin: 0;
 }
 
-h1 {
+.home-page h1 {
   font-size: clamp(1.75rem, 5vw, 2.5rem);
   line-height: 1.15;
   letter-spacing: -0.035em;
@@ -42,12 +41,8 @@ h3 {
   overflow-wrap: anywhere;
 }
 
-button,
-input {
+.plain-button {
   font: inherit;
-}
-
-button {
   min-height: 2.75rem;
   padding: 0.5rem 1rem;
   border: 1px solid var(--border);
@@ -58,16 +53,16 @@ button {
   cursor: pointer;
 }
 
-button:not(:disabled):hover {
+.plain-button:not(:disabled):hover {
   border-color: var(--brand);
 }
 
-button:disabled {
+.plain-button:disabled {
   opacity: 0.7;
   cursor: wait;
 }
 
-:where(button, input):focus-visible {
+.plain-button:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 3px;
 }
@@ -119,55 +114,6 @@ button:disabled {
 
 .page {
   padding-block: 2rem;
-}
-
-.login-page {
-  display: grid;
-  justify-items: center;
-  padding-block: clamp(2rem, 8vh, 5rem);
-}
-
-.login-panel {
-  width: min(100%, 28rem);
-  padding: clamp(1.25rem, 5vw, 2.25rem);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: var(--surface);
-}
-
-.login-panel h1 {
-  margin-bottom: 0.5rem;
-  font-size: clamp(1.5rem, 5vw, 2rem);
-}
-
-.login-form {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.login-form label {
-  display: grid;
-  gap: 0.375rem;
-  font-weight: 600;
-}
-
-.login-form input {
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #a9a0b6;
-  border-radius: 0.6rem;
-}
-
-.primary-button {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-}
-
-.primary-button:not(:disabled):hover {
-  background: var(--brand-dark);
 }
 
 .muted {
