@@ -90,7 +90,7 @@ function EditorForm({ id, data, onSaved }: Pick<EditorProps, 'id' | 'onSaved'> &
   }
 
   function addQuestion() {
-    const question = { key: `new-${nextKey.current++}`, prompt: '', options: [newOption(), newOption()] }
+    const question = { key: `new-${nextKey.current++}`, prompt: '', options: [newOption()] }
     updateForm({ questions: [...form.questions, question] })
     setFocusKey(question.key)
   }

@@ -4,7 +4,7 @@
 
 Use the [local setup](../../README.md#local-development) with `JANEQ_DB_PATH` pointing to a disposable SQLite file. Sign in with the configured demo account.
 
-1. Open **My sets** from the header, then select **Create set**. Enter **HTTP methods** as the title and add one question with the prompt **Which HTTP methods are safe?**. Enter **GET**, **HEAD**, and **POST**. Use **Add answer option** to append the third row.
+1. Open **My sets** from the header, then select **Create set**. Enter **HTTP methods** as the title and add one question with the prompt **Which HTTP methods are safe?**. Enter **GET** in the initial option. Use **Add answer option** twice to add **HEAD** and **POST**.
 2. Select **Save draft** with the three options unmarked. The overview shows **Draft**, one question, and a disabled Test action. Select **Back to My sets** and reload. The saved draft appears with its question count and an **Edit** link.
 3. Open **Edit**, mark **GET** and **HEAD** as correct, then select **Save set**. The same set opens as **Ready**. Select **Test**, choose **GET** and **HEAD**, and submit. Results shows **1 / 1** and marks the two selected answers correct.
 
@@ -14,7 +14,7 @@ Only the owner can open an editor or study a custom set. The signed-in library s
 
 The editor has a sticky action bar, large set title, filled description field, numbered cards with a divided header, and underlined question fields. The prompt sits beside its answer choices on desktop. Mobile stacks the prompt and choices. The full-width **Add question** action sits below the cards.
 
-The supplied Quizlet reference puts the add-choice action below the definition. JaneQ places **Add answer option** below the current choices in that same question. It adds a row and focuses the new input. Each choice has its own **Correct** checkbox and remove action.
+The supplied Quizlet reference puts the add-choice action below the definition. Each new question in JaneQ starts with one answer option. **Add answer option** sits below the current choices, adds a row, and focuses its input. Each choice has its own **Correct** checkbox and remove action.
 
 The [shared theme](../../frontend/src/ui/theme.ts) supplies JaneQ typography and focus styling. My sets has a dedicated empty panel with a create action. The editor has a question-empty panel inside the form, so a title-only Draft can be saved. The catalog and editor keep headings and navigation visible while loading. A static Boneyard placeholder appears in the pending region after 200 ms. Load failures offer a retry where applicable.
 
@@ -40,6 +40,7 @@ The [router](../../backend/app/study_sets.py) sends reads and writes through [SQ
 | Check | Reproduce and expect | Observed |
 | --- | --- | --- |
 | Create, reopen, edit, and grade | Run the sample above. Expect Draft after reload, Ready after editing, and a 1/1 Test result. | Pass · Chromium and API on disposable SQLite. Browser creation at 1440 px and editing and grading at 360 px produced 1/1. The API suite reopened the database and verified the saved draft and answer key. |
+| Initial answer option | Add a new question. Enter one correct answer, then add and fill a second option. | Pass · Chromium. The new question had one option and offered **Save draft**. **Add answer option** appended and focused the second input. Filling it allowed the set to be saved as Ready. |
 | Ownership and built-in catalog | Submit a valid editor request for a built-in set and repeat against another username's custom set. Check the other account's catalog, preview, Learn, and Test. | Pass · API. Editor requests returned 404. The other account could access the built-in Test and received 404 for private study routes. |
 | Stale revisions | Open the same editor in two tabs and save one before the other. Open a Test paper, then edit an answer key and submit the original paper. | Pass · Chromium and API. The editor showed the conflict, retained the first tab's form, and opened the saved version in a new tab. The original Test revision was rejected in the API suite. |
 | Save retry | Abort the editor save request in Chromium, then retry with the request restored. At the API, repeat a create with the same creation key. | Pass · Chromium and API. The failed editor save kept the entered description and retry persisted it. The create retry returned the original set ID and one list row. |
