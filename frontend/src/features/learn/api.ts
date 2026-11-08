@@ -1,9 +1,9 @@
 import { http } from '../../http'
-import { isQuestion, type Question } from '../study-sets/question'
+import { isQuestion, type AnswerInput, type Question } from '../study-sets/question'
 
 export type StudyCard = { id: string; prompt: string; answers: string[] }
 export type { Option, Question } from '../study-sets/question'
-export type Feedback = { correct: boolean; selected_ids: string[]; correct_ids: string[] }
+export type Feedback = { correct: boolean; selected_ids: string[]; correct_ids: string[]; answer_text: string | null; correct_text: string | null }
 export type RoundReview = StudyCard & { correct: boolean }
 
 export type LearnView = {
@@ -25,7 +25,7 @@ export type LearnView = {
 }
 
 export type LearnAction =
-  | { action: 'check'; selected_ids: string[] }
+  | ({ action: 'check' } & AnswerInput)
   | { action: 'advance' | 'reset' }
   | { action: 'settings'; shuffle: boolean }
 
@@ -43,6 +43,8 @@ function isStudyCard(value: unknown): value is StudyCard {
 
 function isFeedback(value: unknown): value is Feedback {
   return record(value) && typeof value.correct === 'boolean' && strings(value.selected_ids) && strings(value.correct_ids)
+    && (value.answer_text === null || typeof value.answer_text === 'string')
+    && (value.correct_text === null || typeof value.correct_text === 'string')
 }
 
 function validateView(data: unknown): LearnView {

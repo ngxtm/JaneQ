@@ -17,6 +17,9 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
   const review = reviewResult(result)
   const multiple = result.questions.filter((question) => question.multiple)
   const multipleCorrect = multiple.filter((question) => question.correct).length
+  const written = result.questions.filter((question) => !question.options.length)
+  const writtenCorrect = written.filter((question) => question.correct).length
+  const singleCount = result.total - multiple.length - written.length
 
   return (
     <Stack gap="6">
@@ -59,10 +62,11 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
         <Stack gap="2" borderStyle="solid" borderWidth="0" borderColor="janeq.divider" borderTopWidth={{ base: '2px', md: '0' }}
           borderStartWidth={{ base: '0', md: '2px' }} pt={{ base: '4', md: '0' }} ps={{ base: '0', md: '6' }} justify="center">
           <Heading as="h2" fontSize="lg">By question type</Heading>
-          {result.total > multiple.length ? (
-            <Text>Single choice · {result.score - multipleCorrect} / {result.total - multiple.length}</Text>
+          {singleCount ? (
+            <Text>Single choice · {result.score - multipleCorrect - writtenCorrect} / {singleCount}</Text>
           ) : null}
           {multiple.length ? <Text>Multiple select · {multipleCorrect} / {multiple.length}</Text> : null}
+          {written.length ? <Text>Written answer · {writtenCorrect} / {written.length}</Text> : null}
         </Stack>
       </Flex>
       <Box as="ol" role="list" listStyleType="none" m="0" p="0" aria-label="Question review">

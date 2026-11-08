@@ -100,7 +100,7 @@ export function QuestionFields({ question, number, count, focusKey, errors, onCh
               </IconButton>
             </Flex>
           ))}
-          {errors?.missingOptions ? <Text id={optionsErrorId} fontSize="sm" color="red.700">Enter at least two answer options.</Text> : null}
+          {errors?.missingOptions ? <Text id={optionsErrorId} fontSize="sm" color="red.700">Add at least one answer.</Text> : null}
           {errors?.missingAnswer ? <Text id={answerErrorId} fontSize="sm" color="red.700">Mark at least one option correct.</Text> : null}
           <Button type="button" variant="ghost" size="sm" fontFamily="body" color="janeq.blue" alignSelf="start" onClick={onAddOption}
             aria-describedby={errors?.missingOptions ? optionsErrorId : undefined} data-validation-focus={errors?.missingOptions ? '' : undefined}>

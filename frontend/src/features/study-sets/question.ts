@@ -1,5 +1,6 @@
 export type Option = { id: string; text: string }
 export type Question = { id: string; prompt: string; options: Option[]; multiple: boolean }
+export type AnswerInput = { selected_ids: string[] } | { answer_text: string }
 
 export function isQuestion(value: unknown): value is Question {
   return typeof value === 'object' && value !== null

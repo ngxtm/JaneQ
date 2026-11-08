@@ -92,9 +92,11 @@ Use the generated [Swagger UI](http://127.0.0.1:8000/docs) or [OpenAPI JSON](htt
 | --- | --- |
 | `GET /api/study-sets/{set_id}/preview` | Opening a Ready set loads preview questions and the answer side for each card. |
 | `GET /api/study-sets/{set_id}/learn` | Opening Learn loads the active question, feedback, round summary, or completion. Current questions include option IDs and text. Correct IDs are included in the feedback step. A new revision starts a fresh session and the UI shows an explanation. |
-| `POST /api/study-sets/{set_id}/learn` | Checking, continuing, changing shuffle, and resetting send an `action` with the current `revision` and `version`. A check also sends `selected_ids`, such as `["q15-a"]` on the first question of the review set. Success returns the next view. Invalid selections return `422`. After a stale-step `409`, the UI reloads the saved view. |
+| `POST /api/study-sets/{set_id}/learn` | Checking, continuing, changing shuffle, and resetting send an `action` with the current `revision` and `version`. A check sends `selected_ids`, or `answer_text` when the question has an empty `options` list. Written feedback returns the response and key as `answer_text` and `correct_text`. Invalid answer input returns `422`. After a stale-step `409`, the UI reloads the saved view. [Single saved answers](test-results.md#single-saved-answers) |
 
 Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls go through the [shared Axios client](../../frontend/src/http.ts). The [Learn router](../../backend/app/learn.py) reads the set and answer options from SQLite and stores progress by username and set. [Database reference](../database.md#learn-progress)
+
+For the written fallback, save a one-question set with `DNS` as its only correct answer. Open Learn, enter `HTTP`, and check the answer. Expect the typed response and correct answer below the prompt. **Pass · Chromium and API.** Reloading Learn restored the incorrect response and the answer key.
 
 ## Acceptance checks
 

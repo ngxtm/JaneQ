@@ -4,12 +4,16 @@ export function reviewResult(result: TestResult) {
   return {
     ...result,
     percent: Math.round(result.score / result.total * 100),
-    questions: result.questions.map(({ selected_ids, correct_ids, ...question }) => {
+    questions: result.questions.map(({ selected_ids, correct_ids, answer_text, correct_text, ...question }) => {
       const selected = new Set(selected_ids)
       const correct = new Set(correct_ids)
       return {
         ...question,
-        options: question.options.map((option) => ({
+        written: !question.options.length,
+        options: answer_text !== undefined && correct_text !== undefined ? [
+          { id: 'written-response', text: answer_text, selected: true, correct: answer_text === correct_text },
+          ...(answer_text === correct_text ? [] : [{ id: 'written-key', text: correct_text, selected: false, correct: true }]),
+        ] : question.options.map((option) => ({
           ...option,
           selected: selected.has(option.id),
           correct: correct.has(option.id),

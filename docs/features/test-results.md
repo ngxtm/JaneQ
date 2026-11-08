@@ -33,14 +33,22 @@ The paper uses a centered `4xl` column, timeline markers, white rounded question
 
 Results keeps the paper cards for review and adds text labels alongside correct and incorrect marks. The summary includes a score ring and a breakdown by question type. It stacks on narrow screens and lets **Download PDF**, **New test**, and **Back** wrap. [Results component](../../frontend/src/features/test/Results.tsx)
 
+## Single saved answers
+
+In custom sets, a question with just one saved correct answer uses up to three alternatives from other questions in that set. The server draws from single-answer keys of the same basic format (number, word, or phrase). It skips normalized duplicates and keys listed for the same prompt. The order is shuffled and stable for that set revision, so Test and Learn validate against the same choices the learner saw. Questions with two or more authored options use their saved choices.
+
+When there are no eligible alternatives, Test and Learn show **Your answer** as a text field. Matching ignores case and whitespace differences and normalizes Unicode composition. The answer key is revealed after submission. Test Results and the PDF show the response and key. [Question bank](../../backend/app/question_bank.py)
+
+To verify both modes in one paper, save three questions with a single correct answer each. Use `12` and `24` for two different prompts and `HTTPS` for the third. The numeric questions should each offer `12` and `24`, and the third should show a text field. **Pass · Chromium and API.** The mixed paper scored 2/3 when both numeric choices were correct and the learner typed `http`. Results showed `http` and `HTTPS` separately, and **Download PDF** generated a PDF blob. A separate 360 px run accepted `  dns  ` for `DNS` in a one-question set.
+
 ## API and storage
 
 Use the generated [Swagger UI](http://127.0.0.1:8000/docs) or [OpenAPI JSON](http://127.0.0.1:8000/openapi.json). Both calls use the signed `janeq_session` cookie and go through the [shared Axios client](../../frontend/src/http.ts). The [feature client](../../frontend/src/features/test/api.ts) validates the response before rendering. A `401` returns the app to sign-in.
 
 | Request | Contract |
 | --- | --- |
-| `GET /api/study-sets/{set_id}/test` | Opening Test loads `set_id`, `title`, `revision`, and ordered `questions`. Each question has `id`, `prompt`, `options` containing `id` and `text`, and a `multiple` boolean. |
-| `POST /api/study-sets/{set_id}/test` | Submit the paper's integer `revision` and an `answers` list containing one `{question_id, selected_ids}` entry per question. The response gives `score`, `total`, paper metadata, and graded questions. Each graded question adds `selected_ids`, `correct_ids`, and `correct`. The response also includes `submitted_by` from the signed session and `submitted_at` as a server-generated UTC date-time, such as `2026-11-08T09:30:00Z`. |
+| `GET /api/study-sets/{set_id}/test` | Opening Test loads `set_id`, `title`, `revision`, and ordered `questions`. Each question has `id`, `prompt`, `options` containing `id` and `text`, and a `multiple` boolean. An empty `options` list signals written input. |
+| `POST /api/study-sets/{set_id}/test` | Submit the paper's integer `revision` and one `{question_id, selected_ids}` or `{question_id, answer_text}` entry per question, as indicated by its options. The response includes `score`, `total`, and graded questions with `correct`. Choice reviews include `selected_ids` and `correct_ids`. Written reviews include `answer_text` and `correct_text`, with empty ID lists. The response also includes the signed-in `submitted_by` and server-generated UTC `submitted_at`. |
 
 For the sample, send `revision: 1` and selections `["q15-a"]`, `["q16-a"]`, and `["q24-a"]` on their corresponding questions. The server checks for missing, unknown, or duplicate question IDs, empty or duplicate selections, choices from another question, and extra choices on single-answer questions. Invalid submissions return `422`. A question earns one point only when the selected and correct ID sets match exactly. The server returns questions and selected IDs in catalog order for review and export.
 

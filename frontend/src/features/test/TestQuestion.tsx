@@ -1,4 +1,4 @@
-import { Box, Checkbox, HStack, RadioGroup, SimpleGrid, Stack, Text } from '@chakra-ui/react'
+import { Box, Checkbox, Field, HStack, RadioGroup, SimpleGrid, Stack, Text, Textarea } from '@chakra-ui/react'
 import {
   IconCircleCheckFilled, IconCircleXFilled, IconPoint, IconPointFilled,
 } from '@tabler/icons-react'
@@ -69,16 +69,26 @@ function QuestionPanel({ question, index, total, answered, correct, capture, chi
   return <Box as="li">{capture ? <Skeleton name="test-question" loading={false}>{content}</Skeleton> : content}</Box>
 }
 
-export function TestQuestion({ question, index, total, selected, disabled, onSelect }: {
+export function TestQuestion({ question, index, total, answer, disabled, onAnswer }: {
   question: Question
   index: number
   total: number
-  selected: string[]
+  answer: string[] | string | undefined
   disabled: boolean
-  onSelect: (selected: string[]) => void
+  onAnswer: (answer: string[] | string) => void
 }) {
   const label = `test-prompt-${index}`
   const hint = `test-choice-hint-${index}`
+  const selected = Array.isArray(answer) ? answer : []
+  const written = typeof answer === 'string' ? answer : ''
+  if (!question.options.length) {
+    return <QuestionPanel question={question} index={index} total={total} answered={Boolean(written.trim())}>
+      <Field.Root disabled={disabled}>
+        <Field.Label>Your answer</Field.Label>
+        <Textarea value={written} rows={2} onChange={(event) => onAnswer(event.target.value)} aria-describedby={label} />
+      </Field.Root>
+    </QuestionPanel>
+  }
   return (
     <QuestionPanel question={question} index={index} total={total} answered={selected.length > 0} capture={index === 0}>
       <Stack gap="2">
@@ -90,7 +100,7 @@ export function TestQuestion({ question, index, total, selected, disabled, onSel
             {question.options.map((option) => (
               <Checkbox.Root key={option.id} {...choiceStyle} value={option.id} checked={selected.includes(option.id)}
                 disabled={disabled} colorPalette="blue" onCheckedChange={({ checked }) => {
-                  onSelect(checked ? [...selected, option.id] : selected.filter((id) => id !== option.id))
+                  onAnswer(checked ? [...selected, option.id] : selected.filter((id) => id !== option.id))
                 }}>
                 <Checkbox.HiddenInput />
                 <Checkbox.Control {...choiceIndicator} />
@@ -103,7 +113,7 @@ export function TestQuestion({ question, index, total, selected, disabled, onSel
         ) : (
           <RadioGroup.Root name={`test-answer-${index}`} value={selected[0] ?? ''} disabled={disabled}
             aria-labelledby={label} aria-describedby={hint} colorPalette="blue"
-            onValueChange={({ value }) => { if (value) onSelect([value]) }}>
+            onValueChange={({ value }) => { if (value) onAnswer([value]) }}>
             <SimpleGrid {...choiceGrid}>
               {question.options.map((option) => (
                 <RadioGroup.Item key={option.id} value={option.id} {...choiceStyle}>
@@ -127,12 +137,13 @@ export function ReviewedQuestion({ question, index, total }: { question: Questio
     <QuestionPanel question={question} index={index} total={total} correct={question.correct}>
       <SimpleGrid as="ul" {...choiceGrid} listStyleType="none" m="0" p="0">
         {question.options.map(({ id, text, selected, correct }) => {
-          const color = correct ? 'green.800' : selected ? 'red.800' : 'janeq.ink'
+          const accepted = correct || (question.written && selected && question.correct)
+          const color = accepted ? 'green.800' : selected ? 'red.800' : 'janeq.ink'
           return (
             <HStack key={id} as="li" {...optionStyle} color={color}
-              borderColor={correct ? 'green.200' : selected ? 'red.200' : 'janeq.divider'}
-              bg={correct ? 'green.50' : selected ? 'red.50' : 'white'}>
-              {correct ? <IconCircleCheckFilled size={18} aria-hidden="true" style={{ flexShrink: 0 }} /> : selected ? (
+              borderColor={accepted ? 'green.200' : selected ? 'red.200' : 'janeq.divider'}
+              bg={accepted ? 'green.50' : selected ? 'red.50' : 'white'}>
+              {accepted ? <IconCircleCheckFilled size={18} aria-hidden="true" style={{ flexShrink: 0 }} /> : selected ? (
                 <IconCircleXFilled size={18} aria-hidden="true" style={{ flexShrink: 0 }} />
               ) : null}
               <Stack gap="0.5" minW="0">

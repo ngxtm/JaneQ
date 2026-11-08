@@ -51,7 +51,6 @@ QUESTION_STATUS = """
     SELECT q.id, q.study_set_id,
         CASE
             WHEN trim(q.prompt) <> ''
-                AND COUNT(CASE WHEN trim(o.text) <> '' THEN 1 END) >= 2
                 AND COUNT(CASE WHEN trim(o.text) <> '' AND o.is_correct = 1 THEN 1 END) > 0
             THEN 1 ELSE 0
         END AS configured
@@ -232,7 +231,9 @@ def create_study_set(
 def update_study_set(
     connection: sqlite3.Connection, set_id: str, current: StudySetEditor, updated: StudySetRevision,
 ) -> None:
-    if current.model_dump(exclude={"saved_at"}) == updated.model_dump():
+    previous_content = current.model_dump(exclude={"saved_at"})
+    next_content = updated.model_dump()
+    if previous_content == next_content:
         return
     connection.execute(
         """
@@ -242,7 +243,7 @@ def update_study_set(
         """,
         (updated.title, updated.description, set_id),
     )
-    if current.questions != updated.questions:
+    if previous_content["questions"] != next_content["questions"]:
         # Replacing the question tree is atomic and the new revision invalidates older papers.
         connection.execute("DELETE FROM questions WHERE study_set_id = ?", (set_id,))
         write_study_questions(connection, set_id, updated.questions)

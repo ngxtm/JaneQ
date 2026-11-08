@@ -70,7 +70,7 @@ function TestNotice({ issue, onAction }: { issue: Issue; onAction?: () => void }
 export default function Test({ set, onSessionExpired }: { set: StudySet; onSessionExpired: () => void }) {
   const [view, setView] = useState<View>({ kind: 'loading', showSkeleton: false })
   const [attempt, setAttempt] = useState(0)
-  const [selections, setSelections] = useState(() => new Map<string, string[]>())
+  const [selections, setSelections] = useState(() => new Map<string, string[] | string>())
   const [submitting, setSubmitting] = useState(false)
   const [issue, setIssue] = useState<Issue>()
   const submission = useRef<AbortController | null>(null)
@@ -109,7 +109,10 @@ export default function Test({ set, onSessionExpired }: { set: StudySet; onSessi
   }
 
   const answered = view.kind === 'paper'
-    ? view.paper.questions.filter((question) => (selections.get(question.id)?.length ?? 0) > 0).length
+    ? view.paper.questions.filter((question) => {
+      const answer = selections.get(question.id)
+      return typeof answer === 'string' ? Boolean(answer.trim()) : Boolean(answer?.length)
+    }).length
     : 0
   const blocked = issue !== undefined && issue.action !== 'retry'
   const canSubmit = view.kind === 'paper' && !blocked && !submitting && answered === view.paper.questions.length
@@ -122,7 +125,10 @@ export default function Test({ set, onSessionExpired }: { set: StudySet; onSessi
     submission.current = controller
     setSubmitting(true)
     setIssue(undefined)
-    const answers = view.paper.questions.map((question) => ({ question_id: question.id, selected_ids: selections.get(question.id) ?? [] }))
+    const answers = view.paper.questions.map((question) => {
+      const answer = selections.get(question.id)
+      return { question_id: question.id, ...(typeof answer === 'string' ? { answer_text: answer } : { selected_ids: answer ?? [] }) }
+    })
     try {
       const result = await submitTest(view.paper, answers, controller.signal)
       if (!controller.signal.aborted) setView({ kind: 'results', result })
@@ -169,8 +175,8 @@ export default function Test({ set, onSessionExpired }: { set: StudySet; onSessi
                   <Box as="ol" role="list" listStyleType="none" m="0" p="0" aria-label="Test questions">
                     {view.paper.questions.map((question, index) => (
                       <TestQuestion key={question.id} question={question} index={index} total={view.paper.questions.length}
-                        selected={selections.get(question.id) ?? []} disabled={submitting || blocked}
-                        onSelect={(ids) => setSelections((current) => new Map(current).set(question.id, ids))} />
+                        answer={selections.get(question.id)} disabled={submitting || blocked}
+                        onAnswer={(value) => setSelections((current) => new Map(current).set(question.id, value))} />
                     ))}
                   </Box>
                   <Stack align="center" gap="4" pt="8">

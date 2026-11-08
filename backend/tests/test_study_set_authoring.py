@@ -151,7 +151,7 @@ class StudySetAuthoringTests(TestCase):
         invalid_questions = (
             [],
             [{**question, "prompt": "  "}],
-            [{**question, "options": question["options"][:1]}],
+            [{**question, "options": []}],
             [{**question, "options": [*question["options"], {"text": " ", "is_correct": False}]}],
             [question, {**question, "options": [{**option, "is_correct": False} for option in question["options"]]}],
         )
@@ -164,6 +164,47 @@ class StudySetAuthoringTests(TestCase):
         custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
         self.assertEqual(custom, [saved])
 
+    def test_single_answers_generate_choices_or_accept_text_in_test_and_learn(self) -> None:
+        saved = self.create_set(questions=[
+            {"prompt": prompt, "options": [{"text": answer, "is_correct": True}]}
+            for prompt, answer in [("First result?", "12"), ("Second result?", "24"), ("Name the web protocol.", "HTTPS")]
+        ])
+        self.assertEqual(saved["status"], "ready")
+        path = f"{self.catalog}/{saved['id']}"
+        paper = self.client.get(f"{path}/test").json()
+        self.assertEqual(self.client.get(f"{path}/test").json(), paper)
+        first, second, written = paper["questions"]
+        for question in (first, second):
+            self.assertCountEqual([option["text"] for option in question["options"]], ["12", "24"])
+        self.assertEqual(written["options"], [])
+        self.assertNotIn("HTTPS", str(written))
+
+        answers = [
+            {"question_id": first["id"], "selected_ids": [next(option["id"] for option in first["options"] if option["text"] == "24")]},
+            {"question_id": second["id"], "selected_ids": [next(option["id"] for option in second["options"] if option["text"] == "24")]},
+            {"question_id": written["id"], "answer_text": "  https  "},
+        ]
+        result = self.client.post(f"{path}/test", json={"revision": paper["revision"], "answers": answers})
+        self.assertEqual(result.status_code, 200, result.text)
+        self.assertEqual(result.json()["score"], 2)
+        self.assertEqual(result.json()["questions"][2]["correct_text"], "HTTPS")
+        for invalid in ({"answer_text": " "}, {"selected_ids": [first["options"][0]["id"]]}):
+            bad = [*answers[:2], {"question_id": written["id"], **invalid}]
+            self.assertEqual(self.client.post(f"{path}/test", json={"revision": paper["revision"], "answers": bad}).status_code, 422)
+
+        single = self.create_set(questions=[{"prompt": "What resolves hostnames?", "options": [{"text": "DNS", "is_correct": True}]}])
+        learn_path = f"{self.catalog}/{single['id']}/learn"
+        view = self.client.get(learn_path).json()
+        self.assertEqual(view["question"]["options"], [])
+        feedback = self.client.post(learn_path, json={
+            "action": "check", "revision": view["revision"], "version": view["version"], "answer_text": "HTTP",
+        })
+        self.assertEqual(feedback.status_code, 200, feedback.text)
+        self.assertEqual(feedback.json()["feedback"], {
+            "correct": False, "answer_text": "HTTP", "correct_text": "DNS", "selected_ids": [], "correct_ids": [],
+        })
+        self.assertEqual(self.client.get(learn_path).json(), feedback.json())
+
     def test_revision_checked_delete_cascades_to_questions_and_learn_progress(self) -> None:
         draft = self.create_set(questions=[{
             "prompt": "What resolves a hostname?",
@@ -172,10 +213,12 @@ class StudySetAuthoringTests(TestCase):
         path = f"{self.catalog}/{draft['id']}"
         editor = self.client.get(f"{path}/editor").json()
         self.assertIsNotNone(editor.pop("saved_at"))
+        questions = self.client.get(f"{path}/test").json()["questions"]
         response = self.client.put(f"{path}/editor", json={**editor, "description": "Updated"})
         self.assertEqual(response.status_code, 200)
         saved = response.json()
         self.assertEqual(saved["revision"], 2)
+        self.assertEqual(self.client.get(f"{path}/test").json()["questions"], questions)
         self.assertIn(saved, self.client.get(self.catalog).json())
         self.assertEqual(self.client.delete(path, params={"revision": draft["revision"]}).status_code, 409)
 

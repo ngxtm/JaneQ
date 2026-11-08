@@ -51,7 +51,7 @@ Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `ba
 | Response field | How it is computed |
 | --- | --- |
 | `question_count` | Number of questions in the set. |
-| `configured_count` | Number of questions with a nonblank prompt, at least two nonblank options, and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
+| `configured_count` | Number of questions with a nonblank prompt and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
 | `status` | `ready` when the set has at least one question and every question is configured. Otherwise it is `draft`. |
 | `revision` | Current set revision read in the same query as the summary. The overview submits it when deleting a set. |
 
@@ -59,7 +59,7 @@ These fields are calculated when Home requests the list. Learn, preview, and Tes
 
 ## Custom study set writes
 
-Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once and updates `saved_at`. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision, IDs, and timestamp. The write API trims outer whitespace and requires a title, at least one question, and a prompt, at least two nonblank options, and a correct answer for every question. Previously saved incomplete sets and blank option rows remain readable in the editor for repair.
+Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once and updates `saved_at`. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision, IDs, and timestamp. The write API trims outer whitespace and requires a title, at least one question, and a prompt and at least one nonblank correct answer for every question. Previously saved incomplete sets and blank option rows remain readable in the editor for repair.
 
 Delete locks the database before checking the signed-in owner, custom source, and submitted revision. It removes the set in one transaction. SQLite foreign keys remove its questions, options, and Learn progress.
 
@@ -67,7 +67,7 @@ Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `ba
 
 ## Learn progress
 
-Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
+Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Written responses store `answer_text` in the answer entry. Correct answers come from `answer_options` at request time.
 
 A write transaction checks both the study set revision and the saved step version before it updates the snapshot. When a study set revision changes, Learn presents a fresh session and replaces the previous snapshot on the next successful command. This applies to every effective edit, including metadata changes. [Learn flow and API](features/learn.md)
 
