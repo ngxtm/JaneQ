@@ -14,6 +14,10 @@
 3. Check applicable loading, empty, error, and success states. Verify keyboard navigation, visible focus, layout at mobile and desktop widths, and reduced motion when the screen uses animation. Record the checks actually run.
 4. Render ready sections immediately. Leave brief pending regions visually blank. For data that can take noticeably longer, use a layout-matched Boneyard skeleton scoped to the pending region. Follow the frontend guide for visible copy and accessible status.
 
+## Keep shared UI stable during navigation
+
+Keep UI shared by the source and destination mounted during in-app navigation. Put persistent regions such as the header and navigation in a stable parent layout, and scope route changes, loading states, and entrance animations to the regions that change. Verify that shared UI stays visible and stable during forward and back navigation, including while the destination loads.
+
 ## Close one feature or flow at a time
 
 1. Define the user outcome, scope, and observable acceptance criteria before coding. Group backend, frontend, and data changes into a complete flow that can be exercised through the app.

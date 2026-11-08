@@ -16,6 +16,12 @@ Build interactive controls and overlays with Chakra UI or the shared JaneQ compo
 | Responsive layout | Keep the main action, content, and account controls usable at narrow and wide widths. Check real long titles and text wrapping in the layout. |
 | Motion | Use motion to show feedback or a transition. Honor reduced-motion preferences for animation and decorative movement. |
 
+## Navigation continuity
+
+Keep shared UI in a parent layout that stays mounted across the routes that use it. For Home and Study Set, keep the header, navigation, and account controls in `LibraryLayout` while the main content changes. Put route-specific keys, loading fallbacks, and entrance animations inside the changing region. Shared controls can update their own labels and state in place when navigation requires it.
+
+Check in a browser at desktop and mobile widths. Open a set from Home and return with the in-app link and browser Back. Repeat with a delayed destination response. The same header should stay mounted and visible when in view, with no blank frame, replayed entrance animation, or unexpected position shift. Check keyboard focus on shared controls and move focus to destination content when the initiating control leaves the page.
+
 ## Loading behavior
 
 Use a quiet fallback for brief session checks and lazy imports. Keep ready navigation and content visible when another region is waiting. Reserve visible copy for meaningful outcomes or a concrete action the user can take. Preserve the action label on a pending button and prevent repeat submission.
