@@ -13,6 +13,7 @@ import { StudySetModes } from './StudySetModes'
 import './bones/registry'
 
 const Learn = lazy(() => import('../learn/Learn'))
+const NotFoundPage = lazy(() => import('../navigation/NotFoundPage'))
 
 type StudySetsState =
   | { kind: 'loading' }
@@ -81,26 +82,22 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
       <Box w="full" aria-busy={pending || undefined}>
         <div aria-hidden={pending || undefined}>
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
-            {status === 'loaded' ? (
+            {status === 'loaded' && set ? (
               <Stack gap="4">
                 <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
                   lineHeight={{ base: '1.2', md: '1' }} _focus={{ outline: 'none' }}>
-                  {set?.title ?? 'Study set not found'}
+                  {set.title}
                 </Heading>
-                {set ? (
-                  <>
-                    <Text color="janeq.muted" fontWeight="semibold" minH="8" display="flex" alignItems="center">
-                      {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-                    </Text>
-                    {set.description ? <Text>{set.description}</Text> : null}
-                    {set.status === 'draft' ? (
-                      <Stack gap="1">
-                        <Text role="status">This set is a draft. Finish setting it up before studying.</Text>
-                        <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
-                      </Stack>
-                    ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
-                  </>
-                ) : <Text color="janeq.muted">Choose an available study set from Home.</Text>}
+                <Text color="janeq.muted" fontWeight="semibold" minH="8" display="flex" alignItems="center">
+                  {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                </Text>
+                {set.description ? <Text>{set.description}</Text> : null}
+                {set.status === 'draft' ? (
+                  <Stack gap="1">
+                    <Text role="status">This set is a draft. Finish setting it up before studying.</Text>
+                    <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
+                  </Stack>
+                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
               </Stack>
             ) : null}
           </Skeleton>
@@ -146,6 +143,10 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
     setShowSkeleton(false)
     setState({ kind: 'loading' })
     setAttempt((current) => current + 1)
+  }
+
+  if (viewingSet && state.kind === 'loaded' && !selectedSet) {
+    return <Suspense fallback={null}><NotFoundPage studySet /></Suspense>
   }
 
   function renderLibrary() {

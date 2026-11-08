@@ -5,6 +5,7 @@ import { isUnauthorized } from './http'
 const Login = lazy(() => import('./features/auth/Login'))
 const SessionUnavailable = lazy(() => import('./features/auth/SessionUnavailable'))
 const Home = lazy(() => import('./features/study-sets/Home'))
+const NotFoundPage = lazy(() => import('./features/navigation/NotFoundPage'))
 
 type Session =
   | { kind: 'checking' }
@@ -12,7 +13,7 @@ type Session =
   | { kind: 'signed-out' }
   | { kind: 'signed-in'; user: User; signOut: 'idle' | 'pending' | 'error' }
 
-function App() {
+function SessionApp() {
   const [session, setSession] = useState<Session>({ kind: 'checking' })
   const checkingSession = session.kind === 'checking' || (session.kind === 'unavailable' && session.retrying)
   const signOutRequest = useRef<AbortController | null>(null)
@@ -89,4 +90,10 @@ function App() {
   )
 }
 
-export default App
+export default function App() {
+  const base = import.meta.env.BASE_URL
+  const path = window.location.pathname
+  if (path === base || path === `${base}index.html`) return <SessionApp />
+
+  return <Suspense fallback={null}><NotFoundPage /></Suspense>
+}
