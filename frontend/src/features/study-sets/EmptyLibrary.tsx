@@ -1,7 +1,51 @@
 import { Box, Button, Center, Heading, HStack, Image, Stack, Text } from '@chakra-ui/react'
 import { IconArrowDown, IconBooks, IconFolder } from '@tabler/icons-react'
+import { domAnimation, LazyMotion } from 'motion/react'
+import * as m from 'motion/react-m'
+import { useSyncExternalStore } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
-import './home-motion.css'
+
+const motionPreference = '(prefers-reduced-motion: reduce)'
+
+function subscribeToMotionPreference(onChange: () => void) {
+  const query = window.matchMedia(motionPreference)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+
+function readMotionPreference() {
+  return window.matchMedia(motionPreference).matches
+}
+
+const floatingIcons = [
+  { name: 'books', graphic: <IconBooks size={30} />, duration: 4, delay: 0.2, tilt: -25 },
+  { name: 'mark', graphic: <Image src={janeqMark} alt="" boxSize="12" />, duration: 5, delay: 0, tilt: 0 },
+  { name: 'folder', graphic: <IconFolder size={38} />, duration: 4.5, delay: 0.4, tilt: 20 },
+]
+
+function FloatingIllustration() {
+  // Read the media query live so an in-flight loop stops when the preference changes.
+  const reduceMotion = useSyncExternalStore(subscribeToMotionPreference, readMotionPreference)
+
+  return (
+    <HStack aria-hidden="true" pos="relative" gap="4" color="blue.700" opacity="0.55">
+      <LazyMotion features={domAnimation} strict>
+        {floatingIcons.map(({ name, graphic, duration, delay, tilt }) => reduceMotion ? (
+          <span key={name} style={{ display: 'flex' }}>{graphic}</span>
+        ) : (
+          <m.span
+            key={name}
+            style={{ display: 'flex' }}
+            animate={{ y: [0, -20, 0], rotateZ: [0, tilt, 0] }}
+            transition={{ duration, delay, ease: 'backInOut', repeat: Infinity }}
+          >
+            {graphic}
+          </m.span>
+        ))}
+      </LazyMotion>
+    </HStack>
+  )
+}
 
 export function EmptyLibrary() {
   return (
@@ -14,11 +58,7 @@ export function EmptyLibrary() {
           bg="radial-gradient(ellipse at center, rgb(126 166 255 / 30%) 5%, transparent 70%)"
           pointerEvents="none"
         />
-        <HStack aria-hidden="true" pos="relative" gap="4" color="blue.700" opacity="0.55">
-          <Box className="library-float library-float-books"><IconBooks size={30} /></Box>
-          <Image className="library-float library-float-mark" src={janeqMark} alt="" boxSize="12" />
-          <Box className="library-float library-float-folder"><IconFolder size={38} /></Box>
-        </HStack>
+        <FloatingIllustration />
         <Stack gap="2" pos="relative">
           <Heading as="h1" fontFamily="heading" fontSize={{ base: '2xl', md: '3xl' }}>
             Open your first study set

@@ -82,3 +82,21 @@ The Home layout includes shared navigation, a recent-set grid, study set cards, 
 To verify Home, sign in with a fresh browser profile and check the animated empty dashboard. Select **Browse study sets**, open two different cards, and use browser Back and **Back to Home**. Recent should be ordered newest first and survive reload. At 360 px the cards fit in one column and the account menu supports keyboard navigation and sign-out. Enable reduced motion to verify that the illustration and hover lift stay still.
 
 Verified in Chromium at 1320 px and 360 px. Checks covered card dimensions and hover motion, reduced motion, overview focus, browser Back, Recent ordering after reload, an unknown study-set link, retry after a network failure, and sign-out from the account menu.
+
+### Floating illustration with Motion
+
+[EmptyLibrary](../../frontend/src/features/study-sets/EmptyLibrary.tsx) uses Motion's `LazyMotion` with `domAnimation` for the three floating icons. It uses `backInOut` easing, 20 px travel, and staggered timing.
+
+| Icon | Loop | Initial delay | Midpoint rotation |
+| --- | --- | --- | --- |
+| Books | 4 s | 0.2 s | -25° |
+| JaneQ mark | 5 s | 0 s | 0° |
+| Folder | 4.5 s | 0.4 s | 20° |
+
+JaneQ observes changes to the browser's reduced-motion media query and renders static icons while reduction is active. Card hover and account chevron transitions use Chakra.
+
+| Check | Expected result | Observed outcome |
+| --- | --- | --- |
+| Sign in with reduced motion enabled in a fresh browser profile. Switch the setting off and back on with Home open. | All three icons start still, move with default preferences, and stop as soon as reduced motion is restored. | **Pass · browser** in Chromium. |
+| Switch to 360 px, restore default motion, open HTML / CSS, and return to Home. | The layout fits, the illustration runs before opening the set, and the visited set appears under Recent. | **Pass · browser** in Chromium. |
+| Run `npm run lint` and `npm run build` from `frontend/`. | Both checks pass. | **Pass · CLI**. |
