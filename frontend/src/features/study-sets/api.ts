@@ -8,6 +8,7 @@ export type StudySet = {
   title: string
   description: string
   source_kind: 'builtin' | 'custom'
+  revision: number
   question_count: number
   configured_count: number
   status: 'draft' | 'ready'
@@ -21,6 +22,7 @@ export function isStudySet(value: unknown): value is StudySet {
     && typeof set.title === 'string'
     && typeof set.description === 'string'
     && (set.source_kind === 'builtin' || set.source_kind === 'custom')
+    && typeof set.revision === 'number' && Number.isInteger(set.revision) && set.revision > 0
     && typeof set.question_count === 'number'
     && typeof set.configured_count === 'number'
     && (set.status === 'draft' || set.status === 'ready')

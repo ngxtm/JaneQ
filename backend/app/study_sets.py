@@ -29,6 +29,7 @@ class StudySetSummary(BaseModel):
     title: str
     description: str
     source_kind: Literal["builtin", "custom"]
+    revision: int = Field(ge=1, description="Revision of this summary for guarded set deletion.")
     question_count: int
     configured_count: int
     status: Literal["draft", "ready"]

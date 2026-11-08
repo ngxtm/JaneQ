@@ -1,16 +1,14 @@
-import { Flex, Heading, HStack, IconButton, Menu, Portal, Stack, Text } from '@chakra-ui/react'
-import { IconDotsVertical, IconEditCircle, IconTrash } from '@tabler/icons-react'
+import { Flex, Heading, HStack, Stack, Text } from '@chakra-ui/react'
+import { IconEditCircle } from '@tabler/icons-react'
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from 'react'
 
 type EditorTopBarProps = PropsWithChildren<{
   editing: boolean
   status?: string
   action?: ReactNode
-  onDelete?: () => void
-  busy?: boolean
 }>
 
-export function EditorTopBar({ editing, status, action, onDelete, busy, children }: EditorTopBarProps) {
+export function EditorTopBar({ editing, status, action, children }: EditorTopBarProps) {
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
     if (document.activeElement === document.body) heading.current?.focus({ preventScroll: true })
@@ -32,18 +30,6 @@ export function EditorTopBar({ editing, status, action, onDelete, busy, children
         </Stack>
         <HStack gap="1" flexShrink="0">
           {action}
-          {onDelete ? (
-            <Menu.Root positioning={{ placement: 'bottom-end' }}>
-              <Menu.Trigger asChild>
-                <IconButton type="button" variant="ghost" size="sm" aria-label="More actions" disabled={busy}>
-                  <IconDotsVertical size={19} />
-                </IconButton>
-              </Menu.Trigger>
-              <Portal><Menu.Positioner><Menu.Content fontFamily="body" minW="36" shadow="lg">
-                <Menu.Item value="delete" color="red.700" onSelect={onDelete}><IconTrash size={18} /> Delete set</Menu.Item>
-              </Menu.Content></Menu.Positioner></Portal>
-            </Menu.Root>
-          ) : null}
         </HStack>
       </Flex>
       {children}

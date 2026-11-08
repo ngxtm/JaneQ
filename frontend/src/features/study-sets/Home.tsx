@@ -1,9 +1,10 @@
-import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { Box, Button, Heading, HStack, IconButton, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { IconArrowLeft, IconEditCircle } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
+import { SetDeleteMenu } from '../authoring/SetDeleteMenu'
 import { homeHref, mySetsHref, navigateLibrary, studySetHref, type LibraryRoute } from '../navigation/app-location'
 import { draftTestMessage } from '../test/copy'
 import { getStudySets, type StudySet } from './api'
@@ -62,7 +63,7 @@ function StudySetLoadError({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSessionExpired, loadPreview }: {
+function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSessionExpired, loadPreview, onDeleted }: {
   set: StudySet | undefined
   status: StudySetsState['kind']
   showSkeleton: boolean
@@ -70,6 +71,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   username: string
   onSessionExpired: () => void
   loadPreview: ReturnType<typeof createPreviewLoader>['load']
+  onDeleted: (id: string) => void
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
@@ -93,16 +95,24 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
             {status === 'loaded' && set ? (
               <Stack gap="4">
-                <HStack align="start" gap="4" flexWrap="wrap" justify="space-between">
-                  <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
-                    lineHeight={{ base: '1.2', md: '1' }} overflowWrap="anywhere" minW="0" _focus={{ outline: 'none' }}>
-                    {set.title}
-                  </Heading>
-                  {custom ? <Button asChild variant="outline" fontFamily="body"><a href={studySetHref(set.id, 'editor')}>Edit set</a></Button> : null}
+                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
+                  lineHeight={{ base: '1.2', md: '1' }} overflowWrap="anywhere" _focus={{ outline: 'none' }}>
+                  {set.title}
+                </Heading>
+                <HStack gap="3" justify="space-between" minH="8">
+                  <Text color="janeq.muted" fontWeight="semibold">
+                    {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                  </Text>
+                  {custom ? (
+                    <HStack gap="0" border="1px solid" borderColor="janeq.line" rounded="lg" flexShrink="0">
+                      <IconButton asChild variant="ghost" size="sm" w="10" roundedEnd="0" color="janeq.focus"
+                        focusVisibleRing="outside" focusRingColor="janeq.focus">
+                        <a href={studySetHref(set.id, 'editor')} aria-label="Edit set" title="Edit set"><IconEditCircle size={19} /></a>
+                      </IconButton>
+                      <SetDeleteMenu key={set.id} id={set.id} title={set.title} revision={set.revision} onDeleted={onDeleted} attached />
+                    </HStack>
+                  ) : null}
                 </HStack>
-                <Text color="janeq.muted" fontWeight="semibold" minH="8" display="flex" alignItems="center">
-                  {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-                </Text>
                 {set.description ? <Text>{set.description}</Text> : null}
                 {set.status === 'draft' ? (
                   <Stack gap="2" align="start">
@@ -219,7 +229,7 @@ export default function Home({ route, username, signingOut, signOutError, onSign
         </Suspense>
       )
       return <StudySetOverview set={selectedSet} status={state.kind} showSkeleton={showSkeleton} onRetry={retry}
-        username={username} onSessionExpired={onSessionExpired} loadPreview={previewLoader.load} />
+        username={username} onSessionExpired={onSessionExpired} loadPreview={previewLoader.load} onDeleted={handleDeleted} />
     }
     if (state.kind === 'error') return <StudySetLoadError onRetry={retry} />
 

@@ -26,7 +26,7 @@ The overview puts a quiet **Back to Home** link, title, and question count above
 
 | Area | JaneQ design target |
 | --- | --- |
-| Header | Use a bold 48 px title on desktop and 36 px on mobile. Show the question count and Ready or Draft status. |
+| Header | Use a bold 48 px title on desktop and 36 px on mobile. Show the question count and Ready or Draft status. Owned sets show the attached **Edit set** and **More actions** icons on the right of the metadata row. The menu reuses the editor's delete confirmation. [Authoring and deletion](study-set-authoring.md) |
 | Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and layered shadow. Use 24 px Tabler icons with 2 px strokes, a blue foreground, and an offset blue shadow. Hover and keyboard focus move the icon layers. Reduced motion keeps the layers still. Disabled cards expose their unavailable state to assistive technology. |
 | Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. |
 | Flashcard preview | Use a 500 px height, 12 px radius, layered shadow, orange progress stripe, and 48 px previous and next controls. Show the question or answer face, position, and a star action. Use dark blue for outline controls. |

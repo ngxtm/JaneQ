@@ -141,8 +141,12 @@ class StudySetAuthoringTests(TestCase):
         path = f"{self.catalog}/{draft['id']}"
         editor = self.client.get(f"{path}/editor").json()
         self.assertIsNotNone(editor.pop("saved_at"))
-        self.assertEqual(self.client.put(f"{path}/editor", json={**editor, "description": "Updated"}).status_code, 200)
-        self.assertEqual(self.client.delete(path, params={"revision": 1}).status_code, 409)
+        response = self.client.put(f"{path}/editor", json={**editor, "description": "Updated"})
+        self.assertEqual(response.status_code, 200)
+        saved = response.json()
+        self.assertEqual(saved["revision"], 2)
+        self.assertIn(saved, self.client.get(self.catalog).json())
+        self.assertEqual(self.client.delete(path, params={"revision": draft["revision"]}).status_code, 409)
 
         learn = self.client.get(f"{path}/learn").json()
         answer = learn["question"]["options"][0]["id"]
@@ -150,8 +154,8 @@ class StudySetAuthoringTests(TestCase):
             "action": "check", "revision": learn["revision"], "version": learn["version"], "selected_ids": [answer],
         })
         self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(self.client.delete(path, params={"revision": 2}).status_code, 204)
-        self.assertEqual(self.client.delete(path, params={"revision": 2}).status_code, 404)
+        self.assertEqual(self.client.delete(path, params={"revision": saved["revision"]}).status_code, 204)
+        self.assertEqual(self.client.delete(path, params={"revision": saved["revision"]}).status_code, 404)
         self.assertNotIn(draft["id"], [item["id"] for item in self.client.get(self.catalog).json()])
         self.assertEqual(self.client.get(f"{path}/editor").status_code, 404)
         with closing(connect(self.database)) as connection:

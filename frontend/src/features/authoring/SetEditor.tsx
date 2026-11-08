@@ -6,13 +6,13 @@ import { httpErrorMessage, httpStatus, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { mySetsHref, studySetHref } from '../navigation/app-location'
 import type { StudySet } from '../study-sets/api'
-import { deleteEditorSet, getEditor, saveEditor, type SetRevision } from './api'
-import { DeleteSetDialog } from './DeleteSetDialog'
+import { getEditor, saveEditor, type SetRevision } from './api'
 import { DiscardChangesDialog } from './DiscardChangesDialog'
 import { EditorDetails, type EditorMetadata } from './EditorDetails'
 import { EditorToolbar } from './EditorToolbar'
 import { EditorTopBar } from './EditorTopBar'
 import { QuestionFields, type QuestionField } from './QuestionFields'
+import { SetDeleteMenu } from './SetDeleteMenu'
 import './bones/registry'
 
 type EditorProps = {
@@ -63,16 +63,18 @@ function savedStatus(data: SetRevision) {
 function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | 'onSaved' | 'onDeleted'> & { data?: SetRevision }) {
   const [form, setForm] = useState(() => initialForm(data))
   const [dirty, setDirty] = useState(false)
-  const [operation, setOperation] = useState<'save' | 'delete' | null>(null)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
   const [focusKey, setFocusKey] = useState<string>()
   const [issue, setIssue] = useState<EditorIssue>({ message: '' })
-  const [deleteIssue, setDeleteIssue] = useState<EditorIssue>({ message: '' })
   const title = useRef<HTMLInputElement>(null)
   const nextKey = useRef(0)
   const mutationPending = useRef(false)
   const [creationKey] = useState(() => id ? undefined : crypto.randomUUID?.())
-  const busy = operation !== null
+
+  function setMutationPending(pending: boolean) {
+    mutationPending.current = pending
+    setBusy(pending)
+  }
 
   function newOption() {
     return { key: `new-${nextKey.current++}`, text: '', is_correct: false }
@@ -124,8 +126,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
         prompt, options: options.map(({ text, is_correct }) => ({ text, is_correct })),
       })),
     }
-    mutationPending.current = true
-    setOperation('save')
+    setMutationPending(true)
     setIssue({ message: '' })
     try {
       onSaved(await saveEditor(content, id && data ? { id, revision: data.revision } : { creationKey }))
@@ -136,32 +137,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
         : httpErrorMessage(error, 'Could not save your study set. Try again.')
       setIssue({ message, status })
     } finally {
-      mutationPending.current = false
-      setOperation(null)
-    }
-  }
-
-  async function removeSet() {
-    if (!id || !data || mutationPending.current) return
-    mutationPending.current = true
-    setOperation('delete')
-    setDeleteIssue({ message: '' })
-    try {
-      await deleteEditorSet(id, data.revision)
-      onDeleted(id)
-    } catch (error) {
-      const status = httpStatus(error)
-      if (status === 404) {
-        onDeleted(id)
-      } else {
-        const message = status === 401
-          ? 'Your session expired. Sign in again, then retry deleting here.'
-          : httpErrorMessage(error, 'Could not delete this set. Try again.')
-        setDeleteIssue({ message, status })
-      }
-    } finally {
-      mutationPending.current = false
-      setOperation(null)
+      setMutationPending(false)
     }
   }
 
@@ -176,10 +152,13 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
           }
         }}>
           <EditorTopBar editing={!!id} status={dirty ? 'Unsaved changes' : data ? savedStatus(data) : 'Private study set'}
-            busy={busy} onDelete={id ? () => { setDeleteIssue({ message: '' }); setDeleteOpen(true) } : undefined} action={
-            <PrimaryButton type="submit" fontFamily="body" fontWeight="bold" disabled={busy} flexShrink="0">
-              {id ? 'Done' : isReady(form.questions) ? 'Save set' : 'Save draft'}
-            </PrimaryButton>
+            action={<>
+              <PrimaryButton type="submit" fontFamily="body" fontWeight="bold" disabled={busy} flexShrink="0">
+                {id ? 'Done' : isReady(form.questions) ? 'Save set' : 'Save draft'}
+              </PrimaryButton>
+              {id && data ? <SetDeleteMenu id={id} title={data.title} revision={data.revision} disabled={busy}
+                onDeleted={onDeleted} onPendingChange={setMutationPending} /> : null}
+            </>
           }>
             {issue.message ? (
               <Stack gap="1" role="alert" align="start" fontSize="sm" borderTop="1px solid" borderColor="janeq.divider" pt="3">
@@ -217,8 +196,6 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
         </form>
       </Stack>
       <DiscardChangesDialog dirty={dirty} saving={busy} />
-      {id && data ? <DeleteSetDialog id={id} title={data.title} open={deleteOpen} busy={operation === 'delete'} issue={deleteIssue}
-        onClose={() => setDeleteOpen(false)} onConfirm={() => void removeSet()} /> : null}
     </>
   )
 }

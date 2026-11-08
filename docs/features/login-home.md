@@ -48,6 +48,7 @@ Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh da
     "title": "HTML / CSS",
     "description": "",
     "source_kind": "builtin",
+    "revision": 1,
     "question_count": 3,
     "configured_count": 3,
     "status": "ready"

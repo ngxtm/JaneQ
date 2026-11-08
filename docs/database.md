@@ -53,6 +53,7 @@ Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `ba
 | `question_count` | Number of questions in the set. |
 | `configured_count` | Number of questions with a nonblank prompt, at least two nonblank options, and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
 | `status` | `ready` when the set has at least one question and every question is configured. Otherwise it is `draft`. |
+| `revision` | Current set revision read in the same query as the summary. The overview submits it when deleting a set. |
 
 These fields are calculated when Home requests the list. Learn, preview, and Test use the same question readiness query.
 

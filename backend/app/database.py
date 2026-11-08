@@ -155,7 +155,7 @@ def read_study_set_summaries(
     return connection.execute(
         f"""
         WITH question_status AS ({QUESTION_STATUS})
-        SELECT s.id, s.legacy_id, s.title, s.description, s.source_kind,
+        SELECT s.id, s.legacy_id, s.title, s.description, s.source_kind, s.revision,
             COUNT(q.id) AS question_count,
             COALESCE(SUM(q.configured), 0) AS configured_count,
             CASE
