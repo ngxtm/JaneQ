@@ -23,9 +23,40 @@ Home lists the six built-in study sets from SQLite. Cards show the question coun
 
 Both clients use the shared [Axios instance](../../frontend/src/http.ts) for same-origin `/api` requests. Each client reads `response.data` and validates its response shape. The app shell owns the session, and Home owns the list loading and retry state.
 
-[main.py](../../backend/app/main.py) wires up the routers and runs the [SQLite seed](../../backend/app/database.py) on startup. The seed groups the source questions by topic, preserves their text and option order, and records completion in the same transaction as the inserts. IDs such as `q16-c` refer to original source positions. The built-in sets start as Draft because the supplied answer fields are empty. A set becomes Ready when it has questions and every question has a prompt, at least two nonblank choices, and at least one nonblank choice marked correct.
+[main.py](../../backend/app/main.py) wires up the routers and initializes SQLite on startup. The [database reference](../database.md#study-set-status-on-home) explains how `list_study_sets()` reads the tables to compute the counts and status shown on Home.
+
+## API contract
+
+FastAPI generates the endpoint and schema reference from the backend. With the backend running, use [ReDoc](http://127.0.0.1:8000/redoc) for reading, [Swagger UI](http://127.0.0.1:8000/docs) for trying requests, and [OpenAPI JSON](http://127.0.0.1:8000/openapi.json) for tooling.
+
+| Request | Session or input | Success | Failure and UI behavior |
+| --- | --- | --- | --- |
+| `POST /api/auth/login` | JSON with `username` and `password` | `200` with the configured username, such as `{ "username": "demo" }`. Sets the signed session cookie. | `401` for incorrect credentials. The form shows the invalid-credentials message. |
+| `GET /api/auth/me` | Valid session cookie | `200` with the signed-in username. The app opens Home. | `401` for a missing or invalid session. The app shows Sign in. |
+| `GET /api/study-sets` | Valid session cookie | `200` with a list of study set summaries. Home renders the cards from that list. | `401` for a missing or invalid session. Home returns to Sign in. Other load errors show **Try again**. |
+| `POST /api/auth/logout` | The UI calls this from the signed-in account menu. | `204` with an empty body. The response clears the session cookie if present. | A failed request keeps the current screen and shows a sign-out error. |
+
+Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh database.
+
+```json
+[
+  {
+    "id": "html-css",
+    "title": "HTML / CSS",
+    "description": "",
+    "source_kind": "builtin",
+    "question_count": 3,
+    "configured_count": 0,
+    "status": "draft"
+  }
+]
+```
+
+The backend declares this shape in `StudySetSummary` and the frontend checks it in `getStudySets()`. The `401` responses above describe observed runtime behavior. The generated schema currently covers the success responses, and the authentication errors are documented here alongside their UI effects. [FastAPI study sets router](../../backend/app/study_sets.py) · [React study sets client](../../frontend/src/features/study-sets/api.ts)
 
 ## Design references
+
+The [frontend UI guide](../frontend.md) covers shared actions, states, and accessibility checks used across screens.
 
 The MCQ research report informed JaneQ's card-based Home and feature-specific FastAPI router with a shared authentication check. See [ClassQuiz's protected results router](https://github.com/mawoka-myblock/ClassQuiz/blob/master/classquiz/routers/results.py).
 
@@ -41,17 +72,19 @@ Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and 
 
 ## Acceptance checks
 
-| Check | Expected result |
-| --- | --- |
-| Open the app in a fresh browser session. Request `/api/study-sets` before signing in. | The app shows Sign in. The API returns `401`. |
-| Submit an incorrect password, then submit the configured credentials. | The form shows the invalid-credentials error. A valid sign-in opens Home with six sets and 41 questions in total. |
-| Use Tab to focus the username and password fields. Open Login at a 360 px viewport. | Each focused field shows a single continuous blue line. The form fits the viewport and its fields have accessible names. |
-| Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out and the final reload show Sign in. |
-| Block `/api/study-sets` in the browser, then unblock it and select **Try again**. | Home shows a load error and then restores the six cards. |
-| Check a fresh database, then set the HTML / CSS answer key in a disposable database and restart FastAPI. | The fresh sets are Draft. The edited set stays Ready with three configured questions, and the original question count stays at 41. |
-| Open Home at a 360 px viewport. Run `npm run lint` and `npm run build` in `frontend/`. | Cards fit in one column. Both frontend checks pass. |
+| Check | How to reproduce | Expected result | Verification |
+| --- | --- | --- | --- |
+| Missing session | Open JaneQ in a fresh browser session and request `/api/study-sets`. | JaneQ shows Sign in. The API returns `401` with `{"detail":"Sign in first."}`. | **Pass · API** for the endpoint response. |
+| Credentials and Home data | Submit an incorrect password, then sign in with the configured credentials. | The form shows the credential error. A valid sign-in opens Home with six built-in sets and 41 questions on a fresh database. | **Pass · API** for both login responses and the returned set counts. **Pass · browser (earlier milestone)** for valid sign-in. |
+| Session restore and sign-out | Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out clears the session and the final reload shows Sign in. | **Pass · API** for session lookup and cookie clearing. **Pass · browser (earlier milestone)** for reload and sign-out. |
+| Login on a narrow screen | At 360 px, use Tab to focus the username and password fields. | The form fits, the fields have accessible names, and each focused field shows a continuous blue ring. | **Pass · browser (Login design verification)**. |
+| Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
+| Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
+| Home on a narrow screen | Open Home at 360 px and use the keyboard to open the account menu. | Cards fit in one column and the account menu can be used to sign out. | **Pass · browser (Home and Motion verification)** for the 360 px layout and menu sign-out. **Pending · browser** for the keyboard-only menu path. |
+| Seed and answer-key persistence | Start with a fresh disposable database. Set `answer_options.is_correct` to `1` for `q15-a`, `q16-c`, and `q24-a`, then restart FastAPI with the same file. | Fresh sets are Draft. HTML / CSS stays Ready with three configured questions, and the source total stays at 41. | **Pass · API** for fresh seeded data. **Pass · persistence (earlier milestone)** for restart and seed concurrency checks. |
+| Frontend lint and build | Run `npm run lint` and `npm run build` from `frontend/`. | Both commands exit successfully. | **Pass · CLI (Motion verification)**. |
 
-The Login → Home milestone passed the browser sign-in, reload, sign-out, and mobile layout checks. API checks covered a missing or invalid session, seed concurrency, and answer-key persistence across startup.
+The API checks above were rerun with FastAPI's `TestClient` and a fresh in-memory SQLite database. Browser and Vite proxy checks are separate from that run.
 
 ### Local proxy regression
 

@@ -2,9 +2,11 @@
 
 JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and `frontend/` contains the React and TypeScript app.
 
-## Feature documentation
+## Documentation
 
 - [Demo sign-in and Home](docs/features/login-home.md) covers setup, the UI-to-API flow, and acceptance checks.
+- [Database reference](docs/database.md) covers the SQLite schema, seed behavior, and read-only inspection.
+- [Frontend UI guide](docs/frontend.md) covers shared components, interaction states, and verification.
 
 ## Local development
 
