@@ -1,7 +1,8 @@
 from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .auth import SESSION_REQUIRED_RESPONSES, require_user
 from .database import list_study_sets
@@ -15,7 +16,8 @@ router = APIRouter(
 
 
 class StudySetSummary(BaseModel):
-    id: str
+    id: UUID
+    legacy_id: str | None = Field(description="Old set identifier for bookmark compatibility, when available.")
     title: str
     description: str
     source_kind: Literal["builtin", "custom"]

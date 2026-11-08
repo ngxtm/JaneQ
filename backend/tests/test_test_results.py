@@ -108,7 +108,7 @@ class TestResultsTests(TestCase):
         self.sign_in()
         with closing(connect(self.database)) as connection, connection:
             connection.execute("UPDATE answer_options SET is_correct = 1 WHERE id = 'q15-b'")
-            connection.execute("UPDATE study_sets SET revision = 2 WHERE id = 'html-css'")
+            connection.execute("UPDATE study_sets SET revision = 2 WHERE legacy_id = 'html-css'")
         stale = self.submit()
         self.assertEqual(stale.status_code, 409)
         self.assertEqual(stale.json(), {"detail": {"code": "revision_changed"}})

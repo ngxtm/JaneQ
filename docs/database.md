@@ -16,7 +16,7 @@ seed_history tracks completed seed runs independently.
 
 | Table | Columns | Constraints and purpose |
 | --- | --- | --- |
-| `study_sets` | `id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `revision INTEGER` | `id` is the primary key. `title`, `description`, `source_kind`, and `revision` are required. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. |
+| `study_sets` | `id TEXT`, `legacy_id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `revision INTEGER` | `id` is the primary key and stores the canonical UUID string. `legacy_id` is nullable and unique when present. `title` is the required display name and may repeat. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. |
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
 | `seed_history` | `name TEXT` | `name` is the primary key. `builtin_catalog` marks completion of the MVP seed. |
@@ -29,6 +29,16 @@ Deleting a study set cascades to its questions and their answer options when for
 - The [catalog](../backend/app/builtin_sets) has one JSON file per set. Each file supplies its set and question IDs. Question and option positions follow source order. Option IDs join the question ID and its local choice ID. The seed sets `answer_options.is_correct` for each choice listed in `correctOptionIds`, so all 18 sets start Ready.
 - Startup acquires a write lock before checking `seed_history`. The seed inserts the catalog and records completion in the same transaction. Subsequent startups skip the completed seed and preserve saved progress.
 - The MVP uses a fresh file for a catalog reset. If startup finds study sets in a file without the MVP seed marker, it asks for a new `JANEQ_DB_PATH`. The previous demo database stays available as a separate file. [Built-in study sets](features/builtin-sets.md)
+
+## Study set identity and upgrade
+
+A fresh database assigns stable UUIDv5 IDs to the built-in sets using a fixed namespace and their source keys. The source keys become `legacy_id` aliases. Editing a title has no effect on identity. Future custom sets can receive a server-generated UUID and leave `legacy_id` null.
+
+On startup, a database with the previous `builtin_catalog` schema adds `legacy_id` and updates the set IDs and their references in `questions` and `learn_progress` in one SQLite write transaction. The original keys become aliases. Question and option IDs, revision numbers, and saved Learn state keep their values. Restarting again keeps the same UUIDs. A database from an earlier catalog with a different seed marker still requires its own database path.
+
+The catalog returns `id` as a UUID and `legacy_id` as a nullable string. The preview, Learn, and Test routes accept either key. Learn reads and writes progress under the UUID. The frontend uses the UUID in new links and requests. [OpenAPI](http://127.0.0.1:8000/docs) · [Study set navigation](features/learn.md#study-set-urls-and-preview-loading)
+
+Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `backend/`. The migration test opens a disposable database with the previous schema and saved Learn feedback, then restarts it twice. It verifies identical catalog UUIDs, unchanged feedback through both keys, a working UUID Test route, a clean foreign key check, and two sets with the same title. **Pass · API and SQLite**.
 
 ## Study set status on Home
 

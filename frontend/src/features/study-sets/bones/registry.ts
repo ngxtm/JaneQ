@@ -4,8 +4,10 @@ import { registerBones } from 'boneyard-js'
 
 import _study_set_card from './study-set-card.bones.json'
 import _study_set_overview from './study-set-overview.bones.json'
+import _flashcard_preview from './flashcard-preview.bones.json'
 
 registerBones({
   "study-set-card": _study_set_card,
   "study-set-overview": _study_set_overview,
+  "flashcard-preview": _flashcard_preview,
 })

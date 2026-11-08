@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useSyncExternalStore, type MouseEvent } from 'react'
 
 export const homeHref = import.meta.env.BASE_URL
+const notFoundHref = `${homeHref}404`
 const navigationEvent = 'janeq:navigate'
 
 type SetRoute = { kind: 'set'; id: string; mode: 'overview' | 'learn' | 'test' }
@@ -26,10 +27,10 @@ function legacyPath() {
   const { pathname, hash } = window.location
   if (pathname !== homeHref && pathname !== `${homeHref}index.html`) return undefined
   if (hash === '#home') return homeHref
-  const [, path] = /^#(?:set|card)\/(.+)$/.exec(hash) ?? []
-  const set = path && readSetRoute(path, true)
-  if (set) return studySetHref(set.id, set.mode === 'overview' ? undefined : set.mode)
-  return undefined
+  const legacy = /^#(?:set|card)(?:\/(.*))?$/.exec(hash)
+  if (!legacy) return undefined
+  const set = readSetRoute(legacy[1] ?? '', true)
+  return set ? studySetHref(set.id, set.mode === 'overview' ? undefined : set.mode) : notFoundHref
 }
 
 function getPath() {
@@ -40,6 +41,13 @@ function getPath() {
 function replaceLegacyUrl() {
   const path = legacyPath()
   if (path) window.history.replaceState(window.history.state, '', `${path}${window.location.search}`)
+}
+
+export function replaceStudySetAlias(href: string) {
+  const { pathname, search, hash } = window.location
+  if (pathname === href) return
+  window.history.replaceState(window.history.state, '', `${href}${search}${hash}`)
+  window.dispatchEvent(new Event(navigationEvent))
 }
 
 function subscribe(onChange: () => void) {
@@ -60,6 +68,7 @@ function subscribe(onChange: () => void) {
 
 function readRoute(path: string) {
   if (path === homeHref) return { kind: 'home' as const }
+  if (path === notFoundHref || path === `${notFoundHref}/`) return null
   return path.startsWith(homeHref) ? readSetRoute(path.slice(homeHref.length)) : null
 }
 
@@ -71,6 +80,16 @@ export function useLibraryRoute() {
   return useMemo(() => readRoute(path), [path])
 }
 
+export function navigateLibrary(href: string) {
+  const url = new URL(href, window.location.href)
+  const samePath = url.pathname === window.location.pathname
+  if (url.href !== window.location.href) {
+    window.history.pushState(null, '', url.href)
+    window.dispatchEvent(new Event(navigationEvent))
+  }
+  if (samePath) window.scrollTo(0, 0)
+}
+
 export function followLibraryLink(event: MouseEvent<HTMLElement>) {
   if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
   const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null
@@ -79,10 +98,5 @@ export function followLibraryLink(event: MouseEvent<HTMLElement>) {
     || !readRoute(link.pathname)) return
 
   event.preventDefault()
-  const samePath = link.pathname === window.location.pathname
-  if (link.href !== window.location.href) {
-    window.history.pushState(null, '', link.href)
-    window.dispatchEvent(new Event(navigationEvent))
-  }
-  if (samePath) window.scrollTo(0, 0)
+  navigateLibrary(link.href)
 }

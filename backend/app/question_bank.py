@@ -29,6 +29,7 @@ class Question(BaseModel):
 
 @dataclass
 class QuestionBank:
+    id: str
     title: str
     revision: int
     questions: dict[str, Question]
@@ -45,7 +46,7 @@ def read_question_bank(connection: sqlite3.Connection, set_id: str) -> QuestionB
     if study_set is None:
         return None
 
-    rows = read_study_questions(connection, set_id)
+    rows = read_study_questions(connection, study_set["id"])
     remaining = {row["id"] for row in rows if not row["configured"]}
     questions: dict[str, Question] = {}
     correct_ids: dict[str, list[str]] = {}
@@ -61,4 +62,4 @@ def read_question_bank(connection: sqlite3.Connection, set_id: str) -> QuestionB
 
     for question_id, question in questions.items():
         question.multiple = len(correct_ids[question_id]) > 1
-    return QuestionBank(study_set["title"], study_set["revision"], questions, correct_ids, len(remaining))
+    return QuestionBank(study_set["id"], study_set["title"], study_set["revision"], questions, correct_ids, len(remaining))

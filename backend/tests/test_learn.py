@@ -4,6 +4,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 
@@ -102,7 +103,7 @@ class LearnTests(TestCase):
             view = self.command(view, "reset")
 
         with closing(connect(self.database)) as connection, connection:
-            connection.execute("UPDATE study_sets SET revision = 2 WHERE id = 'html-css'")
+            connection.execute("UPDATE study_sets SET revision = 2 WHERE legacy_id = 'html-css'")
         self.command(view, "check", 409, selected_ids=["q15-a", "q15-b"])
         refreshed = self.client.get(self.path).json()
         self.assertTrue(refreshed["revision_changed"])
@@ -131,6 +132,40 @@ class LearnTests(TestCase):
             self.assertEqual(connection.execute("SELECT name FROM seed_history").fetchone()["name"],
                              "builtin_questions_v2")
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM questions").fetchone()[0], 281)
+
+    def test_slug_database_upgrade_keeps_questions_and_saved_feedback(self) -> None:
+        self.sign_in()
+        catalog = self.client.get("/api/study-sets").json()
+        html_css = next(item for item in catalog if item["legacy_id"] == "html-css")
+        self.assertEqual(str(UUID(html_css["id"])), html_css["id"])
+        canonical_path = f"/api/study-sets/{html_css['id']}"
+        feedback = self.command(self.client.get(self.path).json(), "check", selected_ids=["q15-a"])
+
+        # Reconstruct the previous schema and keys from a populated disposable file.
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("BEGIN IMMEDIATE")
+            connection.execute("PRAGMA defer_foreign_keys = ON")
+            for study_set in catalog:
+                keys = (study_set["legacy_id"], study_set["id"])
+                connection.execute("UPDATE questions SET study_set_id = ? WHERE study_set_id = ?", keys)
+                connection.execute("UPDATE learn_progress SET study_set_id = ? WHERE study_set_id = ?", keys)
+                connection.execute("UPDATE study_sets SET id = ? WHERE id = ?", keys)
+            connection.execute("DROP INDEX study_sets_legacy_id")
+            connection.execute("ALTER TABLE study_sets DROP COLUMN legacy_id")
+
+        for _ in range(2):
+            with TestClient(self.app, cookies=self.client.cookies) as reopened:
+                self.assertEqual(reopened.get("/api/study-sets").json(), catalog)
+                self.assertEqual(reopened.get(f"{canonical_path}/learn").json(), feedback)
+                self.assertEqual(reopened.get(self.path).json(), feedback)
+                self.assertEqual(reopened.get(f"{canonical_path}/test").json()["set_id"], html_css["id"])
+        with closing(connect(self.database)) as connection, connection:
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
+            connection.execute(
+                "INSERT INTO study_sets (id, title, source_kind) VALUES (?, ?, 'custom')",
+                ("725dfaec-5863-484c-85f0-f341927b6ad2", html_css["title"]),
+            )
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM study_sets WHERE title = ?", (html_css["title"],)).fetchone()[0], 2)
 
     def test_all_built_in_sets_open_without_an_editor(self) -> None:
         self.sign_in()

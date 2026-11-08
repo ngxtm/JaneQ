@@ -37,7 +37,7 @@ npm run dev
 
 Open [JaneQ](http://127.0.0.1:5173/). Vite forwards `/api` to FastAPI on port 8000. [The health endpoint](http://127.0.0.1:5173/api/health) should return `{"status":"ok"}` through the proxy. [FastAPI's OpenAPI UI](http://127.0.0.1:8000/docs) is available on the backend port.
 
-Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. The MVP seeds `backend/data/janeq-mvp.sqlite3` on first startup. If `JANEQ_DB_PATH` points to a previous demo database, point it to a new file. The fresh file starts with empty Learn progress. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS.
+Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. The MVP seeds `backend/data/janeq-mvp.sqlite3` on first startup. An existing MVP database upgrades its study set IDs to UUIDs on startup and retains Learn progress. A fresh file starts with empty Learn progress. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. [Database upgrade](docs/database.md#study-set-identity-and-upgrade)
 
 ## Frontend checks
 

@@ -4,10 +4,12 @@
 
 Use the [local development setup](../../README.md#local-development). Set `JANEQ_DB_PATH` to a fresh, disposable SQLite path before starting FastAPI. Start Vite, open [JaneQ](http://127.0.0.1:5173/), and sign in with the configured demo account.
 
-1. From **Home**, open **HTML / CSS**, then select **Test**. The direct browser route is [`/html-css/test`](http://127.0.0.1:5173/html-css/test).
+1. From **Home**, open **HTML / CSS**, then select **Test**. The direct route uses the set UUID. [HTML / CSS Test](http://127.0.0.1:5173/e50a062a-6abc-50be-b0ab-28452a4ce1eb/test)
 2. Select `<ul>`, `background-color: navy`, and **The img element's alt attribute**, in order. Each answered question increases the counter once, even when it has several checked options. **Submit test** becomes available at `3/3 answered`.
 3. Submit and check **Your results**. The score is **2 / 3 (67%)**, with question 2 marked incorrect. The review labels each selected option and each correct answer.
 4. Select **Download PDF** and open `html-css-test-results.pdf`. Verify the score, all three question reviews, signed-in username, and submission time. **New test** loads a fresh paper. **Back** returns to the Study Set. [PDF downloaded during mobile review](test-results.sample.pdf)
+
+The exported filename uses the set title. After the UUID upgrade, submitting HTML / CSS and selecting **Download PDF** still produced a PDF blob named `html-css-test-results.pdf` in Chromium at 390 px.
 
 | Question | Selected option | Correct option | Outcome |
 | --- | --- | --- | --- |
@@ -53,7 +55,7 @@ Use the disposable database from setup. Before changing it, open the HTML / CSS 
 ```sql
 BEGIN;
 UPDATE answer_options SET is_correct = 1 WHERE id = 'q15-b';
-UPDATE study_sets SET revision = revision + 1 WHERE id = 'html-css';
+UPDATE study_sets SET revision = revision + 1 WHERE legacy_id = 'html-css';
 COMMIT;
 ```
 
@@ -62,7 +64,7 @@ Submit the open paper to exercise the revision conflict. Select **Open a new tes
 ```sql
 BEGIN;
 UPDATE answer_options SET is_correct = 0 WHERE question_id = 'q15';
-UPDATE study_sets SET revision = revision + 1 WHERE id = 'html-css';
+UPDATE study_sets SET revision = revision + 1 WHERE legacy_id = 'html-css';
 COMMIT;
 ```
 

@@ -3,6 +3,7 @@ import {
   IconArrowsShuffle, IconBrain, IconCards, IconChevronLeft, IconChevronRight, IconReport,
   IconPlayerPlay, IconSettings, IconStar, IconStarFilled,
 } from '@tabler/icons-react'
+import { Skeleton } from 'boneyard-js/react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { httpErrorMessage, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
@@ -23,6 +24,9 @@ const previewOutline = {
   _hover: { bg: actionHover }, _disabled: { opacity: 0.4, bg: 'transparent' },
   css: iconSize,
 } as const
+const previewHeight = '500px'
+const previewSkeletonName = 'flashcard-preview'
+const previewSkeletonDelayMs = 200
 
 function ModeCard({ label, icon, href, describedBy }: { label: string; icon: ReactNode; href?: string; describedBy?: string }) {
   const content = <>
@@ -61,16 +65,17 @@ export function TestModeCard({ setId, describedBy }: { setId?: string; described
     describedBy={describedBy} />
 }
 
-function readStars(key: string): string[] {
+function readStars(key: string, legacyKey?: string): string[] {
   try {
-    const data: unknown = JSON.parse(window.localStorage.getItem(key) ?? '[]')
+    const stored = window.localStorage.getItem(key) ?? (legacyKey ? window.localStorage.getItem(legacyKey) : null)
+    const data: unknown = JSON.parse(stored ?? '[]')
     return Array.isArray(data) ? data.filter((value): value is string => typeof value === 'string') : []
   } catch {
     return []
   }
 }
 
-function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
+function Preview({ cards, starKey, legacyStarKey }: { cards: StudyCard[]; starKey: string; legacyStarKey?: string }) {
   const [order, setOrder] = useState(cards)
   const [index, setIndex] = useState(0)
   const [direction, setDirection] = useState(0)
@@ -78,7 +83,7 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   const [flipped, setFlipped] = useState(false)
   const [autoplay, setAutoplay] = useState(false)
   const [settings, setSettings] = useState(false)
-  const [stars, setStars] = useState(() => readStars(starKey))
+  const [stars, setStars] = useState(() => readStars(starKey, legacyStarKey))
   const card = order[index]
   const showingAnswer = answerFirst !== flipped
   const changeCard = useCallback((nextIndex: number, nextDirection: number) => {
@@ -128,8 +133,8 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   }
 
   const starred = stars.includes(card.id)
-  return <>
-    <Flex data-study-preview direction="column" h="500px" bg="white" rounded="xl" boxShadow={flashcardShadow} overflow="hidden" minW="0" pb="1">
+  const previewCard = (
+    <Flex data-study-preview direction="column" h={previewHeight} bg="white" rounded="xl" boxShadow={flashcardShadow} overflow="hidden" minW="0" pb="1">
       <Box bg="#ffa54c" h="1" flexShrink="0" w={`${(index + 1) / order.length * 100}%`}
         transition="width 100ms ease-in-out" _motionReduce={{ transition: 'none' }} />
       <Flex direction="column" flex="1" minH="0" p="8">
@@ -149,6 +154,9 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
         </Grid>
       </Flex>
     </Flex>
+  )
+  return <>
+    <Skeleton name={previewSkeletonName} loading={false}>{previewCard}</Skeleton>
     <Stack gap="4" minW="0">
       <Grid templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: '1fr' }} gap="3">
         <Button {...previewOutline} h="10" color={actionColor} fontFamily="body" fontSize="md" fontWeight="semibold"
@@ -177,8 +185,9 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   </>
 }
 
-export function StudySetModes({ setId, username, onSessionExpired, loadPreview }: {
+export function StudySetModes({ setId, legacyId, username, onSessionExpired, loadPreview }: {
   setId: string
+  legacyId: string | null
   username: string
   onSessionExpired: () => void
   loadPreview: (id: string) => Promise<StudyCard[]>
@@ -186,20 +195,27 @@ export function StudySetModes({ setId, username, onSessionExpired, loadPreview }
   const [cards, setCards] = useState<StudyCard[]>()
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [showSkeleton, setShowSkeleton] = useState(false)
+  const pending = !cards && !error
 
   useEffect(() => {
     let active = true
     const stopProgress = showPreviewProgressIfSlow()
+    const skeletonTimer = window.setTimeout(() => setShowSkeleton(true), previewSkeletonDelayMs)
+    function stopLoading() {
+      window.clearTimeout(skeletonTimer)
+      stopProgress()
+    }
     loadPreview(setId).then((items) => {
       if (active) setCards(items)
     }).catch((failure: unknown) => {
       if (!active) return
       if (isUnauthorized(failure)) onSessionExpired()
       else setError(httpErrorMessage(failure, 'Could not load the flashcard preview.'))
-    }).finally(stopProgress)
+    }).finally(stopLoading)
     return () => {
       active = false
-      stopProgress()
+      stopLoading()
     }
   }, [attempt, loadPreview, onSessionExpired, setId])
 
@@ -209,10 +225,19 @@ export function StudySetModes({ setId, username, onSessionExpired, loadPreview }
       <ModeCard label="Flashcards" icon={<IconCards size={24} stroke={2} />} />
       <TestModeCard setId={setId} />
     </Grid>
-    {!cards && !error ? <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden> : null}
-    {cards ? <Preview cards={cards} starKey={`janeq:preview-stars:v1:${username}:${setId}`} /> : null}
+    {pending ? <>
+      <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden>
+      <Box aria-busy="true" h={previewHeight} minW="0">
+        {showSkeleton ? <Box aria-hidden="true">
+          <Skeleton name={previewSkeletonName} loading animate="solid" color="var(--chakra-colors-janeq-divider)">{null}</Skeleton>
+        </Box> : null}
+      </Box>
+    </> : null}
+    {cards ? <Preview cards={cards} starKey={`janeq:preview-stars:v1:${username}:${setId}`}
+      legacyStarKey={legacyId ? `janeq:preview-stars:v1:${username}:${legacyId}` : undefined} /> : null}
     {error ? <Stack align="start" role="alert"><Text color="red.700">{error}</Text><Button variant="outline" onClick={() => {
       setError('')
+      setShowSkeleton(false)
       setAttempt((value) => value + 1)
     }}>Try again</Button></Stack> : null}
   </Grid>

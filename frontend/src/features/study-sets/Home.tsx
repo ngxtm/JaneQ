@@ -104,7 +104,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                     <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
                     <Box mt="4" w="40"><TestModeCard describedBy="test-draft-reason" /></Box>
                   </Stack>
-                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired}
+                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} legacyId={set.legacy_id} username={username} onSessionExpired={onSessionExpired}
                   loadPreview={loadPreview} /></Box>}
               </Stack>
             ) : null}

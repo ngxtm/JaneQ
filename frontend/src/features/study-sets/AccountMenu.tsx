@@ -1,6 +1,6 @@
 import { Avatar, Box, Button, Menu, Text } from '@chakra-ui/react'
 import { IconChevronDown, IconHome, IconLogout } from '@tabler/icons-react'
-import { homeHref } from '../navigation/app-location'
+import { homeHref, navigateLibrary } from '../navigation/app-location'
 
 type AccountMenuProps = {
   username: string
@@ -19,7 +19,14 @@ const itemStyle = {
 
 export function AccountMenu({ username, signingOut, onSignOut }: AccountMenuProps) {
   return (
-    <Menu.Root positioning={{ placement: 'bottom-end', gutter: 8 }}>
+    <Menu.Root positioning={{ placement: 'bottom-end', gutter: 8 }} navigate={({ node, modifiers }) => {
+      if (modifiers?.metaKey || modifiers?.ctrlKey || modifiers?.shiftKey || modifiers?.altKey) {
+        node.dispatchEvent(new MouseEvent('click', { ...modifiers, bubbles: true, cancelable: true }))
+        return
+      }
+      // The menu's keyboard navigation bypasses the layout's click handler.
+      navigateLibrary(homeHref)
+    }}>
       <Menu.Trigger asChild>
         <Button
           aria-label="Account menu"

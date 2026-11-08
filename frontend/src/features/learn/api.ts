@@ -66,7 +66,7 @@ function studySetPath(id: string) {
 }
 
 export async function getStudyPreview(id: string, signal: AbortSignal): Promise<StudyCard[]> {
-  const { data } = await http.get<unknown>(`${studySetPath(id)}/preview`, { signal })
+  const { data } = await http.get<unknown>(`${studySetPath(id)}/preview`, { signal, timeout: 8_000 })
   if (!Array.isArray(data) || !data.every(isStudyCard)) throw new Error('Unexpected study preview response.')
   return data
 }

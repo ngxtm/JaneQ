@@ -2,13 +2,16 @@ import json
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from uuid import UUID, uuid5
 
 BUILTIN_SETS_DIR = Path(__file__).with_name("builtin_sets")
 SEED_NAME = "builtin_catalog"
+STUDY_SET_NAMESPACE = UUID("9bcc275f-37db-4835-998b-ea87df42f6f7")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS study_sets (
     id TEXT PRIMARY KEY,
+    legacy_id TEXT,
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     source_kind TEXT NOT NULL CHECK (source_kind IN ('builtin', 'custom')),
@@ -60,11 +63,27 @@ def connect(path: Path) -> sqlite3.Connection:
     return connection
 
 
+def upgrade_study_set_ids(connection: sqlite3.Connection) -> None:
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(study_sets)")}
+    if "legacy_id" not in columns:
+        connection.execute("ALTER TABLE study_sets ADD COLUMN legacy_id TEXT")
+        # The parent and both referencing tables must change in the same transaction.
+        connection.execute("PRAGMA defer_foreign_keys = ON")
+        for row in connection.execute("SELECT id FROM study_sets").fetchall():
+            old_id = row["id"]
+            new_id = str(uuid5(STUDY_SET_NAMESPACE, old_id))
+            connection.execute("UPDATE study_sets SET id = ?, legacy_id = ? WHERE id = ?", (new_id, old_id, old_id))
+            connection.execute("UPDATE questions SET study_set_id = ? WHERE study_set_id = ?", (new_id, old_id))
+            connection.execute("UPDATE learn_progress SET study_set_id = ? WHERE study_set_id = ?", (new_id, old_id))
+    connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS study_sets_legacy_id ON study_sets(legacy_id)")
+
+
 def initialize_database(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with closing(connect(path)) as connection, connection:
         # Acquire the write lock before checking the seed marker.
         connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA)
+        upgrade_study_set_ids(connection)
         already_seeded = connection.execute(
             "SELECT 1 FROM seed_history WHERE name = ?", (SEED_NAME,)
         ).fetchone()
@@ -80,12 +99,14 @@ def initialize_database(path: Path) -> None:
 
         for source_path in source_paths:
             study_set = json.loads(source_path.read_text(encoding="utf-8"))
+            legacy_id = study_set["id"]
+            set_id = str(uuid5(STUDY_SET_NAMESPACE, legacy_id))
             connection.execute(
-                "INSERT INTO study_sets (id, title, source_kind) VALUES (?, ?, 'builtin')",
-                (study_set["id"], study_set["title"]),
+                "INSERT INTO study_sets (id, legacy_id, title, source_kind) VALUES (?, ?, ?, 'builtin')",
+                (set_id, legacy_id, study_set["title"]),
             )
             for position, row in enumerate(study_set["questions"], start=1):
-                seed_question(connection, study_set["id"], position, row)
+                seed_question(connection, set_id, position, row)
         connection.execute("INSERT INTO seed_history (name) VALUES (?)", (SEED_NAME,))
 
 
@@ -122,7 +143,7 @@ def list_study_sets(path: Path) -> list[sqlite3.Row]:
         return connection.execute(
             f"""
             WITH question_status AS ({QUESTION_STATUS})
-            SELECT s.id, s.title, s.description, s.source_kind,
+            SELECT s.id, s.legacy_id, s.title, s.description, s.source_kind,
                 COUNT(q.id) AS question_count,
                 COALESCE(SUM(q.configured), 0) AS configured_count,
                 CASE
@@ -139,7 +160,11 @@ def list_study_sets(path: Path) -> list[sqlite3.Row]:
 
 def read_study_set(connection: sqlite3.Connection, set_id: str) -> sqlite3.Row | None:
     return connection.execute(
-        "SELECT id, title, source_kind, revision FROM study_sets WHERE id = ?", (set_id,)
+        """
+        SELECT id, title, source_kind, revision FROM study_sets
+        WHERE id = :id OR legacy_id = :id ORDER BY id = :id DESC LIMIT 1
+        """,
+        {"id": set_id},
     ).fetchone()
 
 

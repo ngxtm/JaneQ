@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect, read_learn_progress, save_learn_progress
-from .question_bank import Question, read_question_bank
+from .question_bank import Question, QuestionBank, read_question_bank
 
 router = APIRouter(
     prefix="/api/study-sets/{set_id}",
@@ -102,15 +102,15 @@ class ChangeSettings(LearnAction):
 Command = Annotated[CheckAnswer | Advance | Reset | ChangeSettings, Field(discriminator="action")]
 
 
-def ready_questions(
+def ready_bank(
     connection: sqlite3.Connection, set_id: str
-) -> tuple[int, dict[str, Question], dict[str, list[str]]]:
+) -> QuestionBank:
     bank = read_question_bank(connection, set_id)
     if bank is None:
         raise HTTPException(404, "Study set not found.")
     if not bank.ready:
         raise HTTPException(409, "This set is a draft. Finish setting it up before studying.")
-    return bank.revision, bank.questions, bank.correct_ids
+    return bank
 
 
 def study_card(question: Question, correct_ids: list[str]) -> StudyCard:
@@ -205,8 +205,8 @@ def get_preview(
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
-        _, questions, correct_ids = ready_questions(connection, set_id)
-        return [study_card(question, correct_ids[question.id]) for question in questions.values()]
+        bank = ready_bank(connection, set_id)
+        return [study_card(question, bank.correct_ids[question.id]) for question in bank.questions.values()]
 
 
 def load_progress(
@@ -225,9 +225,9 @@ def get_learn(
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN")
-        revision, questions, correct_ids = ready_questions(connection, set_id)
-        progress, changed = load_progress(connection, user.username, set_id, revision, questions)
-        return learn_view(progress, revision, changed, questions, correct_ids)
+        bank = ready_bank(connection, set_id)
+        progress, changed = load_progress(connection, user.username, bank.id, bank.revision, bank.questions)
+        return learn_view(progress, bank.revision, changed, bank.questions, bank.correct_ids)
 
 
 @router.post("/learn")
@@ -239,11 +239,11 @@ def update_learn(
     with closing(connect(request.app.state.database_path)) as connection, connection:
         # Check the revision and step under the same write lock as the progress update.
         connection.execute("BEGIN IMMEDIATE")
-        revision, questions, correct_ids = ready_questions(connection, set_id)
-        progress, _ = load_progress(connection, user.username, set_id, revision, questions)
-        if command.revision != revision or command.version != progress.version:
+        bank = ready_bank(connection, set_id)
+        progress, _ = load_progress(connection, user.username, bank.id, bank.revision, bank.questions)
+        if command.revision != bank.revision or command.version != progress.version:
             raise HTTPException(409, "This Learn step has changed. Reload your progress.")
-        progress = apply_command(progress, command, questions, correct_ids)
+        progress = apply_command(progress, command, bank.questions, bank.correct_ids)
         progress.version = uuid4().hex
-        save_learn_progress(connection, user.username, set_id, revision, progress.model_dump_json())
-        return learn_view(progress, revision, False, questions, correct_ids)
+        save_learn_progress(connection, user.username, bank.id, bank.revision, progress.model_dump_json())
+        return learn_view(progress, bank.revision, False, bank.questions, bank.correct_ids)

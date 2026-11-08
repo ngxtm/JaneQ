@@ -5,11 +5,12 @@ import { PrimaryButton } from '../../ui/PrimaryButton'
 import { generateResultPdf } from './pdf-download'
 import type { ResultReview } from './result-review'
 
-function downloadPdf(file: Blob, setId: string) {
+function downloadPdf(file: Blob, title: string) {
   const url = URL.createObjectURL(file)
   const link = document.createElement('a')
   link.href = url
-  link.download = `${setId.replace(/[^a-zA-Z0-9_-]/g, '-')}-test-results.pdf`
+  const name = title.toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '')
+  link.download = `${name || 'study-set'}-test-results.pdf`
   document.body.append(link)
   link.click()
   link.remove()
@@ -37,7 +38,7 @@ export function DownloadResultButton({ result, onError }: { result: ResultReview
         return
       }
       if (reply.kind === 'error') throw new Error('Could not generate the PDF.')
-      downloadPdf(reply.file, result.set_id)
+      downloadPdf(reply.file, result.title)
     } catch {
       if (!controller.signal.aborted) onError('Could not create the PDF. Select Download PDF to try again.')
     } finally {

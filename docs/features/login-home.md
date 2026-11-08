@@ -138,7 +138,7 @@ The library shell holds the header, account menu, and footer. Home shows recentl
 | Library sections | Recent lists sets opened by the signed-in user. Built-in sets lists the seeded catalog. My sets appears when custom sets are available. |
 | Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the overview. |
 | Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
-| Navigation state | Home uses `/` and each set uses its stable ID in `/<id>`. The library stores up to 16 recent set IDs per demo username. The API catalog supplies the displayed records. [Route handling](../../frontend/src/features/navigation/app-location.ts) · [Recent sets](../../frontend/src/features/study-sets/library-navigation.ts) |
+| Navigation state | Home uses `/` and each set uses its UUID in `/<uuid>`. The library stores up to 16 recent set IDs per demo username and upgrades saved aliases after loading the catalog. Account menu navigation keeps the header mounted with pointer and keyboard activation. [Route handling](../../frontend/src/features/navigation/app-location.ts) · [Recent sets](../../frontend/src/features/study-sets/library-navigation.ts) |
 
 [LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and renders [AccountMenu](../../frontend/src/features/study-sets/AccountMenu.tsx). [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.
 
@@ -179,7 +179,7 @@ The card slots and overview body stay visually blank for the first 200 ms, then 
 Regenerate the [card and overview bones](../../frontend/src/features/study-sets/bones) when their layout changes. Start JaneQ and sign in with a dedicated Chromium test profile that exposes a CDP port. From `frontend/`, run the following using that port and the same origin used to sign in:
 
 ```sh
-npm exec -- boneyard-js build "http://127.0.0.1:5173/" "http://127.0.0.1:5173/html-css" --out ./src/features/study-sets/bones --breakpoints 360,768,1280 --no-scan --wait 1000 --force --cdp 9222
+npm exec -- boneyard-js build "http://127.0.0.1:5173/" "http://127.0.0.1:5173/e50a062a-6abc-50be-b0ab-28452a4ce1eb" --out ./src/features/study-sets/bones --breakpoints 360,768,1280 --no-scan --wait 1000 --force --cdp 9222
 ```
 
 The CLI captures the first real Built-in card and the HTML / CSS overview. The [registry](../../frontend/src/features/study-sets/bones/registry.ts) loads with the Home module.
