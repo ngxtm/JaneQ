@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { studySetHref } from '../study-sets/library-navigation'
 import type { TestResult } from './api'
 import { DownloadResultButton } from './DownloadResultButton'
+import { reviewResult } from './result-review'
 import { ReviewedQuestion } from './TestQuestion'
 
 export function Results({ result, onRestart }: { result: TestResult; onRestart: () => void }) {
@@ -13,7 +14,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
     window.scrollTo(0, 0)
     heading.current?.focus({ preventScroll: true })
   }, [])
-  const percent = Math.round(result.score / result.total * 100)
+  const review = reviewResult(result)
   const multiple = result.questions.filter((question) => question.multiple)
   const multipleCorrect = multiple.filter((question) => question.correct).length
 
@@ -27,7 +28,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
           </Heading>
         </Box>
         <Flex wrap="wrap" gap="2">
-          <DownloadResultButton result={result} onError={setDownloadError} />
+          <DownloadResultButton result={review} onError={setDownloadError} />
           <Button variant="outline" color="janeq.focus" borderColor="janeq.line" _hover={{ bg: 'blue.50' }} onClick={onRestart}>
             <IconRotateClockwise2 size={18} aria-hidden="true" /> New test
           </Button>
@@ -41,7 +42,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
         bg="white" rounded="3xl" borderWidth="2px" borderStyle="solid" borderColor="janeq.divider" shadow="xl"
         px={{ base: '5', sm: '8' }} py="6">
         <HStack gap="4">
-          <ProgressCircle.Root value={percent} aria-label="Percentage correct" flexShrink="0">
+          <ProgressCircle.Root value={review.percent} aria-label="Percentage correct" flexShrink="0">
             <ProgressCircle.Circle css={{ '--size': { base: '100px', sm: '140px' }, '--thickness': '4px' }}>
               <ProgressCircle.Track stroke="janeq.divider" />
               <ProgressCircle.Range stroke="#4b83ff" strokeLinecap="round" _motionReduce={{ transition: 'none' }} />
@@ -65,7 +66,7 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
         </Stack>
       </Flex>
       <Box as="ol" role="list" listStyleType="none" m="0" p="0" aria-label="Question review">
-        {result.questions.map((question, index) => (
+        {review.questions.map((question, index) => (
           <ReviewedQuestion key={question.id} question={question} index={index} total={result.total} />
         ))}
       </Box>

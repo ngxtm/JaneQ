@@ -2,7 +2,8 @@ import { Spinner, Text } from '@chakra-ui/react'
 import { IconDownload } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { PrimaryButton } from '../../ui/PrimaryButton'
-import type { TestResult } from './api'
+import { generateResultPdf } from './pdf-download'
+import type { ResultReview } from './result-review'
 
 function downloadPdf(file: Blob, setId: string) {
   const url = URL.createObjectURL(file)
@@ -16,7 +17,7 @@ function downloadPdf(file: Blob, setId: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function DownloadResultButton({ result, onError }: { result: TestResult; onError: (error: string) => void }) {
+export function DownloadResultButton({ result, onError }: { result: ResultReview; onError: (error: string) => void }) {
   const [generating, setGenerating] = useState(false)
   const pending = useRef<AbortController | null>(null)
 
@@ -29,10 +30,14 @@ export function DownloadResultButton({ result, onError }: { result: TestResult; 
     setGenerating(true)
     onError('')
     try {
-      const [{ pdf }, { ResultPdf }] = await Promise.all([import('@react-pdf/renderer'), import('./ResultPdf')])
+      const reply = await generateResultPdf(result, controller.signal)
       if (controller.signal.aborted) return
-      const file = await pdf(<ResultPdf result={result} exportedAt={new Date()} />).toBlob()
-      if (!controller.signal.aborted) downloadPdf(file, result.set_id)
+      if (reply.kind === 'unsupported-text') {
+        onError('The report contains characters the PDF fonts cannot display.')
+        return
+      }
+      if (reply.kind === 'error') throw new Error('Could not generate the PDF.')
+      downloadPdf(reply.file, result.set_id)
     } catch {
       if (!controller.signal.aborted) onError('Could not create the PDF. Select Download PDF to try again.')
     } finally {

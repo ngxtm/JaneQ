@@ -1,17 +1,9 @@
-import { Circle, Document, Font, G, Page, Path, StyleSheet, Svg, Text, View } from '@react-pdf/renderer'
+/* oxlint-disable react/only-export-components -- The PDF worker owns its React components. */
+import { Circle, Document, G, Page, Path, pdf, StyleSheet, Svg, Text, View } from '@react-pdf/renderer'
 import type { ReactNode } from 'react'
-import janeqMark from '../../assets/janeq-mark.svg?raw'
-import type { TestResult } from './api'
-import regularFont from './fonts/OpenSans-Regular.ttf?inline'
-import boldFont from './fonts/OpenSans-Bold.ttf?inline'
-
-Font.register({
-  family: 'Open Sans',
-  fonts: [
-    { src: regularFont, fontWeight: 400 },
-    { src: boldFont, fontWeight: 700 },
-  ],
-})
+import type { PdfReply, PdfRequest } from './pdf-download'
+import { preparePdfText, type PdfFonts, UnsupportedPdfText } from './pdf-fonts'
+import type { MarkShape, PdfMark } from './pdf-mark'
 
 const styles = StyleSheet.create({
   page: {
@@ -52,39 +44,32 @@ const styles = StyleSheet.create({
   },
 })
 
-// Translate the elements used by the bundled mark so the web and PDF share its geometry.
-function markElement(element: Element, index: number): ReactNode {
-  const paint = {
-    fill: element.getAttribute('fill') ?? undefined,
-    stroke: element.getAttribute('stroke') ?? undefined,
-    strokeWidth: element.getAttribute('stroke-width') ?? undefined,
-    strokeLinecap: element.getAttribute('stroke-linecap') === 'round' ? 'round' as const : undefined,
-  }
-  switch (element.localName) {
-    case 'g':
-      return <G key={index} {...paint}>{Array.from(element.children, markElement)}</G>
+function renderMark(shape: MarkShape, index: number): ReactNode {
+  switch (shape.kind) {
+    case 'group':
+      return <G key={index} {...shape.paint}>{shape.children.map(renderMark)}</G>
     case 'path':
-      return <Path key={index} {...paint} d={element.getAttribute('d') ?? ''} />
+      return <Path key={index} {...shape.paint} d={shape.d} />
     case 'circle':
-      return <Circle key={index} {...paint} cx={element.getAttribute('cx') ?? 0}
-        cy={element.getAttribute('cy') ?? 0} r={element.getAttribute('r') ?? 0} />
-    default:
-      return null
+      return <Circle key={index} {...shape.paint} cx={shape.cx} cy={shape.cy} r={shape.r} />
   }
 }
 
-function JaneQMark() {
-  const svg = new DOMParser().parseFromString(janeqMark, 'image/svg+xml').documentElement
-  return <Svg width={24} height={24} viewBox={svg.getAttribute('viewBox') ?? undefined}>
-    {Array.from(svg.children, markElement)}
-  </Svg>
+function JaneQMark({ mark }: { mark: PdfMark }) {
+  return <Svg width={24} height={24} viewBox={mark.viewBox}>{mark.shapes.map(renderMark)}</Svg>
 }
 
-function AnswerLine({ label, answers }: { label: string; answers: string[] }) {
+function fontRuns(fonts: PdfFonts, text: string, weight?: number) {
+  return fonts(text, weight).map(({ text, fontFamily, fontWeight }, index) => (
+    <Text key={index} style={{ fontFamily, fontWeight }}>{text}</Text>
+  ))
+}
+
+function AnswerLine({ label, answers, fonts }: { label: string; answers: string[]; fonts: PdfFonts }) {
   return (
     <View style={styles.answer}>
       <Text style={styles.answerLabel}>{label}</Text>
-      <Text style={styles.answerValues}>{answers.join('\n')}</Text>
+      <Text style={styles.answerValues}>{fontRuns(fonts, answers.join('\n'))}</Text>
     </View>
   )
 }
@@ -101,8 +86,7 @@ const submissionDate = new Intl.DateTimeFormat('en-GB', {
 })
 const exportDate = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' })
 
-export function ResultPdf({ result, exportedAt }: { result: TestResult; exportedAt: Date }) {
-  const percent = Math.round(result.score / result.total * 100)
+function ResultPdf({ result, exportedAt, mark, fonts }: PdfRequest & { fonts: PdfFonts }) {
   const submittedAt = submissionDate.format(new Date(result.submitted_at))
 
   return (
@@ -110,26 +94,26 @@ export function ResultPdf({ result, exportedAt }: { result: TestResult; exported
       <Page size="A4" style={styles.page}>
         <View style={styles.header} fixed>
           <View style={styles.brand}>
-            <JaneQMark />
+            <JaneQMark mark={mark} />
             <Text style={styles.brandName}>JaneQ</Text>
           </View>
           <Text style={styles.eyebrow}>TEST RESULTS</Text>
         </View>
-        <Text style={styles.title} minPresenceAhead={55}>{result.title}</Text>
+        <Text style={styles.title} minPresenceAhead={55}>{fontRuns(fonts, result.title, 700)}</Text>
         <View style={styles.summary} wrap={false}>
           <View>
-            <Text style={styles.score}>{result.score} / {result.total} ({percent}%)</Text>
+            <Text style={styles.score}>{result.score} / {result.total} ({result.percent}%)</Text>
             <Text style={styles.scoreDetails}>{result.score} correct / {result.total - result.score} incorrect</Text>
           </View>
           <View style={styles.submission}>
-            <Text style={styles.metadata}><Text style={styles.label}>Submitted by</Text>  {result.submitted_by}</Text>
+            <Text style={styles.metadata}><Text style={styles.label}>Submitted by</Text>  {fontRuns(fonts, result.submitted_by)}</Text>
             <Text style={styles.metadata}><Text style={styles.label}>Submitted at</Text>  {submittedAt}</Text>
           </View>
         </View>
         <Text style={styles.reviewTitle} minPresenceAhead={55}>Question review</Text>
         {result.questions.map((question, index) => {
-          const selected = question.options.filter((option) => question.selected_ids.includes(option.id)).map((option) => option.text)
-          const correct = question.options.filter((option) => question.correct_ids.includes(option.id)).map((option) => option.text)
+          const selected = question.options.filter((option) => option.selected).map((option) => option.text)
+          const correct = question.options.filter((option) => option.correct).map((option) => option.text)
           const style = index === result.questions.length - 1 ? styles.question : [styles.question, styles.questionDivider]
           return (
             <View style={style} key={question.id} wrap={!fitsWithReview(question.prompt, selected, correct)}>
@@ -139,9 +123,9 @@ export function ResultPdf({ result, exportedAt }: { result: TestResult; exported
                   {question.correct ? 'Correct' : 'Incorrect'}
                 </Text>
               </View>
-              <Text style={styles.prompt}>{question.prompt}</Text>
-              <AnswerLine label="Your answer" answers={selected} />
-              <AnswerLine label="Correct answer" answers={correct} />
+              <Text style={styles.prompt}>{fontRuns(fonts, question.prompt)}</Text>
+              <AnswerLine label="Your answer" answers={selected} fonts={fonts} />
+              <AnswerLine label="Correct answer" answers={correct} fonts={fonts} />
             </View>
           )
         })}
@@ -152,4 +136,24 @@ export function ResultPdf({ result, exportedAt }: { result: TestResult; exported
       </Page>
     </Document>
   )
+}
+
+self.onmessage = async ({ data }: MessageEvent<PdfRequest>) => {
+  const { result } = data
+  let reply: PdfReply
+  try {
+    const regular = [
+      result.submitted_by,
+      ...result.questions.flatMap((question) => [
+        question.prompt,
+        ...question.options.filter((option) => option.selected || option.correct).map((option) => option.text),
+      ]),
+    ]
+    const fonts = await preparePdfText(regular, result.title)
+    const file = await pdf(<ResultPdf {...data} fonts={fonts} />).toBlob()
+    reply = { kind: 'success', file }
+  } catch (error) {
+    reply = error instanceof UnsupportedPdfText ? { kind: 'unsupported-text' } : { kind: 'error' }
+  }
+  self.postMessage(reply)
 }

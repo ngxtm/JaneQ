@@ -5,7 +5,7 @@ import {
 import { Skeleton } from 'boneyard-js/react'
 import type { PropsWithChildren } from 'react'
 import type { Question } from '../study-sets/question'
-import type { GradedQuestion } from './api'
+import type { QuestionReview } from './result-review'
 
 const optionStyle = {
   alignItems: 'center', gap: '3', px: { base: '3', md: '5' }, py: '4', minH: '14',
@@ -122,23 +122,21 @@ export function TestQuestion({ question, index, total, selected, disabled, onSel
   )
 }
 
-export function ReviewedQuestion({ question, index, total }: { question: GradedQuestion; index: number; total: number }) {
+export function ReviewedQuestion({ question, index, total }: { question: QuestionReview; index: number; total: number }) {
   return (
     <QuestionPanel question={question} index={index} total={total} correct={question.correct}>
       <SimpleGrid as="ul" {...choiceGrid} listStyleType="none" m="0" p="0">
-        {question.options.map((option) => {
-          const selected = question.selected_ids.includes(option.id)
-          const correct = question.correct_ids.includes(option.id)
+        {question.options.map(({ id, text, selected, correct }) => {
           const color = correct ? 'green.800' : selected ? 'red.800' : 'janeq.ink'
           return (
-            <HStack key={option.id} as="li" {...optionStyle} color={color}
+            <HStack key={id} as="li" {...optionStyle} color={color}
               borderColor={correct ? 'green.200' : selected ? 'red.200' : 'janeq.divider'}
               bg={correct ? 'green.50' : selected ? 'red.50' : 'white'}>
               {correct ? <IconCircleCheckFilled size={18} aria-hidden="true" style={{ flexShrink: 0 }} /> : selected ? (
                 <IconCircleXFilled size={18} aria-hidden="true" style={{ flexShrink: 0 }} />
               ) : null}
               <Stack gap="0.5" minW="0">
-                <Text whiteSpace="pre-wrap" overflowWrap="anywhere">{option.text}</Text>
+                <Text whiteSpace="pre-wrap" overflowWrap="anywhere">{text}</Text>
                 {selected || correct ? (
                   <Text fontSize="xs" fontWeight="semibold">
                     {selected && correct ? 'Your answer · Correct answer' : selected ? 'Your answer' : 'Correct answer'}
