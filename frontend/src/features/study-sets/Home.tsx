@@ -199,7 +199,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
 
   return (
     <UiProvider>
-      <LibraryLayout username={username} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
+      <LibraryLayout isHome={!viewingSet} username={username} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
         {renderLibrary()}
       </LibraryLayout>
     </UiProvider>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import type { StudySet } from './api'
 
 const recentLimit = 16
@@ -60,11 +60,15 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
       const nextHash = window.location.hash
       setHash(nextHash)
       rememberCurrentSet(sets)
-      if (nextHash.startsWith('#set/') || nextHash === '#home') window.scrollTo(0, 0)
     }
     window.addEventListener('hashchange', updateLocation)
     return () => window.removeEventListener('hashchange', updateLocation)
   }, [sets, rememberCurrentSet])
+
+  useLayoutEffect(() => {
+    // Scroll after the destination commits so the outgoing view cannot jump first.
+    if (hash.startsWith('#set/') || hash === '#home') window.scrollTo(0, 0)
+  }, [hash])
 
   useEffect(() => {
     try {

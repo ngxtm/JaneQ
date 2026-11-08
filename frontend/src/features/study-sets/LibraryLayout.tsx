@@ -4,6 +4,7 @@ import janeqMark from '../../assets/janeq-mark.svg'
 import { AccountMenu } from './AccountMenu'
 
 type LibraryLayoutProps = PropsWithChildren<{
+  isHome: boolean
   username: string
   signingOut: boolean
   signOutError: string
@@ -39,12 +40,13 @@ function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps)
 }
 
 export function LibraryLayout({
-  children, username, signingOut, signOutError, onSignOut,
+  children, isHome, username, signingOut, signOutError, onSignOut,
 }: LibraryLayoutProps) {
+  // The Home fragment must have no scroll target while a set is on screen.
   return (
-    <Flex direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
+    <Flex id={isHome ? 'home' : undefined} direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
       <LibraryNavigation username={username} signingOut={signingOut} onSignOut={onSignOut} />
-      <Container id="home" as="main" maxW="7xl" mt="10" pb={{ base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
+      <Container as="main" maxW="7xl" mt="10" pb={{ base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
         {signOutError ? <Text role="alert" color="red.700" mb="4">{signOutError}</Text> : null}
         {children}
       </Container>
