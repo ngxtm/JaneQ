@@ -7,9 +7,10 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { httpErrorMessage, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
-import { getStudyPreview, type StudyCard } from '../learn/api'
-import { learnHref, testHref } from './library-navigation'
+import type { StudyCard } from '../learn/api'
+import { studySetHref } from '../navigation/app-location'
 import { PreviewCard } from './PreviewCard'
+import { showPreviewProgressIfSlow } from './preview-progress'
 
 const actionColor = '#0036b4'
 const actionHover = '#e0edff'
@@ -56,7 +57,7 @@ function ModeCard({ label, icon, href, describedBy }: { label: string; icon: Rea
 }
 
 export function TestModeCard({ setId, describedBy }: { setId?: string; describedBy?: string }) {
-  return <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={setId ? testHref(setId) : undefined}
+  return <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={setId ? studySetHref(setId, 'test') : undefined}
     describedBy={describedBy} />
 }
 
@@ -176,30 +177,35 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
   </>
 }
 
-export function StudySetModes({ setId, username, onSessionExpired }: {
+export function StudySetModes({ setId, username, onSessionExpired, loadPreview }: {
   setId: string
   username: string
   onSessionExpired: () => void
+  loadPreview: (id: string) => Promise<StudyCard[]>
 }) {
   const [cards, setCards] = useState<StudyCard[]>()
   const [error, setError] = useState('')
   const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    const controller = new AbortController()
-    getStudyPreview(setId, controller.signal).then((items) => {
-      if (!controller.signal.aborted) setCards(items)
+    let active = true
+    const stopProgress = showPreviewProgressIfSlow()
+    loadPreview(setId).then((items) => {
+      if (active) setCards(items)
     }).catch((failure: unknown) => {
-      if (controller.signal.aborted) return
+      if (!active) return
       if (isUnauthorized(failure)) onSessionExpired()
       else setError(httpErrorMessage(failure, 'Could not load the flashcard preview.'))
-    })
-    return () => controller.abort()
-  }, [attempt, onSessionExpired, setId])
+    }).finally(stopProgress)
+    return () => {
+      active = false
+      stopProgress()
+    }
+  }, [attempt, loadPreview, onSessionExpired, setId])
 
   return <Grid templateColumns={{ base: 'minmax(0, 1fr)', lg: '10rem minmax(0, 1fr) 10rem' }} gap="8" alignItems="start">
     <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: '1fr' }} gap="4">
-      <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={learnHref(setId)} />
+      <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={studySetHref(setId, 'learn')} />
       <ModeCard label="Flashcards" icon={<IconCards size={24} stroke={2} />} />
       <TestModeCard setId={setId} />
     </Grid>

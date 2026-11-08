@@ -1,10 +1,10 @@
 import { Box, Button, Container, Flex, HStack, Image, Link, Text } from '@chakra-ui/react'
 import type { PropsWithChildren } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
+import { followLibraryLink, homeHref } from '../navigation/app-location'
 import { AccountMenu } from './AccountMenu'
 
 type LibraryLayoutProps = PropsWithChildren<{
-  isHome: boolean
   username: string
   signingOut: boolean
   signOutError: string
@@ -14,7 +14,7 @@ type LibraryLayoutProps = PropsWithChildren<{
 function Brand({ size }: { size: 'sm' | 'lg' }) {
   const compact = size === 'sm'
   return (
-    <Link href="#home" gap="2" color="janeq.ink" _hover={{ textDecoration: 'none' }}>
+    <Link href={homeHref} gap="2" color="janeq.ink" _hover={{ textDecoration: 'none' }}>
       <Image src={janeqMark} alt="" boxSize={compact ? '5' : '6'} />
       <Text fontFamily="heading" fontSize={compact ? 'lg' : '2xl'} fontWeight="700">
         JaneQ
@@ -31,7 +31,7 @@ function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps)
       <HStack as="nav" aria-label="Main navigation" gap="4" flexShrink="0">
         <Brand size="lg" />
         <Button asChild variant="ghost" fontFamily="body" fontSize="sm" fontWeight="700" hideBelow="md">
-          <a href="#home">Home</a>
+          <a href={homeHref}>Home</a>
         </Button>
       </HStack>
       <AccountMenu username={username} signingOut={signingOut} onSignOut={onSignOut} />
@@ -40,11 +40,10 @@ function LibraryNavigation({ username, signingOut, onSignOut }: NavigationProps)
 }
 
 export function LibraryLayout({
-  children, isHome, username, signingOut, signOutError, onSignOut,
+  children, username, signingOut, signOutError, onSignOut,
 }: LibraryLayoutProps) {
-  // The Home fragment must have no scroll target while a set is on screen.
   return (
-    <Flex id={isHome ? 'home' : undefined} direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
+    <Flex onClick={followLibraryLink} direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
       <LibraryNavigation username={username} signingOut={signingOut} onSignOut={onSignOut} />
       <Container as="main" maxW="7xl" mt="10" pb={{ base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
         {signOutError ? <Text role="alert" color="red.700" mb="4">{signOutError}</Text> : null}
@@ -54,7 +53,7 @@ export function LibraryLayout({
         <Container maxW="7xl" px={{ base: '4', sm: '8' }} py="10">
           <HStack justify="space-between">
             <Brand size="sm" />
-            <Link href="#home" fontSize="sm" color="janeq.muted">Home</Link>
+            <Link href={homeHref} fontSize="sm" color="janeq.muted">Home</Link>
           </HStack>
         </Container>
       </Box>

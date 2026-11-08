@@ -1,5 +1,6 @@
 import { Avatar, Box, Button, Menu, Text } from '@chakra-ui/react'
 import { IconChevronDown, IconHome, IconLogout } from '@tabler/icons-react'
+import { homeHref } from '../navigation/app-location'
 
 type AccountMenuProps = {
   username: string
@@ -79,7 +80,7 @@ export function AccountMenu({ username, signingOut, onSignOut }: AccountMenuProp
           _motionReduce={{ animation: 'none' }}
         >
           <Menu.Item value="home" asChild {...itemStyle}>
-            <a href="#home"><IconHome size={18} aria-hidden="true" /> Home</a>
+            <a href={homeHref}><IconHome size={18} aria-hidden="true" /> Home</a>
           </Menu.Item>
           <Menu.Separator mx="0" borderWidth="0" bg="janeq.divider" />
           <Menu.Item value="sign-out" disabled={signingOut} onSelect={onSignOut} {...itemStyle}>

@@ -2,8 +2,8 @@ import { Avatar, Box, Grid, Heading, HStack, LinkBox, LinkOverlay, Stack, Text }
 import { IconProgress } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import janeqMark from '../../assets/janeq-mark.svg'
+import { studySetHref } from '../navigation/app-location'
 import type { StudySet } from './api'
-import { studySetHref } from './library-navigation'
 
 const gridStyles = {
   templateColumns: 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))',
@@ -20,13 +20,14 @@ const cardStyles = {
   shadow: 'lg',
 } as const
 
-function StudySetCard({ set, username }: { set: StudySet; username: string }) {
+function StudySetCard({ set, username, onIntent }: { set: StudySet; username: string; onIntent: (set: StudySet) => void }) {
   const draft = set.status === 'draft'
   const builtIn = set.source_kind === 'builtin'
 
   return (
     <LinkBox
       as="article"
+      onPointerEnter={(event) => { if (event.pointerType === 'mouse') onIntent(set) }}
       {...cardStyles}
       transition="transform 150ms ease-in-out, border-color 150ms ease-in-out"
       _hover={{
@@ -46,7 +47,7 @@ function StudySetCard({ set, username }: { set: StudySet; username: string }) {
       <Stack h="full" justify="space-between" gap="3">
         <Stack gap="2" direction={draft ? 'column-reverse' : 'column'}>
           <Heading as="h3" fontFamily="heading" fontSize="lg" lineHeight="1.25" lineClamp={2} overflowWrap="anywhere">
-            <LinkOverlay href={studySetHref(set.id)} _focusVisible={{ outline: 'none' }}>{set.title}</LinkOverlay>
+            <LinkOverlay href={studySetHref(set.id)} onFocus={() => onIntent(set)} _focusVisible={{ outline: 'none' }}>{set.title}</LinkOverlay>
           </Heading>
           <HStack color="janeq.muted" gap="1.5" fontSize="sm">
             {draft ? <IconProgress size={16} aria-hidden="true" /> : null}
@@ -67,18 +68,19 @@ function StudySetCard({ set, username }: { set: StudySet; username: string }) {
   )
 }
 
-export function StudySetGrid({ sets, username, captureCard = false }: {
+export function StudySetGrid({ sets, username, onIntent, captureCard = false }: {
   sets: StudySet[]
   username: string
+  onIntent: (set: StudySet) => void
   captureCard?: boolean
 }) {
   return (
     <Grid {...gridStyles}>
       {sets.map((set, index) => captureCard && index === 0 ? (
         <Skeleton key={set.id} name={cardSkeletonName} loading={false}>
-          <StudySetCard set={set} username={username} />
+          <StudySetCard set={set} username={username} onIntent={onIntent} />
         </Skeleton>
-      ) : <StudySetCard key={set.id} set={set} username={username} />)}
+      ) : <StudySetCard key={set.id} set={set} username={username} onIntent={onIntent} />)}
     </Grid>
   )
 }

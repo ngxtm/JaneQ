@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { getUser, signOut, type User } from './features/auth/api'
+import { useLibraryRoute, type LibraryRoute } from './features/navigation/app-location'
 import { isUnauthorized } from './http'
 
 const Login = lazy(() => import('./features/auth/Login'))
@@ -13,7 +14,7 @@ type Session =
   | { kind: 'signed-out' }
   | { kind: 'signed-in'; user: User; signOut: 'idle' | 'pending' | 'error' }
 
-function SessionApp() {
+function SessionApp({ route }: { route: LibraryRoute }) {
   const [session, setSession] = useState<Session>({ kind: 'checking' })
   const checkingSession = session.kind === 'checking' || (session.kind === 'unavailable' && session.retrying)
   const signOutRequest = useRef<AbortController | null>(null)
@@ -78,6 +79,7 @@ function SessionApp() {
       {session.kind === 'signed-in' ? (
         <Suspense fallback={null}>
           <Home
+            route={route}
             username={session.user.username}
             signingOut={session.signOut === 'pending'}
             signOutError={session.signOut === 'error' ? 'Could not sign out. Please try again.' : ''}
@@ -91,9 +93,8 @@ function SessionApp() {
 }
 
 export default function App() {
-  const base = import.meta.env.BASE_URL
-  const path = window.location.pathname
-  if (path === base || path === `${base}index.html`) return <SessionApp />
+  const route = useLibraryRoute()
+  if (route) return <SessionApp route={route} />
 
   return <Suspense fallback={null}><NotFoundPage /></Suspense>
 }

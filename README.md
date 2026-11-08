@@ -6,7 +6,7 @@ JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and
 
 - [Demo sign-in and Home](docs/features/login-home.md) covers setup, the UI-to-API flow, and acceptance checks. [The 404 screen](docs/features/login-home.md#page-and-study-set-not-found) covers missing pages and study sets.
 - [Built-in study sets](docs/features/builtin-sets.md) covers the seeded question bank and the path from Home to Learn.
-- [Study Set and Learn](docs/features/learn.md) covers the layout, local review setup, and Learn acceptance checks.
+- [Study Set and Learn](docs/features/learn.md) covers the study flow, local review setup, and Learn acceptance checks. [Study set URLs and preview loading](docs/features/learn.md#study-set-urls-and-preview-loading) covers direct links and the top loading bar.
 - [Test, Results, and PDF download](docs/features/test-results.md) covers the practice flow, API contract, and sample report.
 - [JaneQ branding](docs/features/branding.md) describes the shared logo and where it appears.
 - [Database reference](docs/database.md) covers the SQLite schema, seed behavior, and read-only inspection.

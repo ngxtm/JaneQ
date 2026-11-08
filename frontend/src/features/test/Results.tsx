@@ -1,7 +1,7 @@
 import { Box, Button, Flex, Heading, HStack, ProgressCircle, Stack, Text } from '@chakra-ui/react'
 import { IconArrowLeft, IconCircleCheck, IconCircleX, IconRotateClockwise2 } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
-import { studySetHref } from '../study-sets/library-navigation'
+import { studySetHref } from '../navigation/app-location'
 import type { TestResult } from './api'
 import { DownloadResultButton } from './DownloadResultButton'
 import { reviewResult } from './result-review'

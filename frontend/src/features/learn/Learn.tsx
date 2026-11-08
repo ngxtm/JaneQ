@@ -3,7 +3,7 @@ import { IconArrowLeft, IconCheck, IconKeyframes, IconSettings, IconTrophy, Icon
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
-import { studySetHref } from '../study-sets/library-navigation'
+import { studySetHref } from '../navigation/app-location'
 import type { Feedback, LearnView, Question } from './api'
 import { useLearn } from './use-learn'
 import './learn.css'

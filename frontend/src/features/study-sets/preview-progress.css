@@ -1,0 +1,21 @@
+@import '@bprogress/core/css';
+
+.bprogress {
+  --bprogress-color: #ffa54c;
+  --bprogress-height: 3px;
+}
+
+.bprogress .indeterminate {
+  z-index: var(--bprogress-z-index);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bprogress .indeterminate .inc {
+    animation: none;
+    width: 100%;
+  }
+
+  .bprogress .indeterminate .dec {
+    display: none;
+  }
+}

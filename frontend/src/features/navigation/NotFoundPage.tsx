@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { StudyErrorScreen } from '../../ui/StudyErrorScreen'
 import styles from '../../ui/study-error-screen.module.css'
+import { followLibraryLink, homeHref } from './app-location'
 
 export default function NotFoundPage({ studySet = false }: { studySet?: boolean }) {
   const heading = useRef<HTMLHeadingElement>(null)
@@ -25,7 +26,7 @@ export default function NotFoundPage({ studySet = false }: { studySet?: boolean 
       headingRef={heading}
     >
       <PrimaryButton asChild minH="11" px="4" borderRadius="lg" fontFamily="body">
-        <a href={studySet ? '#home' : import.meta.env.BASE_URL}>
+        <a href={homeHref} onClick={followLibraryLink}>
           <IconHome size={18} aria-hidden="true" /> Back to Home
         </a>
       </PrimaryButton>

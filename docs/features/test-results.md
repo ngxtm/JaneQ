@@ -4,7 +4,7 @@
 
 Use the [local development setup](../../README.md#local-development). Set `JANEQ_DB_PATH` to a fresh, disposable SQLite path before starting FastAPI. Start Vite, open [JaneQ](http://127.0.0.1:5173/), and sign in with the configured demo account.
 
-1. From **Home**, open **HTML / CSS**, then select **Test**. The direct browser route is [`/#set/html-css/test`](http://127.0.0.1:5173/#set/html-css/test).
+1. From **Home**, open **HTML / CSS**, then select **Test**. The direct browser route is [`/html-css/test`](http://127.0.0.1:5173/html-css/test).
 2. Select `<ul>`, `background-color: navy`, and **The img element's alt attribute**, in order. Each answered question increases the counter once, even when it has several checked options. **Submit test** becomes available at `3/3 answered`.
 3. Submit and check **Your results**. The score is **2 / 3 (67%)**, with question 2 marked incorrect. The review labels each selected option and each correct answer.
 4. Select **Download PDF** and open `html-css-test-results.pdf`. Verify the score, all three question reviews, signed-in username, and submission time. **New test** loads a fresh paper. **Back** returns to the Study Set. [PDF downloaded during mobile review](test-results.sample.pdf)

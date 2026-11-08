@@ -4,6 +4,21 @@
 
 The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. The standalone **Flashcards** card is reserved. **Test** opens the [Test, Results, and PDF download flow](test-results.md) on Ready sets.
 
+## Study set URLs and preview loading
+
+Home opens at `/`. An overview opens at `/<id>`, with `/learn` and `/test` appended for those modes. JaneQ uses the ID returned by `GET /api/study-sets`, which is the primary key in SQLite. For example, the .NET set opens at `/dotnet`. A future user-created set can have its own stable ID and share a title with another set. Legacy `#home`, `#set/<id>`, and `#card/<id>` links are replaced in browser history with their corresponding paths. Old editor links open the overview. When hosting the frontend, serve the SPA entry point for direct document requests to set paths and route `/api` to FastAPI. [API and storage](#api-and-storage)
+
+A 3 px yellow-orange bar at the top of the viewport uses BProgress in indeterminate mode while the flashcard preview is pending. The title, study modes, and shared header stay visible. The bar appears after 180 ms, disappears on completion, error, or leaving the preview, and stays still with reduced motion. The preview announces its pending state to assistive technology. [BProgress configuration](https://bprogress.vercel.app/docs/configure)
+
+Hover or focus a Ready card to start `GET /api/study-sets/{set_id}/preview` early. Opening the set uses the same request if it is still pending. The signed-in library keeps one successful response in memory for up to 30 seconds. A failed request can be retried and a Draft set skips the preview. The MCQ research report separates session and question reads from answer submissions. The speculative request only reads the preview and leaves Learn and Test actions to their respective screens. [MCQ research report](../../../interview/docs/MCQ_RESEARCH_REPORT.md) · [Database reference](../database.md)
+
+| Check | How to reproduce | Expected result | Verification |
+| --- | --- | --- | --- |
+| Set URLs and history | Open .NET from Home, use browser Back and Forward, then enter Learn and Test. Reload Test. | Home and the modes use path URLs. Back and Forward restore the set or catalog. The header stays mounted across Home and the set, and Test reloads at its direct URL. | Pass · Chromium at 1440 px |
+| Bookmarks and missing pages | Open `/#home`, `/#card/dotnet`, `/#set/html-css/editor`, and `/#set/dotnet/test`. Open `/no-such-set` while signed in and `/no/such/page`. | Each bookmark opens its corresponding path. The two invalid paths show the study set and general 404 screens respectively. | Pass · Chromium |
+| Hover and quick return | Hold the .NET preview request, hover the card, then open it. Release the request, return Home and reopen the set. | Hover starts one request and opening reuses it. The yellow bar animates while waiting and goes away after completion. Reopening with the cached preview skips the bar. | Pass · Chromium at 1440 px against FastAPI and SQLite |
+| Keyboard, reduced motion, and retry | At 390 px with reduced motion, hold the .NET preview request, focus its card, then press Enter. Fail the held request, unblock it, and choose **Try again**. | Focus starts one request. The bar stays still during the wait, clears on failure, and the retry loads the preview. Home and the set fit the viewport. | Pass · Chromium at 390 px against FastAPI and SQLite |
+
 ## Study Set reference
 
 

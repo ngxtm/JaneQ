@@ -4,11 +4,13 @@ import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
+import { homeHref, type LibraryRoute } from '../navigation/app-location'
 import { draftTestMessage } from '../test/copy'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
 import { useLibraryNavigation } from './library-navigation'
+import { createPreviewLoader } from './preview-loader'
 import { StudySetGrid, StudySetGridPlaceholder } from './StudySetGrid'
 import { StudySetModes, TestModeCard } from './StudySetModes'
 import './bones/registry'
@@ -23,6 +25,7 @@ type StudySetsState =
   | { kind: 'loaded'; sets: StudySet[] }
 
 type HomeProps = {
+  route: LibraryRoute
   username: string
   signingOut: boolean
   signOutError: string
@@ -57,13 +60,14 @@ function StudySetLoadError({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSessionExpired }: {
+function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSessionExpired, loadPreview }: {
   set: StudySet | undefined
   status: StudySetsState['kind']
   showSkeleton: boolean
   onRetry: () => void
   username: string
   onSessionExpired: () => void
+  loadPreview: ReturnType<typeof createPreviewLoader>['load']
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
@@ -77,7 +81,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   return (
     <Stack align="start" gap="4">
       <Button asChild variant="ghost" size="xs" h="6" minH="6" fontFamily="body" color="janeq.ink">
-        <a href="#home"><IconArrowLeft size={18} /> Back to Home</a>
+        <a href={homeHref}><IconArrowLeft size={18} /> Back to Home</a>
       </Button>
       {pending ? <VisuallyHidden role="status">Loading study set…</VisuallyHidden> : null}
       {status === 'error' ? <StudySetLoadError onRetry={onRetry} /> : null}
@@ -100,7 +104,8 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                     <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
                     <Box mt="4" w="40"><TestModeCard describedBy="test-draft-reason" /></Box>
                   </Stack>
-                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
+                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired}
+                  loadPreview={loadPreview} /></Box>}
               </Stack>
             ) : null}
           </Skeleton>
@@ -110,13 +115,23 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   )
 }
 
-export default function Home({ username, signingOut, signOutError, onSignOut, onSessionExpired }: HomeProps) {
+export default function Home({ route, username, signingOut, signOutError, onSignOut, onSessionExpired }: HomeProps) {
   const [state, setState] = useState<StudySetsState>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [showSkeleton, setShowSkeleton] = useState(false)
+  const [previewLoader] = useState(createPreviewLoader)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, viewingTest, rememberCurrentSet, removeUnavailableRecentSets } =
-    useLibraryNavigation(username, sets)
+  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets } =
+    useLibraryNavigation(username, sets, route)
+
+  useEffect(() => previewLoader.clear, [previewLoader])
+
+  function prefetchPreview(set: StudySet) {
+    if (set.status === 'ready') {
+      // The overview handles failures when the user actually opens the set.
+      void previewLoader.load(set.id).catch(() => {})
+    }
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -125,7 +140,6 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
     getStudySets(controller.signal).then((sets) => {
       if (controller.signal.aborted) return
       removeUnavailableRecentSets(sets)
-      rememberCurrentSet(sets)
       setState({ kind: 'loaded', sets })
     }).catch((error: unknown) => {
       // A stale response from a previous Home screen cannot end the current session.
@@ -140,7 +154,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [attempt, onSessionExpired, rememberCurrentSet, removeUnavailableRecentSets])
+  }, [attempt, onSessionExpired, removeUnavailableRecentSets])
 
   function retry() {
     setShowSkeleton(false)
@@ -165,7 +179,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
         </Suspense>
       )
       return <StudySetOverview set={selectedSet} status={state.kind} showSkeleton={showSkeleton} onRetry={retry}
-        username={username} onSessionExpired={onSessionExpired} />
+        username={username} onSessionExpired={onSessionExpired} loadPreview={previewLoader.load} />
     }
     if (state.kind === 'error') return <StudySetLoadError onRetry={retry} />
 
@@ -181,17 +195,17 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
         {showRecent ? (
           <SetSection id="recent" title="Recent" busy={pending}>
             {pending ? <StudySetGridPlaceholder count={recentCount} visible={showSkeleton} /> : (
-              <StudySetGrid sets={recent} username={username} />
+              <StudySetGrid sets={recent} username={username} onIntent={prefetchPreview} />
             )}
           </SetSection>
         ) : null}
         <SetSection id="built-in-sets" title="Built-in sets" busy={pending}>
           {pending ? <StudySetGridPlaceholder count={builtInPlaceholderCount} visible={showSkeleton} /> : null}
-          {builtInSets.length ? <StudySetGrid sets={builtInSets} username={username} captureCard /> : null}
+          {builtInSets.length ? <StudySetGrid sets={builtInSets} username={username} onIntent={prefetchPreview} captureCard /> : null}
           {!pending && !builtInSets.length ? <Text color="janeq.muted">No study sets are available.</Text> : null}
         </SetSection>
         {mySets.length ? (
-          <SetSection id="my-sets" title="My sets"><StudySetGrid sets={mySets} username={username} /></SetSection>
+          <SetSection id="my-sets" title="My sets"><StudySetGrid sets={mySets} username={username} onIntent={prefetchPreview} /></SetSection>
         ) : null}
       </Stack>
     )
@@ -199,7 +213,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
 
   return (
     <UiProvider>
-      <LibraryLayout isHome={!viewingSet} username={username} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
+      <LibraryLayout username={username} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
         {renderLibrary()}
       </LibraryLayout>
     </UiProvider>

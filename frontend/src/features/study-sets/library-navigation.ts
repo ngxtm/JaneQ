@@ -1,25 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import type { LibraryRoute } from '../navigation/app-location'
 import type { StudySet } from './api'
 
 const recentLimit = 16
-
-export function studySetHref(id: string) {
-  return `#set/${encodeURIComponent(id)}`
-}
-
-export function learnHref(id: string) {
-  return `${studySetHref(id)}/learn`
-}
-
-export function testHref(id: string) {
-  return `${studySetHref(id)}/test`
-}
-
-function setFromHash(sets: StudySet[], hash: string) {
-  // Old answer-key bookmarks now open the set overview.
-  const overviewHash = hash.endsWith('/editor') ? hash.slice(0, -'/editor'.length) : hash
-  return sets.find((set) => studySetHref(set.id) === overviewHash || learnHref(set.id) === hash || testHref(set.id) === hash)
-}
 
 function readRecent(key: string): string[] {
   try {
@@ -34,18 +17,15 @@ function readRecent(key: string): string[] {
   return []
 }
 
-export function useLibraryNavigation(username: string, sets: StudySet[]) {
+export function useLibraryNavigation(username: string, sets: StudySet[], route: LibraryRoute) {
   const storageKey = `janeq:recent:v1:${username}`
-  const [hash, setHash] = useState(() => window.location.hash)
   const [recentIds, setRecentIds] = useState(() => readRecent(storageKey))
-  const selectedSet = setFromHash(sets, hash)
+  const selectedSet = route.kind === 'set' ? sets.find((set) => set.id === route.id) : undefined
+  const selectedId = selectedSet?.id
 
-  const rememberCurrentSet = useCallback((availableSets: StudySet[]) => {
-    const id = setFromHash(availableSets, window.location.hash)?.id
-    if (id) {
-      setRecentIds((ids) => ids[0] === id ? ids : [id, ...ids.filter((item) => item !== id)].slice(0, recentLimit))
-    }
-  }, [])
+  if (selectedId && recentIds[0] !== selectedId) {
+    setRecentIds([selectedId, ...recentIds.filter((id) => id !== selectedId)].slice(0, recentLimit))
+  }
 
   const removeUnavailableRecentSets = useCallback((availableSets: StudySet[]) => {
     const availableIds = new Set(availableSets.map((set) => set.id))
@@ -55,20 +35,10 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
     })
   }, [])
 
-  useEffect(() => {
-    const updateLocation = () => {
-      const nextHash = window.location.hash
-      setHash(nextHash)
-      rememberCurrentSet(sets)
-    }
-    window.addEventListener('hashchange', updateLocation)
-    return () => window.removeEventListener('hashchange', updateLocation)
-  }, [sets, rememberCurrentSet])
-
   useLayoutEffect(() => {
     // Scroll after the destination commits so the outgoing view cannot jump first.
-    if (hash.startsWith('#set/') || hash === '#home') window.scrollTo(0, 0)
-  }, [hash])
+    if (route.kind === 'set' || !window.location.hash) window.scrollTo(0, 0)
+  }, [route])
 
   useEffect(() => {
     try {
@@ -84,10 +54,10 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
     return set ? [set] : []
   })
 
-  const viewingSet = hash.startsWith('#set/')
+  const viewingSet = route.kind === 'set'
   return {
     selectedSet, recent, recentCount: recentIds.length,
-    viewingSet, viewingLearn: viewingSet && hash.endsWith('/learn'), viewingTest: viewingSet && hash.endsWith('/test'),
-    rememberCurrentSet, removeUnavailableRecentSets,
+    viewingSet, viewingLearn: viewingSet && route.mode === 'learn', viewingTest: viewingSet && route.mode === 'test',
+    removeUnavailableRecentSets,
   }
 }
