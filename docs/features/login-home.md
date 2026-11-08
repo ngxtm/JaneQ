@@ -34,7 +34,7 @@ FastAPI generates the endpoint and schema reference from the backend. With the b
 | Request | Session or input | Success | Failure and UI behavior |
 | --- | --- | --- | --- |
 | `POST /api/auth/login` | JSON with `username` and `password` | `200` with the configured username, such as `{ "username": "demo" }`. Sets the signed session cookie. | `401` for incorrect credentials. The form shows the invalid-credentials message. |
-| `GET /api/auth/me` | Valid session cookie | `200` with the signed-in username. The app opens Home. | `401` for a missing or invalid session. The app shows Sign in. |
+| `GET /api/auth/me` | Valid session cookie | `200` with the signed-in username. The app opens Home. | `401` opens Sign in. Other failures, including a response JaneQ cannot read, show the [connection error screen](../../frontend/src/features/auth/SessionUnavailable.tsx). **Try again** repeats the session check. |
 | `GET /api/study-sets` | Valid session cookie | `200` with a list of study set summaries. Home renders the cards from that list. | `401` for a missing or invalid session. Home returns to Sign in. Other load errors show **Try again**. |
 | `POST /api/auth/logout` | The UI calls this from the signed-in account menu. | `204` with an empty body. The response clears the session cookie if present. | A failed request keeps the current screen and shows a sign-out error. |
 
@@ -72,6 +72,12 @@ JaneQ's Vite sign-in uses a centered layout, outlined inputs, Outfit headings, O
 
 The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in and moves down 16 px over 0.3 s after a 0.1 s delay. Reduced motion shows the final layout immediately, and keyboard focus brings the form into view immediately if the user tabs in during the entrance. The demo form uses a username and password with JaneQ's logo.
 
+### Session connection error
+
+The error screen uses a centered illustration that fades into the background, a large heading, a short explanation, and a recovery action.
+
+JaneQ uses its own mark and session-specific copy so users know what they can retry. The centered layout fills the viewport, and the illustration is static and decorative. **Try again** sends a new session request from the current page. It is the only action because Home depends on the session check. [SessionUnavailable](../../frontend/src/features/auth/SessionUnavailable.tsx) · [App session check](../../frontend/src/App.tsx)
+
 ## Acceptance checks
 
 | Check | How to reproduce | Expected result | Verification |
@@ -82,6 +88,7 @@ The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in 
 | Sign-out across sessions | While the Home list is pending, intercept logout with a `503`, then let the list return `401` and sign in again. Repeat with a delayed logout that would clear the cookie. | The new Home shows no old sign-out error, and `GET /api/auth/me` returns `200` after the delayed response. | **Pass · browser** in Chromium with intercepted responses. |
 | Login entrance | Reload signed out at 360 px, press Tab during the entrance, and repeat with reduced motion enabled. | Background and form animate with default settings. Tab shows the focused field immediately. Reduced motion shows the final layout on first render. | **Pass · browser** in Chromium. |
 | Login on a narrow screen | At 360 px, use Tab to focus the username and password fields. | The form fits, the fields have accessible names, and each focused field shows a continuous blue ring. | **Pass · browser (Login design verification)**. |
+| Session connection error and recovery | In a signed-out browser, block `/api/auth/me` and reload. At desktop and mobile widths, inspect the layout. Press Tab to focus **Try again**, unblock the request, then press Enter. | The error fills the screen with no horizontal overflow. **Try again** has a visible focus ring and returns to Sign in once the API responds. | **Pass · browser** in Chromium at 1280 × 720 and 390 × 844. |
 | Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
 | Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
 | Home on a narrow screen | Open Home at 360 px. Focus the account menu, press Enter, press Escape to return focus to the trigger, then reopen it and use End and Enter to sign out. | The menu fits the viewport, Escape restores focus, and keyboard selection returns to Sign in. | **Pass · browser** in Chromium. |
