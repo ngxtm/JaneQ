@@ -8,7 +8,7 @@ import { httpErrorMessage, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import { getStudyPreview, type StudyCard } from '../learn/api'
-import { learnHref } from './library-navigation'
+import { learnHref, testHref } from './library-navigation'
 import { PreviewCard } from './PreviewCard'
 
 const actionColor = '#0036b4'
@@ -23,7 +23,7 @@ const previewOutline = {
   css: iconSize,
 } as const
 
-function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href?: string }) {
+function ModeCard({ label, icon, href, describedBy }: { label: string; icon: ReactNode; href?: string; describedBy?: string }) {
   const content = <>
     <Box aria-hidden="true" position="relative" boxSize="6" flexShrink="0" css={{ '& svg': { display: 'block' } }}>
       <Box className="mode-icon-shadow" position="absolute" top="1" left="-1" color="#1a5fff"
@@ -51,8 +51,13 @@ function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href?
         '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
       } : {}),
     }}>
-    {href ? <a href={href}>{content}</a> : <span role="link" aria-disabled="true">{content}</span>}
+    {href ? <a href={href}>{content}</a> : <span role="link" aria-disabled="true" aria-describedby={describedBy}>{content}</span>}
   </Flex>
+}
+
+export function TestModeCard({ setId, describedBy }: { setId?: string; describedBy?: string }) {
+  return <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={setId ? testHref(setId) : undefined}
+    describedBy={describedBy} />
 }
 
 function readStars(key: string): string[] {
@@ -196,7 +201,7 @@ export function StudySetModes({ setId, username, onSessionExpired }: {
     <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: '1fr' }} gap="4">
       <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={learnHref(setId)} />
       <ModeCard label="Flashcards" icon={<IconCards size={24} stroke={2} />} />
-      <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} />
+      <TestModeCard setId={setId} />
     </Grid>
     {!cards && !error ? <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden> : null}
     {cards ? <Preview cards={cards} starKey={`janeq:preview-stars:v1:${username}:${setId}`} /> : null}

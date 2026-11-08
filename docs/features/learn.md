@@ -2,7 +2,7 @@
 
 ## Scope and order
 
-The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. **Flashcards** and **Test** are visible entries reserved for their standalone flows. Test includes Results and JSON export when implemented.
+The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. The standalone **Flashcards** card is reserved. **Test** opens the [Test, Results, and JSON export flow](test-results.md) on Ready sets.
 
 ## Study Set reference
 
@@ -10,7 +10,7 @@ The flow is **Home → Study Set → Learn → round review → finish → Study
 | Area | JaneQ design target |
 | --- | --- |
 | Header | Use a 48 px bold title on desktop and 36 px on mobile. Ready metadata uses the MCQ question count. JaneQ retains a compact **Back to Home** above the title. |
-| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and a two-layer shadow. The 24 px Tabler icons use 2 px strokes, a `#4b83ff` foreground, and an offset `#1a5fff` copy blurred by 2 px at 30% opacity. Hover and keyboard focus move the icon layers, with stationary feedback under reduced motion. Flashcards and Test keep the same visual treatment and expose their unavailable state to assistive technology. |
+| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and a two-layer shadow. The 24 px Tabler icons use 2 px strokes, a `#4b83ff` foreground, and an offset `#1a5fff` copy blurred by 2 px at 30% opacity. Hover and keyboard focus move the icon layers, with stationary feedback under reduced motion. Disabled cards expose their unavailable state to assistive technology. |
 | Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. JaneQ's three modes occupy two rows above the preview. |
 | Flashcard preview | Match the 500 px height, 12 px corner radius, two-layer shadow, orange progress stripe, and 48 px previous and next controls. Show MCQ prompts and answers, position, and a star action. Use `#0036b4` for outline controls. |
 

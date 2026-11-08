@@ -8,7 +8,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
-from .database import connect, read_learn_progress, read_study_questions, read_study_set, save_learn_progress
+from .database import connect, read_learn_progress, save_learn_progress
+from .question_bank import Question, read_question_bank
 
 router = APIRouter(
     prefix="/api/study-sets/{set_id}",
@@ -21,18 +22,6 @@ router = APIRouter(
 )
 
 Phase = Literal["question", "feedback", "summary", "complete"]
-
-
-class Option(BaseModel):
-    id: str
-    text: str
-
-
-class Question(BaseModel):
-    id: str
-    prompt: str
-    options: list[Option]
-    multiple: bool
 
 
 class StudyCard(BaseModel):
@@ -116,27 +105,12 @@ Command = Annotated[CheckAnswer | Advance | Reset | ChangeSettings, Field(discri
 def ready_questions(
     connection: sqlite3.Connection, set_id: str
 ) -> tuple[int, dict[str, Question], dict[str, list[str]]]:
-    study_set = read_study_set(connection, set_id)
-    if study_set is None:
+    bank = read_question_bank(connection, set_id)
+    if bank is None:
         raise HTTPException(404, "Study set not found.")
-    rows = read_study_questions(connection, set_id)
-    if not rows or any(not row["configured"] for row in rows):
+    if not bank.ready:
         raise HTTPException(409, "This set is a draft. Finish setting it up before studying.")
-
-    questions = {}
-    correct_ids = {}
-    for row in rows:
-        question_id = row["id"]
-        if question_id not in questions:
-            questions[question_id] = Question(id=question_id, prompt=row["prompt"], options=[], multiple=False)
-            correct_ids[question_id] = []
-        questions[question_id].options.append(Option(id=row["option_id"], text=row["text"]))
-        if row["is_correct"]:
-            correct_ids[question_id].append(row["option_id"])
-
-    for question_id, question in questions.items():
-        question.multiple = len(correct_ids[question_id]) > 1
-    return study_set["revision"], questions, correct_ids
+    return bank.revision, bank.questions, bank.correct_ids
 
 
 def study_card(question: Question, correct_ids: list[str]) -> StudyCard:
@@ -163,17 +137,12 @@ def apply_command(
     if isinstance(command, CheckAnswer) and progress.phase == "question":
         question_id = progress.queue[len(progress.answers)]
         question = questions[question_id]
-        selected = set(command.selected_ids)
-        if (
-            len(selected) != len(command.selected_ids)
-            or not selected.issubset(option.id for option in question.options)
-            or (not question.multiple and len(selected) != 1)
-        ):
+        if not question.accepts(command.selected_ids):
             raise HTTPException(422, [{
                 "type": "value_error", "loc": ["body", "selected_ids"],
                 "msg": "Choose valid options for the current question.",
             }])
-        correct = selected == set(correct_ids[question_id])
+        correct = set(command.selected_ids) == set(correct_ids[question_id])
         if correct:
             progress.mastery[question_id] = 2 if question_id in progress.mastery else 1
         progress.studied_ids.add(question_id)

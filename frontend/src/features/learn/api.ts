@@ -1,8 +1,8 @@
 import { http } from '../../http'
+import { isQuestion, type Question } from '../study-sets/question'
 
 export type StudyCard = { id: string; prompt: string; answers: string[] }
-export type Option = { id: string; text: string }
-export type Question = { id: string; prompt: string; options: Option[]; multiple: boolean }
+export type { Option, Question } from '../study-sets/question'
 export type Feedback = { correct: boolean; selected_ids: string[]; correct_ids: string[] }
 export type RoundReview = StudyCard & { correct: boolean }
 
@@ -39,12 +39,6 @@ function strings(value: unknown): value is string[] {
 
 function isStudyCard(value: unknown): value is StudyCard {
   return record(value) && typeof value.id === 'string' && typeof value.prompt === 'string' && strings(value.answers)
-}
-
-function isQuestion(value: unknown): value is Question {
-  return record(value) && typeof value.id === 'string' && typeof value.prompt === 'string'
-    && typeof value.multiple === 'boolean' && Array.isArray(value.options)
-    && value.options.every((option: unknown) => record(option) && typeof option.id === 'string' && typeof option.text === 'string')
 }
 
 function isFeedback(value: unknown): value is Feedback {

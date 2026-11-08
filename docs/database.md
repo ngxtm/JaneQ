@@ -40,13 +40,17 @@ Deleting a study set cascades to its questions and their answer options when for
 | `configured_count` | Number of questions with a nonblank prompt, at least two nonblank options, and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
 | `status` | `ready` when the set has at least one question and every question is configured. Otherwise it is `draft`. |
 
-These fields are calculated when Home requests the list. The Learn and preview endpoints use the same question readiness query.
+These fields are calculated when Home requests the list. Learn, preview, and Test use the same question readiness query.
 
 ## Learn progress
 
 Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
 
 A write transaction checks both the study set revision and the saved step version before it updates the snapshot. When a study set revision changes, Learn presents a fresh session and replaces the previous snapshot on the next successful command. Study set authoring must increment the revision when the question or answer content changes. [Learn flow and API](features/learn.md)
+
+## Test read snapshot
+
+Test reads `study_sets.revision`, the ordered questions, and their answer options in one SQLite read transaction per request. Both requests require a Ready set. The submission revision must match the revision read in the grading transaction. Test attempts and exports live in the browser during the flow, and the Test endpoints write no SQLite rows. [Test flow and API](features/test-results.md#api-and-storage)
 
 ## Inspect a local database
 
