@@ -1,5 +1,5 @@
 import {
-  Box, Button, Center, Field, Heading, Image, Input,
+  Box, Center, Field, Heading, Image, Input,
   Separator, Stack, Text, VisuallyHidden,
 } from '@chakra-ui/react'
 import { domAnimation, LazyMotion } from 'motion/react'
@@ -7,6 +7,7 @@ import * as m from 'motion/react-m'
 import { type PropsWithChildren, type SubmitEvent, useState } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import { isUnauthorized } from '../../http'
+import { PrimaryButton } from '../../ui/PrimaryButton'
 import { UiProvider } from '../../ui/UiProvider'
 import { signIn, type User } from './api'
 
@@ -115,24 +116,20 @@ export default function Login({ onSignIn }: LoginProps) {
               />
             </Field.Root>
             {error ? <Text fontSize="sm" color="red.700" role="alert">{error}</Text> : null}
-            <Button
+            <PrimaryButton
               type="submit"
               h="12"
               mt="1"
               borderRadius="lg"
-              bg="janeq.blue"
-              color="white"
               fontFamily="body"
               fontSize="sm"
               fontWeight="600"
               shadow="sm"
-              focusRingColor="janeq.focus"
-              _hover={{ bg: 'janeq.blueHover' }}
               disabled={pending}
               aria-busy={pending}
             >
               Sign in
-            </Button>
+            </PrimaryButton>
           </form>
         </Stack>
 

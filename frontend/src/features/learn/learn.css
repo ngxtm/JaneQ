@@ -25,8 +25,6 @@
 .learn-titlebar h1 { font-size: clamp(1.5rem, 4vw, 2rem); }
 .learn-titlebar h1:focus { outline: none; }
 .learn-icon { color: var(--learn-blue); }
-.learn-primary { background: var(--learn-blue); color: white; }
-.learn-primary:hover:not(:disabled) { background: var(--chakra-colors-janeq-blueHover); }
 
 .learn-notice {
   display: flex;
@@ -154,15 +152,13 @@
 .learn-complete { display: grid; justify-items: center; gap: 1.25rem; text-align: center; }
 .learn-complete .learn-stats { width: 100%; margin-bottom: 1.5rem; }
 .learn-complete h2 { font-size: clamp(1.5rem, 5vw, 2.5rem); }
-.learn-setting { display: flex; align-items: center; gap: .75rem; }
-.learn-setting input { accent-color: var(--chakra-colors-janeq-blue); }
 
 @media (max-width: 640px) {
   .learn-options { grid-template-columns: minmax(0, 1fr); }
   .learn-reviewed li { grid-template-columns: minmax(0, 1fr) auto; gap: .375rem 1rem; }
   .learn-reviewed-answer { grid-column: 1; grid-row: 2; padding: 0; border: 0; color: var(--learn-muted); }
   .learn-reviewed li svg { grid-column: 2; grid-row: 1; }
-  .learn-action-bar span { display: none; }
+  .learn-action-bar > div > span { display: none; }
   .learn-action-bar button { width: 100%; }
 }
 

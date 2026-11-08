@@ -1,6 +1,8 @@
 import { Button, Dialog, IconButton, Portal, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowLeft, IconCheck, IconKeyframes, IconSettings, IconTrophy, IconX } from '@tabler/icons-react'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { PrimaryButton } from '../../ui/PrimaryButton'
+import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import { studySetHref } from '../study-sets/library-navigation'
 import type { Feedback, LearnView, Question } from './api'
 import { useLearn } from './use-learn'
@@ -82,7 +84,7 @@ function QuestionCard({ view, question, feedback, busy, shortcuts, onAnswer }: {
           const correct = feedback?.correct_ids.includes(option.id)
           const incorrect = feedback?.selected_ids.includes(option.id) && !correct
           const pressed = selected.includes(option.id)
-          return <button type="button" key={option.id} aria-disabled={disabled || undefined}
+          return <Button unstyled key={option.id} aria-disabled={disabled || undefined}
             aria-pressed={question.multiple ? (feedback?.selected_ids ?? selected).includes(option.id) : undefined}
             data-state={correct ? 'correct' : incorrect ? 'incorrect' : pressed && !feedback ? 'selected' : undefined}
             onClick={() => choose(option.id)}>
@@ -91,11 +93,11 @@ function QuestionCard({ view, question, feedback, busy, shortcuts, onAnswer }: {
             </span>
             <span>{option.text}</span>
             {correct || incorrect ? <VisuallyHidden>{correct ? 'Correct answer' : 'Incorrect choice'}</VisuallyHidden> : null}
-          </button>
+          </Button>
         })}
       </div>
       {question.multiple && !feedback ? (
-        <Button className="learn-primary" disabled={busy || !selected.length} onClick={() => onAnswer(selected)}>Check answer</Button>
+        <PrimaryButton disabled={busy || !selected.length} onClick={() => onAnswer(selected)}>Check answer</PrimaryButton>
       ) : null}
     </div>
   </section>
@@ -156,28 +158,30 @@ export default function Learn({ setId, onSessionExpired }: { setId: string; onSe
       <IconTrophy size={56} className="learn-icon" aria-hidden="true" />
       <h2 id="learn-complete-title">You mastered every question!</h2>
       <p>All {view.total_questions} questions in this set are mastered.</p>
-      <Button asChild className="learn-primary"><a href={backHref}>Finish Learn</a></Button>
+      <PrimaryButton asChild><a href={backHref}>Finish Learn</a></PrimaryButton>
       <Button variant="ghost" onClick={() => { setSettings(true); setConfirmReset(true) }}>Reset progress</Button>
     </section> : null}
     {showContinue ? <div className="learn-action-bar"><div>
       <span>Press Enter to continue</span>
-      <Button ref={continueButton} className="learn-primary" disabled={busy} onClick={() => { void send({ action: 'advance' }) }}>
+      <PrimaryButton ref={continueButton} disabled={busy} onClick={() => { void send({ action: 'advance' }) }}>
         {phase === 'summary' ? `Continue to round ${(view?.round ?? 0) + 1}` : 'Continue'}
-      </Button>
+      </PrimaryButton>
     </div></div> : null}
     <Dialog.Root open={settings && !!view} onOpenChange={({ open }) => { setSettings(open); if (!open) setConfirmReset(false) }} placement="center">
-      <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content mx="4">
+      <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
         <Dialog.Header><Dialog.Title>{confirmReset ? 'Reset progress?' : 'Settings'}</Dialog.Title></Dialog.Header>
         <Dialog.Body>
           {error ? <p role="alert" className="learn-negative">{error}</p> : null}
           {confirmReset ? <p>This will start a new Learn session for this study set.</p> : (
-            <label className="learn-setting"><input type="checkbox" checked={view?.shuffle ?? false} disabled={busy}
-              onChange={(event) => { void send({ action: 'settings', shuffle: event.target.checked }) }} /> Shuffle questions in future rounds</label>
+            <SettingsSwitch label="Shuffle questions in future rounds" checked={view?.shuffle ?? false} disabled={busy}
+              onCheckedChange={({ checked }) => { void send({ action: 'settings', shuffle: checked }) }} />
           )}
         </Dialog.Body>
         <Dialog.Footer>
-          <Dialog.ActionTrigger asChild><Button variant="outline">{confirmReset ? 'Cancel' : 'Done'}</Button></Dialog.ActionTrigger>
-          <Button colorPalette="red" disabled={busy} onClick={async () => {
+          <Dialog.ActionTrigger asChild>
+            {confirmReset ? <Button variant="outline">Cancel</Button> : <PrimaryButton>Done</PrimaryButton>}
+          </Dialog.ActionTrigger>
+          <Button variant={confirmReset ? 'solid' : 'outline'} colorPalette="red" disabled={busy} onClick={async () => {
             if (!confirmReset) setConfirmReset(true)
             else if (await send({ action: 'reset' })) { setConfirmReset(false); setSettings(false) }
           }}>Reset progress</Button>

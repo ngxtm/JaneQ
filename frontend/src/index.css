@@ -21,31 +21,3 @@ a {
   color: inherit;
   text-decoration: none;
 }
-
-.page {
-  width: min(100%, 68rem);
-  margin-inline: auto;
-  padding: 2rem 1.25rem;
-}
-
-.error {
-  color: #a32d42;
-}
-
-.plain-button {
-  margin-top: 0.75rem;
-  min-height: 2.75rem;
-  padding: 0.5rem 1rem;
-  border: 1px solid #c5d1df;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #0042da;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.plain-button:focus-visible {
-  outline: 2px solid #0042da;
-  outline-offset: 2px;
-}

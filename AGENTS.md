@@ -9,6 +9,7 @@
 ## Keep the frontend consistent
 
 1. Follow the [frontend UI guide](docs/frontend.md). Reuse the Chakra theme, component recipes, and established interaction patterns. Update the shared guide in the same change when a shared UI rule changes.
+   - Build interactive controls and overlays with Chakra UI or JaneQ components built on Chakra. Do not author bare HTML controls or rely on browser-default styling. Use shared patterns for buttons, selection controls, form fields, menus, and dialogs. Keep semantic HTML for page structure and for elements composed through Chakra's `asChild` API.
 2. Record screen-specific layout, states, and deliberate design departures in the feature document. Explain which user need a departure serves and how to verify it. Treat shared defaults as a starting point for screen-specific design.
 3. Check applicable loading, empty, error, and success states. Verify keyboard navigation, visible focus, layout at mobile and desktop widths, and reduced motion when the screen uses animation. Record the checks actually run.
 4. Render ready sections immediately. Leave brief pending regions visually blank. For data that can take noticeably longer, use a layout-matched Boneyard skeleton scoped to the pending region. Follow the frontend guide for visible copy and accessible status.

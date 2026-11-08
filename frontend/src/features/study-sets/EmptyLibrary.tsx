@@ -1,9 +1,10 @@
-import { Box, Button, Center, Heading, HStack, Image, Stack, Text } from '@chakra-ui/react'
+import { Box, Center, Heading, HStack, Image, Stack, Text } from '@chakra-ui/react'
 import { IconArrowDown, IconBooks, IconFolder } from '@tabler/icons-react'
 import { domAnimation, LazyMotion } from 'motion/react'
 import * as m from 'motion/react-m'
 import { useSyncExternalStore } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
+import { PrimaryButton } from '../../ui/PrimaryButton'
 
 const motionPreference = '(prefers-reduced-motion: reduce)'
 
@@ -65,18 +66,15 @@ export function EmptyLibrary() {
           </Heading>
           <Text color="janeq.muted">Choose a built-in set to start learning with JaneQ.</Text>
         </Stack>
-        <Button
+        <PrimaryButton
           asChild
           size="xl"
-          bg="janeq.blue"
-          color="white"
           fontFamily="body"
           rounded="xl"
           shadow="lg"
-          _hover={{ bg: 'janeq.blueHover' }}
         >
           <a href="#built-in-sets"><IconArrowDown size={18} /> Browse study sets</a>
-        </Button>
+        </PrimaryButton>
       </Stack>
     </Center>
   )

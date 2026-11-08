@@ -5,6 +5,8 @@ import {
 } from '@tabler/icons-react'
 import { useEffect, useState, type ReactNode } from 'react'
 import { httpErrorMessage, isUnauthorized } from '../../http'
+import { PrimaryButton } from '../../ui/PrimaryButton'
+import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import { getStudyPreview, type StudyCard } from '../learn/api'
 import { learnHref } from './library-navigation'
 
@@ -162,13 +164,15 @@ function Preview({ cards, starKey }: { cards: StudyCard[]; starKey: string }) {
         aria-label="Settings" onClick={() => setSettings(true)}><IconSettings /></IconButton>
     </Stack>
     <Dialog.Root open={settings} onOpenChange={({ open }) => setSettings(open)} placement="center">
-      <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content mx="4">
+      <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
         <Dialog.Header><Dialog.Title>Flashcard preview settings</Dialog.Title></Dialog.Header>
-        <Dialog.Body><label><input type="checkbox" checked={answerFirst} onChange={(event) => {
-          setAnswerFirst(event.target.checked)
-          setFlipped(false)
-        }} /> Show the answer first</label></Dialog.Body>
-        <Dialog.Footer><Dialog.ActionTrigger asChild><Button>Done</Button></Dialog.ActionTrigger></Dialog.Footer>
+        <Dialog.Body>
+          <SettingsSwitch label="Show the answer first" checked={answerFirst} onCheckedChange={({ checked }) => {
+            setAnswerFirst(checked)
+            setFlipped(false)
+          }} />
+        </Dialog.Body>
+        <Dialog.Footer><Dialog.ActionTrigger asChild><PrimaryButton>Done</PrimaryButton></Dialog.ActionTrigger></Dialog.Footer>
       </Dialog.Content></Dialog.Positioner></Portal>
     </Dialog.Root>
   </>

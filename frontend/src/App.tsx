@@ -3,6 +3,7 @@ import { getUser, signOut, type User } from './features/auth/api'
 import { isUnauthorized } from './http'
 
 const Login = lazy(() => import('./features/auth/Login'))
+const SessionUnavailable = lazy(() => import('./features/auth/SessionUnavailable'))
 const Home = lazy(() => import('./features/study-sets/Home'))
 
 type Session =
@@ -61,10 +62,9 @@ function App() {
   return (
     <>
       {session.kind === 'unavailable' ? (
-        <main className="page">
-          <p className="error" role="alert">Could not connect to JaneQ.</p>
-          <button className="plain-button" type="button" onClick={retrySession}>Try again</button>
-        </main>
+        <Suspense fallback={null}>
+          <SessionUnavailable onRetry={retrySession} />
+        </Suspense>
       ) : null}
       {session.kind === 'signed-out' ? (
         <Suspense fallback={null}>

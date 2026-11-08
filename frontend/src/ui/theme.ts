@@ -1,4 +1,4 @@
-import { createSystem, defaultConfig, defineConfig, defineRecipe } from '@chakra-ui/react'
+import { createSystem, defaultConfig, defineConfig, defineRecipe, defineSlotRecipe } from '@chakra-ui/react'
 
 const janeqTheme = defineConfig({
   theme: {
@@ -22,6 +22,7 @@ const janeqTheme = defineConfig({
       },
     },
     recipes: {
+      button: defineRecipe({ base: { borderStyle: 'solid' } }),
       input: defineRecipe({
         base: {
           borderStyle: 'solid',
@@ -39,6 +40,23 @@ const janeqTheme = defineConfig({
               focusRingWidth: '1px',
             },
           },
+        },
+      }),
+    },
+    slotRecipes: {
+      dialog: defineSlotRecipe({
+        slots: ['backdrop', 'positioner', 'content', 'title'],
+        base: {
+          backdrop: {
+            _open: { _motionReduce: { animationName: 'none' } },
+            _closed: { _motionReduce: { animationName: 'none' } },
+          },
+          positioner: { paddingInline: '4' },
+          content: {
+            _open: { _motionReduce: { animationName: 'none' } },
+            _closed: { _motionReduce: { animationName: 'none' } },
+          },
+          title: { fontFamily: 'heading' },
         },
       }),
     },
