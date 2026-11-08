@@ -35,8 +35,9 @@ const styles = StyleSheet.create({
   submission: { flex: 1, borderLeft: '1pt solid #dbe3ed', paddingLeft: 16, gap: 4 },
   metadata: { fontSize: 10.5 },
   label: { fontWeight: 700 },
-  reviewTitle: { fontSize: 13, fontWeight: 700, marginBottom: 7 },
-  question: { borderTop: '1pt solid #dbe3ed', paddingTop: 9, marginBottom: 11 },
+  reviewTitle: { fontSize: 13, fontWeight: 700, paddingBottom: 7, borderBottom: '1pt solid #dbe3ed' },
+  question: { paddingTop: 9 },
+  questionDivider: { paddingBottom: 11, borderBottom: '1pt solid #dbe3ed' },
   questionHeading: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
   questionNumber: { fontSize: 9, color: '#4c5f77', fontWeight: 700 },
   correct: { fontSize: 9, fontWeight: 700, color: '#186345' },
@@ -129,8 +130,9 @@ export function ResultPdf({ result, exportedAt }: { result: TestResult; exported
         {result.questions.map((question, index) => {
           const selected = question.options.filter((option) => question.selected_ids.includes(option.id)).map((option) => option.text)
           const correct = question.options.filter((option) => question.correct_ids.includes(option.id)).map((option) => option.text)
+          const style = index === result.questions.length - 1 ? styles.question : [styles.question, styles.questionDivider]
           return (
-            <View style={styles.question} key={question.id} wrap={!fitsWithReview(question.prompt, selected, correct)}>
+            <View style={style} key={question.id} wrap={!fitsWithReview(question.prompt, selected, correct)}>
               <View style={styles.questionHeading} minPresenceAhead={32}>
                 <Text style={styles.questionNumber}>Question {index + 1}</Text>
                 <Text style={question.correct ? styles.correct : styles.incorrect}>
