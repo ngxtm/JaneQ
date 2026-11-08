@@ -4,21 +4,23 @@ import type { Ref } from 'react'
 
 export type EditorMetadata = { title: string; description: string }
 
-export function EditorDetails({ metadata, titleRef, questionCount, onChange }: {
+export function EditorDetails({ metadata, titleRef, titleInvalid, questionCount, onChange }: {
   metadata: EditorMetadata
   titleRef: Ref<HTMLInputElement>
+  titleInvalid: boolean
   questionCount: string
   onChange: (fields: Partial<EditorMetadata>) => void
 }) {
   return (
     <Skeleton name="set-editor-details" loading={false}>
       <Stack gap="6">
-        <Field.Root gap="0" required>
+        <Field.Root gap="0" required invalid={titleInvalid}>
           <VisuallyHidden asChild><Field.Label>Title</Field.Label></VisuallyHidden>
           <Input ref={titleRef} value={metadata.title} required placeholder="Set title" h="auto" py="2"
-            variant="flushed" borderColor="transparent" fontFamily="heading"
+            variant="flushed" borderColor={titleInvalid ? 'red.600' : 'transparent'} fontFamily="heading"
             fontSize={{ base: '2xl', sm: '3xl', md: '5xl' }} fontWeight="bold" color="janeq.ink"
             onChange={(event) => onChange({ title: event.target.value })} />
+          {titleInvalid ? <Field.ErrorText>Enter a title for your study set.</Field.ErrorText> : null}
           <Text color="janeq.muted">{questionCount}</Text>
         </Field.Root>
         <Field.Root>

@@ -179,7 +179,11 @@ class LearnTests(TestCase):
                 self.assertNotIn("correct_ids", response.json()["question"])
         editor_path = "/api/study-sets/html-css/editor"
         self.assertEqual(self.client.get(editor_path).status_code, 404)
-        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "title": "Built-in", "questions": []}).status_code, 404)
+        update = {"revision": 1, "title": "Built-in", "questions": [{
+            "prompt": "Which choice is correct?",
+            "options": [{"text": "A", "is_correct": True}, {"text": "B", "is_correct": False}],
+        }]}
+        self.assertEqual(self.client.put(editor_path, json=update).status_code, 404)
 
     def test_new_set_grades_seeded_multi_select(self) -> None:
         self.sign_in()

@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { createSetHref, studySetHref } from '../navigation/app-location'
 import type { StudySet } from '../study-sets/api'
+import { librarySetHref } from '../study-sets/library-navigation'
 import './bones/registry'
 
 function SetRow({ set }: { set: StudySet }) {
@@ -13,7 +14,7 @@ function SetRow({ set }: { set: StudySet }) {
       borderColor="janeq.divider" rounded="xl">
       <Stack minW="0" gap="1">
         <Heading as="h2" fontFamily="heading" fontSize="lg" overflowWrap="anywhere">
-          <Link href={studySetHref(set.id)}>{set.title}</Link>
+          <Link href={librarySetHref(set)}>{set.title}</Link>
         </Heading>
         <HStack gap="2" flexWrap="wrap" color="janeq.muted" fontSize="sm">
           <Text fontWeight="semibold">{set.status === 'draft' ? 'Draft' : 'Ready'}</Text>

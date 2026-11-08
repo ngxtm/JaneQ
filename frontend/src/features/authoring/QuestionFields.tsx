@@ -1,6 +1,7 @@
 import { Button, Checkbox, Field, Flex, Grid, Heading, HStack, IconButton, Input, Menu, Portal, Stack, Text, Textarea, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowDown, IconArrowUp, IconGripHorizontal, IconListDetails, IconTrash } from '@tabler/icons-react'
 import type { OptionContent } from './api'
+import type { questionErrors } from './validation'
 
 export type OptionField = OptionContent & { key: string }
 export type QuestionField = { key: string; prompt: string; options: OptionField[] }
@@ -10,6 +11,7 @@ type QuestionFieldsProps = {
   number: number
   count: number
   focusKey: string | undefined
+  errors?: ReturnType<typeof questionErrors>
   onChange: (question: QuestionField) => void
   onAddOption: () => void
   onRemove: () => void
@@ -18,15 +20,18 @@ type QuestionFieldsProps = {
 
 const questionDragType = 'application/x-janeq-question'
 
-export function QuestionFields({ question, number, count, focusKey, onChange, onAddOption, onRemove, onMove }: QuestionFieldsProps) {
+export function QuestionFields({ question, number, count, focusKey, errors, onChange, onAddOption, onRemove, onMove }: QuestionFieldsProps) {
   const headingId = `question-${question.key}`
+  const answerErrorId = `${headingId}-answer-error`
+  const optionsErrorId = `${headingId}-options-error`
 
   function updateOption(key: string, update: Partial<OptionContent>) {
     onChange({ ...question, options: question.options.map((option) => option.key === key ? { ...option, ...update } : option) })
   }
 
   return (
-    <Stack as="section" aria-labelledby={headingId} bg="white" rounded="xl" border="2px solid" borderColor="janeq.canvas" shadow="sm" gap="0"
+    <Stack as="section" id={`${headingId}-card`} aria-labelledby={headingId} bg="white" rounded="xl" border="2px solid"
+      borderColor={errors ? 'red.600' : 'janeq.canvas'} shadow="sm" gap="0"
       onDragOver={(event) => {
         if (event.dataTransfer.types.includes(questionDragType)) event.preventDefault()
       }} onDrop={(event) => {
@@ -59,30 +64,34 @@ export function QuestionFields({ question, number, count, focusKey, onChange, on
         </HStack>
       </Flex>
       <Grid templateColumns={{ base: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' }} gap="6" p="5">
-        <Field.Root>
+        <Field.Root invalid={errors?.missingPrompt}>
           <Textarea value={question.prompt} autoFocus={focusKey === question.key} resize="vertical"
-            variant="flushed" borderColor="janeq.line"
+            variant="flushed" borderColor={errors?.missingPrompt ? 'red.600' : 'janeq.line'}
             onChange={(event) => onChange({ ...question, prompt: event.target.value })}
             rows={2} placeholder="Enter a question" />
           <Field.Label color="janeq.muted" fontSize="sm">Question<VisuallyHidden>{` ${number} prompt`}</VisuallyHidden></Field.Label>
+          {errors?.missingPrompt ? <Field.ErrorText>Enter the question prompt.</Field.ErrorText> : null}
         </Field.Root>
         <Stack gap="3">
           <Text fontSize="sm" fontWeight="medium">Answer options</Text>
           {question.options.map((option, index) => (
             <Flex key={option.key} gap="2" align="end" flexWrap="wrap">
-              <Field.Root flex="1" minW="28">
+              <Field.Root flex="1" minW="28" invalid={errors?.blankOptions.has(option.key)}>
                 <VisuallyHidden asChild><Field.Label>Question {number}, option {index + 1}</Field.Label></VisuallyHidden>
                 <Input value={option.text} autoFocus={focusKey === option.key} placeholder={`Option ${index + 1}`}
-                  variant="flushed" borderColor="janeq.line" onChange={(event) => {
+                  variant="flushed" borderColor={errors?.blankOptions.has(option.key) ? 'red.600' : 'janeq.line'} onChange={(event) => {
                   const text = event.target.value
                   updateOption(option.key, { text, is_correct: Boolean(text.trim()) && option.is_correct })
                 }} />
+                {errors?.blankOptions.has(option.key) ? <Field.ErrorText>Enter an option or remove this row.</Field.ErrorText> : null}
               </Field.Root>
               <Checkbox.Root checked={option.is_correct} disabled={!option.text.trim()} minH="10" colorPalette="blue"
                 css={{ '&:has(input:focus-visible) [data-part=control]': { outline: '2px solid', outlineColor: 'janeq.focus', outlineOffset: '2px' } }}
                 onCheckedChange={({ checked }) => updateOption(option.key, { is_correct: checked === true })}>
-                <Checkbox.HiddenInput />
-                <Checkbox.Control borderStyle="solid" borderColor="janeq.muted" _checked={{ bg: 'janeq.blue', borderColor: 'janeq.blue', color: 'white' }} />
+                <Checkbox.HiddenInput aria-describedby={errors?.missingAnswer ? answerErrorId : undefined}
+                  data-validation-focus={errors?.missingAnswer && !errors.missingOptions && option.text.trim() ? '' : undefined} />
+                <Checkbox.Control borderStyle="solid" borderColor={errors?.missingAnswer ? 'red.600' : 'janeq.muted'}
+                  _checked={{ bg: 'janeq.blue', borderColor: 'janeq.blue', color: 'white' }} />
                 <Checkbox.Label>Correct<VisuallyHidden>{` for question ${number}, option ${index + 1}`}</VisuallyHidden></Checkbox.Label>
               </Checkbox.Root>
               <IconButton type="button" variant="ghost" aria-label={`Remove question ${number}, option ${index + 1}`}
@@ -91,7 +100,10 @@ export function QuestionFields({ question, number, count, focusKey, onChange, on
               </IconButton>
             </Flex>
           ))}
-          <Button type="button" variant="ghost" size="sm" fontFamily="body" color="janeq.blue" alignSelf="start" onClick={onAddOption}>
+          {errors?.missingOptions ? <Text id={optionsErrorId} fontSize="sm" color="red.700">Enter at least two answer options.</Text> : null}
+          {errors?.missingAnswer ? <Text id={answerErrorId} fontSize="sm" color="red.700">Mark at least one option correct.</Text> : null}
+          <Button type="button" variant="ghost" size="sm" fontFamily="body" color="janeq.blue" alignSelf="start" onClick={onAddOption}
+            aria-describedby={errors?.missingOptions ? optionsErrorId : undefined} data-validation-focus={errors?.missingOptions ? '' : undefined}>
             <IconListDetails size={18} /> Add answer option
           </Button>
         </Stack>

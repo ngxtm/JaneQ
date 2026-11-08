@@ -4,6 +4,14 @@ import type { StudySet } from './api'
 
 const recentLimit = 16
 
+function needsEditor(set: StudySet | undefined) {
+  return set?.source_kind === 'custom' && set.status === 'draft'
+}
+
+export function librarySetHref(set: StudySet) {
+  return studySetHref(set.id, needsEditor(set) ? 'editor' : undefined)
+}
+
 function readRecent(key: string): string[] {
   try {
     const stored: unknown = JSON.parse(window.localStorage.getItem(key) ?? '[]')
@@ -24,6 +32,8 @@ export function useLibraryNavigation(username: string, sets: StudySet[], route: 
     ? sets.find((set) => set.id === route.id) ?? sets.find((set) => set.legacy_id === route.id)
     : undefined
   const selectedId = selectedSet?.id
+  const mode = route.kind === 'set' ? needsEditor(selectedSet) ? 'editor' : route.mode : undefined
+  const editorId = route.kind === 'set' && mode === 'editor' ? selectedId ?? route.id : undefined
 
   if (selectedId && recentIds[0] !== selectedId) {
     setRecentIds([selectedId, ...recentIds.filter((id) => id !== selectedId)].slice(0, recentLimit))
@@ -47,10 +57,10 @@ export function useLibraryNavigation(username: string, sets: StudySet[], route: 
   }, [route])
 
   useEffect(() => {
-    if (route.kind === 'set' && selectedId && route.id !== selectedId) {
-      replaceStudySetAlias(studySetHref(selectedId, route.mode === 'overview' ? undefined : route.mode))
+    if (route.kind === 'set' && selectedId && (route.id !== selectedId || route.mode !== mode)) {
+      replaceStudySetAlias(studySetHref(selectedId, mode === 'overview' ? undefined : mode))
     }
-  }, [route, selectedId])
+  }, [route, selectedId, mode])
 
   useEffect(() => {
     try {
@@ -68,7 +78,7 @@ export function useLibraryNavigation(username: string, sets: StudySet[], route: 
 
   const viewingSet = route.kind === 'set'
   return {
-    selectedSet, recent, recentCount: recentIds.length,
+    selectedSet, recent, recentCount: recentIds.length, editorId,
     viewingSet, viewingLearn: viewingSet && route.mode === 'learn', viewingTest: viewingSet && route.mode === 'test',
     removeUnavailableRecentSets,
   }

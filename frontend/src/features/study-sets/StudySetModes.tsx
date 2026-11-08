@@ -28,7 +28,7 @@ const previewHeight = '500px'
 const previewSkeletonName = 'flashcard-preview'
 const previewSkeletonDelayMs = 200
 
-function ModeCard({ label, icon, href, describedBy }: { label: string; icon: ReactNode; href?: string; describedBy?: string }) {
+function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href?: string }) {
   const content = <>
     <Box aria-hidden="true" position="relative" boxSize="6" flexShrink="0" css={{ '& svg': { display: 'block' } }}>
       <Box className="mode-icon-shadow" position="absolute" top="1" left="-1" color="#1a5fff"
@@ -56,13 +56,8 @@ function ModeCard({ label, icon, href, describedBy }: { label: string; icon: Rea
         '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
       } : {}),
     }}>
-    {href ? <a href={href}>{content}</a> : <span role="link" aria-disabled="true" aria-describedby={describedBy}>{content}</span>}
+    {href ? <a href={href}>{content}</a> : <span role="link" aria-disabled="true">{content}</span>}
   </Flex>
-}
-
-export function TestModeCard({ setId, describedBy }: { setId?: string; describedBy?: string }) {
-  return <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={setId ? studySetHref(setId, 'test') : undefined}
-    describedBy={describedBy} />
 }
 
 function readStars(key: string, legacyKey?: string): string[] {
@@ -223,7 +218,7 @@ export function StudySetModes({ setId, legacyId, username, onSessionExpired, loa
     <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: '1fr' }} gap="4">
       <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={studySetHref(setId, 'learn')} />
       <ModeCard label="Flashcards" icon={<IconCards size={24} stroke={2} />} />
-      <TestModeCard setId={setId} />
+      <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={studySetHref(setId, 'test')} />
     </Grid>
     {pending ? <>
       <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden>

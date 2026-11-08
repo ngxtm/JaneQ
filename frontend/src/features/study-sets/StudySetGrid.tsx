@@ -3,8 +3,8 @@ import { IconProgress } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import { useEffect, useRef } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
-import { studySetHref } from '../navigation/app-location'
 import type { StudySet } from './api'
+import { librarySetHref } from './library-navigation'
 
 const gridStyles = {
   templateColumns: 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))',
@@ -58,7 +58,7 @@ function StudySetCard({ set, username, onIntent }: { set: StudySet; username: st
       <Stack h="full" justify="space-between" gap="3">
         <Stack gap="2" direction={draft ? 'column-reverse' : 'column'}>
           <Heading as="h3" fontFamily="heading" fontSize="lg" lineHeight="1.25" lineClamp={2} overflowWrap="anywhere">
-            <LinkOverlay href={studySetHref(set.id)} data-study-set-link onFocus={(event) => {
+            <LinkOverlay href={librarySetHref(set)} data-study-set-link onFocus={(event) => {
               if (event.currentTarget.matches(':focus-visible')) onIntent(set)
             }} _focusVisible={{ outline: 'none' }}>{set.title}</LinkOverlay>
           </Heading>

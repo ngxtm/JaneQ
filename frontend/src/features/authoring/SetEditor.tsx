@@ -1,7 +1,7 @@
-import { Box, Button, chakra, Heading, HStack, Link, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { Box, Button, chakra, createToaster, Heading, HStack, Link, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import { IconNotebook, IconPlus } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
-import { useEffect, useRef, useState, type SubmitEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type SubmitEvent } from 'react'
 import { httpErrorMessage, httpStatus, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { mySetsHref, studySetHref } from '../navigation/app-location'
@@ -11,8 +11,10 @@ import { DiscardChangesDialog } from './DiscardChangesDialog'
 import { EditorDetails, type EditorMetadata } from './EditorDetails'
 import { EditorToolbar } from './EditorToolbar'
 import { EditorTopBar } from './EditorTopBar'
+import { EditorToast } from './EditorToast'
 import { QuestionFields, type QuestionField } from './QuestionFields'
 import { SetDeleteMenu } from './SetDeleteMenu'
+import { questionErrors } from './validation'
 import './bones/registry'
 
 type EditorProps = {
@@ -25,6 +27,8 @@ type EditorProps = {
 type EditorFormState = EditorMetadata & { questions: QuestionField[] }
 type EditorLoad = { kind: 'loading'; showSkeleton: boolean } | { kind: 'error'; missing: boolean } | { kind: 'loaded'; data: SetRevision }
 type EditorIssue = { message: string; status?: number }
+type ValidationFocus = { kind: 'title' | 'add-question' } | { kind: 'question'; key: string }
+const validationToastId = 'editor-validation'
 
 function initialForm(content?: SetRevision): EditorFormState {
   return {
@@ -36,13 +40,6 @@ function initialForm(content?: SetRevision): EditorFormState {
       options: question.options.map((option, index) => ({ ...option, key: `saved-${index}` })),
     })) ?? [],
   }
-}
-
-function isReady(questions: QuestionField[]) {
-  return questions.length > 0 && questions.every(({ prompt, options }) => {
-    const filled = options.filter(({ text }) => text.trim())
-    return Boolean(prompt.trim()) && filled.length >= 2 && filled.some(({ is_correct }) => is_correct)
-  })
 }
 
 function questionCountLabel(count: number) {
@@ -65,11 +62,41 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
   const [focusKey, setFocusKey] = useState<string>()
+  const [validationFocus, setValidationFocus] = useState<ValidationFocus | null>(null)
   const [issue, setIssue] = useState<EditorIssue>({ message: '' })
+  const [toaster] = useState(() => createToaster({ placement: 'top-end', max: 1 }))
+  const editor = useRef<HTMLFormElement>(null)
   const title = useRef<HTMLInputElement>(null)
+  const addQuestionButton = useRef<HTMLButtonElement>(null)
+  const shake = useRef<Animation | null>(null)
   const nextKey = useRef(0)
   const mutationPending = useRef(false)
   const [creationKey] = useState(() => id ? undefined : crypto.randomUUID?.())
+
+  useEffect(() => () => { toaster.remove() }, [toaster])
+
+  useLayoutEffect(() => {
+    if (!validationFocus) return
+    let target: HTMLElement | null
+    if (validationFocus.kind === 'question') {
+      const card = document.getElementById(`question-${validationFocus.key}-card`)
+      target = card?.querySelector<HTMLElement>('textarea[aria-invalid="true"], input:not([type="checkbox"])[aria-invalid="true"]')
+        ?? card?.querySelector<HTMLElement>('[data-validation-focus]') ?? null
+    } else {
+      target = validationFocus.kind === 'title' ? title.current : addQuestionButton.current
+    }
+
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    target?.focus({ preventScroll: true })
+    target?.scrollIntoView({ block: 'center', behavior: reducedMotion ? 'instant' : 'smooth' })
+    if (!reducedMotion) {
+      shake.current = editor.current?.animate(
+        [0, -6, 5, -3, 2, 0].map((offset) => ({ transform: `translateX(${offset}px)` })),
+        { duration: 280, easing: 'ease-out' },
+      ) ?? null
+    }
+    return () => { shake.current?.cancel() }
+  }, [validationFocus])
 
   function setMutationPending(pending: boolean) {
     mutationPending.current = pending
@@ -113,12 +140,37 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (mutationPending.current) return
+    setIssue({ message: '' })
+
+    function reject(focus: ValidationFocus, description: string) {
+      setValidationFocus(focus)
+      toaster.create({ id: validationToastId, type: 'error', title: 'Could not save set', description, closable: true })
+    }
+
     if (!form.title.trim()) {
-      setIssue({ message: 'Enter a title for your study set.' })
-      title.current?.focus()
+      reject({ kind: 'title' }, 'Enter a title for your study set.')
+      return
+    }
+    if (!form.questions.length) {
+      reject({ kind: 'add-question' }, 'Add at least one question before saving.')
+      return
+    }
+    const invalidQuestions = form.questions.flatMap((question, index) => {
+      const errors = questionErrors(question)
+      return errors ? [{ key: question.key, number: index + 1, errors }] : []
+    })
+    const firstInvalid = invalidQuestions[0]
+    if (firstInvalid) {
+      const { errors, key, number } = firstInvalid
+      const onlyMissingAnswer = errors.missingAnswer && !errors.missingPrompt && !errors.missingOptions && !errors.blankOptions.size
+      const description = invalidQuestions.length > 1 ? `${invalidQuestions.length} questions need attention.`
+        : onlyMissingAnswer ? `Question ${number} needs at least one correct answer.` : `Review the fields in question ${number}.`
+      reject({ kind: 'question', key }, description)
       return
     }
 
+    toaster.dismiss(validationToastId)
+    setValidationFocus(null)
     const content = {
       title: form.title,
       description: form.description,
@@ -127,7 +179,6 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
       })),
     }
     setMutationPending(true)
-    setIssue({ message: '' })
     try {
       onSaved(await saveEditor(content, id && data ? { id, revision: data.revision } : { creationKey }))
     } catch (error) {
@@ -144,7 +195,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
   return (
     <>
       <Stack asChild gap={{ base: '6', md: '8' }} css={{ '& :is(input, textarea, button)': { scrollMarginTop: '24' } }}>
-        <form onSubmit={submit} aria-busy={busy || undefined} onKeyDown={(event) => {
+        <form ref={editor} noValidate onSubmit={submit} aria-busy={busy || undefined} onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)
             && event.target instanceof Node && event.currentTarget.contains(event.target)) {
             event.preventDefault()
@@ -154,7 +205,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
           <EditorTopBar editing={!!id} status={dirty ? 'Unsaved changes' : data ? savedStatus(data) : 'Private study set'}
             action={<>
               <PrimaryButton type="submit" fontFamily="body" fontWeight="bold" disabled={busy} flexShrink="0">
-                {id ? 'Done' : isReady(form.questions) ? 'Save set' : 'Save draft'}
+                {id ? 'Done' : 'Save set'}
               </PrimaryButton>
               {id && data ? <SetDeleteMenu id={id} title={data.title} revision={data.revision} disabled={busy}
                 onDeleted={onDeleted} onPendingChange={setMutationPending} /> : null}
@@ -170,31 +221,38 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
             ) : null}
           </EditorTopBar>
           <chakra.fieldset display="flex" flexDirection="column" gap={{ base: '6', md: '8' }} minW="0" border="0" m="0" p="0" disabled={busy}>
-            <EditorDetails metadata={form} titleRef={title} questionCount={questionCountLabel(form.questions.length)} onChange={updateForm} />
+            <EditorDetails metadata={form} titleRef={title} titleInvalid={!!validationFocus && !form.title.trim()}
+              questionCount={questionCountLabel(form.questions.length)} onChange={updateForm} />
             <EditorToolbar count={form.questions.length} onReverse={() => updateForm({ questions: form.questions.toReversed() })} />
             <Stack gap="4">
               <VisuallyHidden as="h2">Questions</VisuallyHidden>
               {form.questions.length === 0 ? (
-                <HStack align="start" gap="3" bg="white" rounded="xl" border="1px solid" borderColor="janeq.divider" p="5">
+                <HStack align="start" gap="3" bg="white" rounded="xl" border="1px solid"
+                  borderColor={validationFocus ? 'red.600' : 'janeq.divider'} p="5">
                   <Box aria-hidden="true" color="blue.700" mt="1"><IconNotebook size={24} /></Box>
                   <Stack gap="1"><Heading as="h3" size="md">Add your first question</Heading>
-                    <Text color="janeq.muted">Write a prompt, add answer options, then mark every correct choice.</Text></Stack>
+                    <Text id="editor-empty-questions" color={validationFocus ? 'red.700' : 'janeq.muted'}>
+                      {validationFocus ? 'Add at least one question before saving.' : 'Write a prompt, add answer options, then mark every correct choice.'}
+                    </Text></Stack>
                 </HStack>
               ) : null}
               {form.questions.map((question, index) => (
                 <QuestionFields key={question.key} question={question} number={index + 1} focusKey={focusKey} onChange={updateQuestion}
+                  errors={validationFocus ? questionErrors(question) : undefined}
                   count={form.questions.length} onMove={moveQuestion}
                   onAddOption={() => addOption(question)}
                   onRemove={() => updateForm({ questions: form.questions.filter((item) => item.key !== question.key) })} />
               ))}
             </Stack>
-            <Button type="button" variant="outline" fontFamily="body" h={{ base: '14', md: '24' }} rounded="xl"
+            <Button ref={addQuestionButton} type="button" variant="outline" fontFamily="body" h={{ base: '14', md: '24' }} rounded="xl"
+              aria-describedby={form.questions.length === 0 ? 'editor-empty-questions' : undefined}
               bg="white" borderColor="janeq.line" color="janeq.ink" _hover={{ bg: 'janeq.canvas' }} onClick={addQuestion}>
               <IconPlus size={20} /> Add question
             </Button>
           </chakra.fieldset>
         </form>
       </Stack>
+      <EditorToast toaster={toaster} />
       <DiscardChangesDialog dirty={dirty} saving={busy} />
     </>
   )

@@ -8,11 +8,16 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from app.database import connect
+from app.database import connect, create_study_set
+from app.study_set_content import StudySetContent
 
 
 class StudySetAuthoringTests(TestCase):
     catalog = "/api/study-sets"
+    complete_question = {
+        "prompt": "Which HTTP method retrieves a resource?",
+        "options": [{"text": "GET", "is_correct": True}, {"text": "POST", "is_correct": False}],
+    }
 
     def setUp(self) -> None:
         directory = self.enterContext(TemporaryDirectory())
@@ -35,15 +40,18 @@ class StudySetAuthoringTests(TestCase):
         return client
 
     def create_set(self, **fields) -> dict:
-        response = self.client.post(self.catalog, json={"title": "HTTP practice", "questions": [], **fields})
+        response = self.client.post(self.catalog, json={"title": "HTTP practice", "questions": [self.complete_question], **fields})
         self.assertEqual(response.status_code, 201, response.text)
         return response.json()
 
-    def test_draft_edit_and_grade_after_reopening_database(self) -> None:
-        draft = self.create_set(questions=[{
+    def test_repair_legacy_draft_and_grade_after_reopening_database(self) -> None:
+        content = StudySetContent(title="Legacy draft", questions=[{
             "prompt": "  Which methods are safe?  ",
             "options": [{"text": text, "is_correct": False} for text in ("GET", "HEAD", "POST", "  ")],
         }])
+        with closing(connect(self.database)) as connection, connection:
+            set_id = create_study_set(connection, "author", content, None)
+        draft = next(item for item in self.client.get(self.catalog).json() if item["id"] == set_id)
         self.assertEqual((draft["status"], draft["configured_count"], draft["question_count"]), ("draft", 0, 1))
         path = f"{self.catalog}/{draft['id']}"
         self.assertEqual(self.client.get(f"{path}/test").status_code, 409)
@@ -56,6 +64,8 @@ class StudySetAuthoringTests(TestCase):
             self.assertEqual(saved["questions"][0]["options"][-1]["text"], "")
 
         options = saved["questions"][0]["options"]
+        self.assertEqual(self.client.put(f"{path}/editor", json=saved).status_code, 422)
+        options.pop()
         options[0]["is_correct"] = options[1]["is_correct"] = True
         response = self.client.put(f"{path}/editor", json=saved)
         self.assertEqual(response.status_code, 200, response.text)
@@ -85,7 +95,7 @@ class StudySetAuthoringTests(TestCase):
     def test_private_reads_and_writes_and_immutable_built_ins(self) -> None:
         draft = self.create_set()
         path = f"{self.catalog}/{draft['id']}"
-        valid_update = {"title": "Changed", "questions": [], "revision": 1}
+        valid_update = {"title": "Changed", "questions": [self.complete_question], "revision": 1}
         with self.signed_in_as("another-author") as other:
             self.assertNotIn(draft, other.get(self.catalog).json())
             for mode in ("editor", "preview", "learn", "test"):
@@ -102,7 +112,7 @@ class StudySetAuthoringTests(TestCase):
     def test_validation_and_signed_session_contract(self) -> None:
         draft = self.create_set()
         path = f"{self.catalog}/{draft['id']}/editor"
-        payload = {"title": "Edited", "questions": [], "revision": 1}
+        payload = {"title": "Edited", "questions": [self.complete_question], "revision": 1}
         for fields in (
             {"title": "  "}, {"revision": "1"}, {"owner_username": "someone-else"},
             {"questions": [{"prompt": "Question", "options": [{"text": "  ", "is_correct": True}]}]},
@@ -116,14 +126,14 @@ class StudySetAuthoringTests(TestCase):
         self.assertEqual(editor["put"]["security"], [{"SessionCookie": []}])
         self.assertIn("409", editor["put"]["responses"])
         self.client.post("/api/auth/logout")
-        self.assertEqual(self.client.post(self.catalog, json={"title": "Unsigned", "questions": []}).status_code, 401)
+        self.assertEqual(self.client.post(self.catalog, json={"title": "Unsigned", "questions": [self.complete_question]}).status_code, 401)
         self.assertEqual(self.client.get(path).status_code, 401)
         self.assertEqual(self.client.put(path, json=payload).status_code, 401)
         self.assertEqual(self.client.delete(path.removesuffix("/editor"), params={"revision": 1}).status_code, 401)
 
     def test_create_retry_reuses_the_same_set(self) -> None:
         headers = {"Idempotency-Key": str(uuid4())}
-        content = {"title": "Retried set", "questions": []}
+        content = {"title": "Retried set", "questions": [self.complete_question]}
         first = self.client.post(self.catalog, headers=headers, json=content)
         self.assertEqual(first.status_code, 201)
         retry = self.client.post(self.catalog, headers=headers, json=content)
@@ -132,6 +142,27 @@ class StudySetAuthoringTests(TestCase):
         self.assertEqual(changed.status_code, 409)
         custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
         self.assertEqual(custom, [first.json()])
+
+    def test_create_and_update_require_complete_questions(self) -> None:
+        saved = self.create_set()
+        path = f"{self.catalog}/{saved['id']}/editor"
+        original = self.client.get(path).json()
+        question = self.complete_question
+        invalid_questions = (
+            [],
+            [{**question, "prompt": "  "}],
+            [{**question, "options": question["options"][:1]}],
+            [{**question, "options": [*question["options"], {"text": " ", "is_correct": False}]}],
+            [question, {**question, "options": [{**option, "is_correct": False} for option in question["options"]]}],
+        )
+        for questions in invalid_questions:
+            with self.subTest(questions=questions):
+                content = {"title": "Incomplete", "questions": questions}
+                self.assertEqual(self.client.post(self.catalog, json=content).status_code, 422)
+                self.assertEqual(self.client.put(path, json={**content, "revision": saved["revision"]}).status_code, 422)
+        self.assertEqual(self.client.get(path).json(), original)
+        custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
+        self.assertEqual(custom, [saved])
 
     def test_revision_checked_delete_cascades_to_questions_and_learn_progress(self) -> None:
         draft = self.create_set(questions=[{

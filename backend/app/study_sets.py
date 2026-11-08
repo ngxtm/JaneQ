@@ -11,7 +11,7 @@ from .database import (
     connect, create_study_set, delete_study_set, read_study_set, read_study_set_editor, read_study_set_summaries,
     update_study_set,
 )
-from .study_set_content import StudySetContent, StudySetEditor, StudySetRevision
+from .study_set_content import CompleteStudySet, StudySetEditor, StudySetRevision
 
 router = APIRouter(
     prefix="/api/study-sets",
@@ -54,10 +54,10 @@ def owned_custom_set(connection: Connection, set_id: str, username: str) -> Row:
     409: {"model": AuthError, "description": "This creation key already belongs to a set with different content."},
 })
 def post_study_set(
-    content: StudySetContent, request: Request, response: Response, user: SessionUser,
+    content: CompleteStudySet, request: Request, response: Response, user: SessionUser,
     idempotency_key: Annotated[UUID | None, Header(description="Reuse the same UUID to retry a create request.")] = None,
 ) -> StudySetSummary:
-    """Create a private custom set, including a draft with incomplete questions."""
+    """Create a private study set with complete questions and answer keys."""
     response.headers["Cache-Control"] = "no-store"
     with closing(connect(request.app.state.database_path)) as connection, connection:
         connection.execute("BEGIN IMMEDIATE")

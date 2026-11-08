@@ -6,14 +6,13 @@ import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
 import { SetDeleteMenu } from '../authoring/SetDeleteMenu'
 import { homeHref, mySetsHref, navigateLibrary, studySetHref, type LibraryRoute } from '../navigation/app-location'
-import { draftTestMessage } from '../test/copy'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
 import { useLibraryNavigation } from './library-navigation'
 import { createPreviewLoader } from './preview-loader'
 import { StudySetGrid, StudySetGridPlaceholder } from './StudySetGrid'
-import { StudySetModes, TestModeCard } from './StudySetModes'
+import { StudySetModes } from './StudySetModes'
 import './bones/registry'
 
 const Learn = lazy(() => import('../learn/Learn'))
@@ -114,14 +113,9 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                   ) : null}
                 </HStack>
                 {set.description ? <Text>{set.description}</Text> : null}
-                {set.status === 'draft' ? (
-                  <Stack gap="2" align="start">
-                    <Text role="status" id="test-draft-reason">{draftTestMessage(set.question_count - set.configured_count)}</Text>
-                    <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
-                    <Box mt="4" w="40"><TestModeCard describedBy="test-draft-reason" /></Box>
-                  </Stack>
-                ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} legacyId={set.legacy_id} username={username} onSessionExpired={onSessionExpired}
-                  loadPreview={loadPreview} /></Box>}
+                {set.status === 'ready' ? <Box mt="6"><StudySetModes key={set.id} setId={set.id} legacyId={set.legacy_id}
+                  username={username} onSessionExpired={onSessionExpired} loadPreview={loadPreview} /></Box>
+                  : <Text role="status">This set is unavailable for study.</Text>}
               </Stack>
             ) : null}
           </Skeleton>
@@ -138,9 +132,8 @@ export default function Home({ route, username, signingOut, signOutError, onSign
   const [previewLoader] = useState(createPreviewLoader)
   const catalogRequest = useRef<AbortController>(null)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets } =
+  const { selectedSet, recent, recentCount, editorId, viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets } =
     useLibraryNavigation(username, sets, route)
-  const editorId = route.kind === 'set' && route.mode === 'editor' ? route.id : undefined
   const inMySets = route.kind === 'my-sets' || route.kind === 'create' || editorId !== undefined || selectedSet?.source_kind === 'custom'
 
   useEffect(() => previewLoader.clear, [previewLoader])
