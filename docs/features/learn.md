@@ -9,10 +9,11 @@ The flow is **Home → Study Set → Learn → round review → finish → Study
 
 | Area | JaneQ design target |
 | --- | --- |
-| Header | Set title and metadata above the study area, with set actions on the right of the metadata row. Use JaneQ's available question count and Draft or Ready status for MCQ metadata. |
-| Desktop | Mode cards down the left in **Learn**, **Flashcards**, **Test** order. A large flashcard preview in the center. **Shuffle**, **Autoplay**, and **Settings** on the right. |
-| Mobile | Move the mode cards into a two-column grid above the preview. Keep preview controls compact. |
-| Flashcard preview | Show the card face, current position, star action, and previous and next controls. The preview is part of the Study Set. The Flashcards mode opens its own screen. |
+| Header | Use a 48 px bold title on desktop and 36 px on mobile. Ready metadata uses the MCQ question count, with the built-in edit action as an 18 px icon in a 32 px control. JaneQ retains a compact **Back to Home** above the title. |
+| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and a two-layer shadow. The 24 px Tabler icons use 2 px strokes, a `#4b83ff` foreground, and an offset `#1a5fff` copy blurred by 2 px at 30% opacity. Hover and keyboard focus move the icon layers, with stationary feedback under reduced motion. Flashcards and Test keep the same visual treatment and expose their unavailable state to assistive technology. |
+| Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. JaneQ's three modes occupy two rows above the preview. |
+| Flashcard preview | Match the 500 px height, 12 px corner radius, two-layer shadow, orange progress stripe, and 48 px previous and next controls. Show MCQ prompts and answers, position, and a star action. Use `#0036b4` for outline controls. |
+
 
 ## Learn milestone
 
@@ -71,7 +72,8 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 
 | Check | How to reproduce | Expected result | Verification |
 | --- | --- | --- | --- |
-| Study Set layout | Open the Ready HTML / CSS set and flip the first preview card. | Learn, Flashcards, and Test appear in that order. The card flips to its answer side. | Pass · browser at 1440 px and 360 px |
+| Study Set appearance | Open the Ready HTML / CSS set and inspect the layout at 1440 and 390 px. Check the mode and preview styles in DevTools. | The desktop mode card measures 160 × 59 px and the preview measures 832 × 500 px. At 390 and 320 px the page has no horizontal overflow. | Pass · browser |
+| Study Set interactions | Hover Learn, enable reduced motion, flip the preview, press Right Arrow, toggle Autoplay, open mobile Settings, and use Enter on Learn. | The icon layers move on hover and stay still under reduced motion. The preview flips and advances. Autoplay shows its active color. Settings opens and Learn enters Round 1. | Pass · browser |
 | Learn entry and return | Open Learn, use Back, and open Learn again. | Learn opens for the selected set. Back returns to its overview. | Pass · browser |
 | Draft entry | Select a built-in Draft from Home and try its Learn URL directly. | Home opens the editor. The direct Learn request returns `409`. | Pass · browser and API |
 | Feedback and rounds | Answer two of three questions correctly and one incorrectly in round 1. Answer all three correctly in round 2. Complete the last Familiar question in a later round. | Correct feedback advances automatically. Wrong feedback waits for **Continue**. Round 1 shows `1 Learning`, `2 Familiar`, `0 Mastered`, and three reviewed rows. **Finish Learn** appears at `3 Mastered` and returns to the set. | Pass · browser. Pass · API for the same flow with a wrong review answer retaining Familiar. |

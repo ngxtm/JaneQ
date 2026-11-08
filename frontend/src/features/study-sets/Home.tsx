@@ -1,5 +1,5 @@
-import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
-import { IconArrowLeft } from '@tabler/icons-react'
+import { Box, Button, Heading, HStack, IconButton, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { IconArrowLeft, IconEditCircle } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
@@ -75,7 +75,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
 
   return (
     <Stack align="start" gap="4">
-      <Button asChild variant="ghost" fontFamily="body" color="janeq.ink">
+      <Button asChild variant="ghost" size="xs" h="6" minH="6" fontFamily="body" color="janeq.ink">
         <a href="#home"><IconArrowLeft size={18} /> Back to Home</a>
       </Button>
       {pending ? <VisuallyHidden role="status">Loading study set…</VisuallyHidden> : null}
@@ -85,18 +85,28 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
             {status === 'loaded' ? (
               <Stack gap="4">
-                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '3xl', md: '5xl' }}>
+                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
+                  lineHeight={{ base: '1.2', md: '1' }} _focus={{ outline: 'none' }}>
                   {set?.title ?? 'Study set not found'}
                 </Heading>
                 {set ? (
                   <>
-                    <Text color="janeq.muted">
-                      {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-                    </Text>
+                    <HStack justify="space-between" minH="8">
+                      <Text color="janeq.muted" fontWeight="semibold">
+                        {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                      </Text>
+                      {set.source_kind === 'builtin' && set.status === 'ready' ? (
+                        <IconButton asChild variant="outline" boxSize="8" minW="8" rounded="lg" bg="transparent"
+                          border="1px solid #cbd5e0" color="#0036b4" _hover={{ bg: '#e0edff' }}
+                          css={{ '& svg': { width: '18px', height: '18px' } }}>
+                          <a href={answerKeyHref(set.id)} aria-label="Edit answer key" title="Edit answer key"><IconEditCircle /></a>
+                        </IconButton>
+                      ) : null}
+                    </HStack>
                     {set.description ? <Text>{set.description}</Text> : null}
-                    {set.source_kind === 'builtin' ? (
+                    {set.source_kind === 'builtin' && set.status === 'draft' ? (
                       <Box><Button asChild variant="outline" bg="transparent" borderStyle="solid">
-                        <a href={answerKeyHref(set.id)}>{set.status === 'ready' ? 'Edit answer key' : 'Set answer key'}</a>
+                        <a href={answerKeyHref(set.id)}>Set answer key</a>
                       </Button></Box>
                     ) : null}
                     {set.status === 'draft' ? (
@@ -104,7 +114,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                         <Text role="status">This set is a draft. Finish setting it up before studying.</Text>
                         <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
                       </Stack>
-                    ) : <Box mt="5"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
+                    ) : <Box mt="6"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
                   </>
                 ) : <Text color="janeq.muted">Choose an available study set from Home.</Text>}
               </Stack>
