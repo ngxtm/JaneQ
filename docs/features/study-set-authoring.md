@@ -4,7 +4,7 @@
 
 Use the [local setup](../../README.md#local-development) with `JANEQ_DB_PATH` pointing to a disposable SQLite file. Sign in with the configured demo account.
 
-1. Open **My sets** from the header, then select **Create set**. Enter **HTTP methods** as the title and add one question with the prompt **Which HTTP methods are safe?**. Enter **GET** in the initial option. Use **Add answer option** twice to add **HEAD** and **POST**.
+1. Select **Create** beside **My sets** in the header, or open **My sets** and select **Create set**. Enter **HTTP methods** as the title and add one question with the prompt **Which HTTP methods are safe?**. Enter **GET** in the initial option. Use **Add answer option** twice to add **HEAD** and **POST**.
 2. Select **Save set** with the three options unmarked. The editor stays open, highlights the question, focuses its first **Correct** checkbox, and shows a Chakra error toast.
 3. Mark **GET** and **HEAD** as correct, then select **Save set**. The set opens as **Ready**. Reopen it from **My sets** or choose **Test**, select **GET** and **HEAD**, and submit to see **1 / 1**.
 4. To delete the disposable set from its overview, select **More actions** beside the **Edit set** icon, choose **Delete set**, and confirm. My sets opens with the set removed. The editor also offers the same menu beside **Done**.
@@ -41,6 +41,7 @@ The [router](../../backend/app/study_sets.py) sends reads and writes through [SQ
 
 | Check | Reproduce and expect | Observed |
 | --- | --- | --- |
+| Quick Create | From Home, select **Create**. Go Back and use Enter on the link at a narrow viewport. | Pass · Chromium at 1440 px and 320 px. Both actions opened `/my-sets/new`. The header stayed mounted, fit the viewport, and the account menu opened. |
 | Invalid save | Try an empty form, then try saving with two incomplete questions. Repeat at 360 px with reduced motion. | Pass · Chromium. The first invalid control got focus. The two cards turned red, the editor shook once, one toast appeared, and the browser sent no create request. The reduced-motion branch kept focus and inline errors without running the shake. |
 | Complete save and grade | Create a set with a complete answer key and submit a Test with all correct options selected. | Pass · Chromium at 360 px and API. The complete set opened as Ready and the multi-answer Test scored 1/1. |
 | Previously saved Draft | Open an old custom Draft's Test URL, attempt to save with no correct answer, and then mark one and save. | Pass · Chromium and API. The URL opened the editor, **Done** required an answer key, and the repaired set opened its Ready overview. |

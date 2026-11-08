@@ -1,7 +1,8 @@
 import { Box, Button, Container, Flex, HStack, Image, Link, Text } from '@chakra-ui/react'
 import type { PropsWithChildren } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
-import { followLibraryLink, homeHref, mySetsHref } from '../navigation/app-location'
+import { PrimaryButton } from '../../ui/PrimaryButton'
+import { createSetHref, followLibraryLink, homeHref, mySetsHref } from '../navigation/app-location'
 import { AccountMenu } from './AccountMenu'
 
 type LibraryLayoutProps = PropsWithChildren<{
@@ -16,8 +17,8 @@ function Brand({ size }: { size: 'sm' | 'lg' }) {
   const compact = size === 'sm'
   return (
     <Link href={homeHref} gap="2" color="janeq.ink" _hover={{ textDecoration: 'none' }}>
-      <Image src={janeqMark} alt="" boxSize={compact ? '5' : '6'} />
-      <Text fontFamily="heading" fontSize={compact ? 'lg' : '2xl'} fontWeight="700">
+      <Image src={janeqMark} alt="" boxSize={compact ? '5' : { base: '5', sm: '6' }} />
+      <Text fontFamily="heading" fontSize={compact ? 'lg' : { base: 'lg', sm: '2xl' }} fontWeight="700">
         JaneQ
       </Text>
     </Link>
@@ -34,9 +35,12 @@ function LibraryNavigation({ username, inMySets, signingOut, onSignOut }: Naviga
         <Button asChild variant="ghost" fontFamily="body" fontSize="sm" fontWeight="700" hideBelow="md">
           <a href={homeHref}>Home</a>
         </Button>
-        <Button asChild variant={inMySets ? 'subtle' : 'ghost'} fontFamily="body" fontSize="sm" fontWeight="700">
+        <Button asChild variant={inMySets ? 'subtle' : 'ghost'} px={{ base: '2', sm: '4' }} fontFamily="body" fontSize="sm" fontWeight="700">
           <a href={mySetsHref} aria-current={inMySets ? 'location' : undefined}>My sets</a>
         </Button>
+        <PrimaryButton asChild px={{ base: '2.5', sm: '4' }} rounded="lg" fontFamily="body" fontSize="sm" fontWeight="700">
+          <a href={createSetHref}>Create</a>
+        </PrimaryButton>
       </HStack>
       <AccountMenu username={username} signingOut={signingOut} onSignOut={onSignOut} />
     </Flex>

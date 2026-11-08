@@ -56,12 +56,12 @@ export function AccountMenu({ username, signingOut, onSignOut }: AccountMenuProp
               bg="green.500"
             />
           </Avatar.Root>
-          <Text truncate minW="0" maxW={{ base: '32', md: '48' }} fontSize="md" fontWeight="700">
+          <Text hideBelow="sm" truncate minW="0" maxW={{ base: '32', md: '48' }} fontSize="md" fontWeight="700">
             {username}
           </Text>
           <Box
             as="span"
-            display="flex"
+            display={{ base: 'none', sm: 'flex' }}
             flexShrink="0"
             aria-hidden="true"
             transition="transform 200ms ease-in-out"
