@@ -1,15 +1,15 @@
 {
   "questions": [
     {
-      "question": "What is the JavaScript method used to declare an integer-type variable?",
+      "question": "Which JavaScript keyword declares a block-scoped variable that can be reassigned?",
       "type": "JavaScript / React.js",
       "options": [
-        "var, let",
+        "let",
         "const",
         "int",
-        "public int"
+        "var"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "How do you define an arrow function in JavaScript?",
@@ -19,10 +19,10 @@
         "function(parameters) { instructions }",
         "=> (parameters) { instructions }"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "Which JavaScript library is used for global state management in React?",
+      "question": "Which of these libraries manages shared application state in React?",
       "type": "JavaScript / React.js",
       "options": [
         "Redux",
@@ -30,10 +30,10 @@
         "jQuery",
         "Lodash"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "In React, which lifecycle method is called after the initial render of the component?",
+      "question": "Which React class lifecycle method runs after the component mounts?",
       "type": "JavaScript / React.js",
       "options": [
         "componentDidMount()",
@@ -42,28 +42,28 @@
         "useEffect({}, [mount])",
         "constructor()"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the difference between a class component and a functional component in React?",
+      "question": "How can a React function component store local state?",
       "type": "JavaScript / React.js",
       "options": [
-        "Class components have local state, whereas functional components do not have state.",
-        "Class components are faster, functional components are deprecated.",
-        "Class components are used only for testing."
+        "Call useState at the top level of the component.",
+        "Define a componentDidMount method.",
+        "Assign a value to this.state."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the latest stable version of Python?",
+      "question": "Which Python expression creates an empty dictionary?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "Python 3.9",
-        "Python 2.7",
-        "Python 4.0",
-        "Python 3.16"
+        "{}",
+        "[]",
+        "()",
+        "set()"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "Which Python framework is commonly used for web development?",
@@ -74,29 +74,29 @@
         "Ruby on Rails",
         "Express"
       ],
-      "answer": ""
+      "correctOptionIds": ["b"]
     },
     {
-      "question": "How do you define a route in FastAPI for a RESTful API?",
+      "question": "Which FastAPI decorator registers a handler for GET /items?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "With the decorator @app.route('/')",
-        "With @app.get()",
-        "With @app.post()",
-        "With @route('/')"
+        "@app.route('/items')",
+        "@app.get('/items')",
+        "@app.post('/items')",
+        "@route('/items')"
       ],
-      "answer": ""
+      "correctOptionIds": ["b"]
     },
     {
-      "question": "What is the role of the model layer in Django’s MVC architecture?",
+      "question": "What is the role of a Django model?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "Handle data and business logic",
+        "Represent application data and define its fields.",
         "Control routes",
         "Handle the user interface",
         "Handle static files"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What is the fundamental difference between Django and FastAPI?",
@@ -107,7 +107,7 @@
         "FastAPI is a CMS",
         "Django is mainly used for automation"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "Which HTTP method is used to retrieve data from a server without modifying it?",
@@ -118,7 +118,7 @@
         "PUT",
         "DELETE"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What does the acronym 'URL' stand for?",
@@ -129,7 +129,7 @@
         "User Resource Library",
         "Unified Request Line"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What does the acronym 'SQL' stand for in databases?",
@@ -140,18 +140,18 @@
         "System Query Language",
         "Structured Question Language"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the main difference between SQL and NoSQL?",
+      "question": "How does a relational database typically organize records, compared with a document database?",
       "type": "Network / SQL",
       "options": [
-        "SQL is based on relational tables, whereas NoSQL is based on documents, graphs or other data structures.",
-        "SQL is faster than NoSQL.",
-        "NoSQL does not support transactions.",
-        "SQL is more suitable for mobile applications."
+        "A relational database uses tables, while a document database stores records as documents.",
+        "A relational database uses only files, while a document database uses tables.",
+        "A relational database stores only numbers, while a document database stores only text.",
+        "Both require every record to be a graph node."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "Which HTML tag is used to create an unordered list?",
@@ -162,7 +162,7 @@
         "<li>",
         "<p>"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "Which CSS property is used to set the text color?",
@@ -173,7 +173,7 @@
         "color",
         "font-color"
       ],
-      "answer": ""
+      "correctOptionIds": ["c"]
     },
     {
       "question": "What does the acronym 'HTTP' stand for in computing?",
@@ -184,7 +184,7 @@
         "High-Tech Transfer Protocol",
         "Hypertext Text Transfer Protocol"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "Who is the inventor of Python?",
@@ -195,42 +195,42 @@
         "Mark Zuckerberg",
         "Tim Berners-Lee"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What does 'JaneQ' mean?",
+      "question": "Which component stores copies of frequently accessed data so repeated requests can reuse them quickly?",
       "type": "General tech knowledge",
       "options": [
-        "Jane Birkin",
-        "Generated Questions",
-        "A generic username",
-        "Jane's Query"
+        "Cache",
+        "Compiler",
+        "Router",
+        "Firewall"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is 'cloud computing'?",
+      "question": "What does cloud computing provide?",
       "type": "General tech knowledge",
       "options": [
-        "Simulating clouds in video games",
-        "Storing data on remote servers accessible via the Internet",
-        "Analyzing weather data",
-        "A type of space flight"
+        "A way to simulate weather in video games",
+        "On-demand access to shared computing resources over a network",
+        "A format for storing files on a local drive",
+        "A protocol for rendering web pages"
       ],
-      "answer": ""
+      "correctOptionIds": ["b"]
     },
     {
-      "question": "What is the difference between 'let' and 'var' in JavaScript for declaring variables?",
+      "question": "Inside a block within a JavaScript function, how do let and var declarations differ in scope?",
       "type": "JavaScript / React.js",
       "options": [
-        "No difference, they are interchangeable",
-        "'let' is used to declare local variables, whereas 'var' declares global variables",
-        "'var' is used to declare local variables, whereas 'let' declares global variables"
+        "Both are scoped to that block.",
+        "let is block-scoped, while var is scoped to the enclosing function.",
+        "var is block-scoped, while let is scoped to the enclosing function."
       ],
-      "answer": ""
+      "correctOptionIds": ["b"]
     },
     {
-      "question": "How do you include a comment in your JavaScript code?",
+      "question": "Which of these are valid JavaScript comment forms? Select all that apply.",
       "type": "JavaScript / React.js",
       "options": [
         "// This is a comment",
@@ -238,7 +238,7 @@
         "# This is a comment",
         "<!-- This is a comment -->"
       ],
-      "answer": ""
+      "correctOptionIds": ["a", "b"]
     },
     {
       "question": "Which JavaScript method is used to add an element to the end of an array?",
@@ -249,7 +249,7 @@
         "add()",
         "extend()"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "How do you include an image in an HTML page?",
@@ -260,7 +260,7 @@
         "<picture src='image.jpg' alt='Image description'>",
         "<img alt='Image description'>"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What does the acronym 'API' stand for in computing?",
@@ -271,18 +271,18 @@
         "Automated Program Integration",
         "Application Program Interface"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the main difference between Django and FastAPI regarding route management?",
+      "question": "How do Django and FastAPI typically connect an incoming URL to a handler?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "Django uses class-based views to handle routes, whereas FastAPI uses asynchronous functions for endpoints.",
-        "Django uses asynchronous functions to handle routes, whereas FastAPI uses class-based views.",
-        "Both frameworks use the same approach for route management.",
-        "Django does not support route management."
+        "Django maps URL patterns to views, while FastAPI commonly uses HTTP method decorators on endpoint functions.",
+        "Both require a separate static HTML file for every route.",
+        "FastAPI requires all handlers to be classes.",
+        "Django uses database tables to choose a view."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What is the main function of the ORM (Object-Relational Mapping) in Django?",
@@ -293,7 +293,7 @@
         "The ORM handles routes in Django.",
         "The ORM is responsible for managing static files."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "How do you define a data model in Django?",
@@ -304,21 +304,21 @@
         "By writing a SQL query to create the corresponding database table.",
         "By using YAML files to define the database structure."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "Which Python library is used to create RESTful APIs with FastAPI?",
+      "question": "Which library does FastAPI use for validation of request bodies declared with data models?",
       "type": "Python / Django / FastAPI",
       "options": [
         "Flask",
         "Django",
         "Tornado",
-        "FastAPI does not require an external library to create RESTful APIs."
+        "Pydantic"
       ],
-      "answer": ""
+      "correctOptionIds": ["d"]
     },
     {
-      "question": "What is FastAPI’s main feature compared to other Python frameworks for building APIs?",
+      "question": "Which feature does FastAPI provide from the OpenAPI schema it generates?",
       "type": "Python / Django / FastAPI",
       "options": [
         "FastAPI supports automatic generation of interactive documentation (Swagger) for APIs.",
@@ -326,7 +326,7 @@
         "FastAPI is not suitable for building RESTful APIs.",
         "FastAPI only supports GraphQL APIs."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What is the difference between a list and a tuple in Python?",
@@ -337,7 +337,7 @@
         "A list can contain data of different types, whereas a tuple can only contain data of the same type.",
         "Lists and tuples are interchangeable in Python."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What is a 'lambda' function in Python and how is it used?",
@@ -348,7 +348,7 @@
         "A lambda function is used to create loops in Python.",
         "A lambda function is an internal Python function used to sort lists."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
       "question": "What is the advantage of using the 'with' statement in Python?",
@@ -359,10 +359,10 @@
         "The 'with' statement is used to create anonymous functions in Python.",
         "The 'with' statement is used to handle exceptions in Python."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "How can you swap the values of two variables in Python without using a temporary variable?",
+      "question": "Which Python assignment swaps a and b without depending on their types?",
       "type": "Python / Django / FastAPI",
       "options": [
         "a, b = b, a",
@@ -370,84 +370,84 @@
         "a = b",
         "a = a + b, b = a - b, a = a - b"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the main difference between a class and an instance in Python?",
+      "question": "What is the difference between a class and an instance in Python?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "A class is a collection of instances, whereas an instance is a specific representation of a class.",
-        "A class is a function in Python, whereas an instance is a variable.",
-        "A class is immutable, whereas an instance is mutable.",
-        "A class and an instance are interchangeable in Python."
+        "A class defines behavior and attributes, and an instance is an object created from that class.",
+        "A class is a function, and an instance is a variable name.",
+        "A class must be immutable, and its instances must be mutable.",
+        "A class and its instances are the same object."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "Who is often credited with inventing the personal computer (PC)?",
+      "question": "Which component typically executes a computer program's machine instructions?",
       "type": "General tech knowledge",
       "options": [
-        "Bill Gates",
-        "Steve Jobs",
-        "Alan Turing",
-        "Charles Babbage"
+        "SSD",
+        "CPU",
+        "Network interface card",
+        "Display"
       ],
-      "answer": ""
+      "correctOptionIds": ["b"]
     },
     {
-      "question": "What is the main purpose of React Server Components (RSC) introduced in React 19?",
+      "question": "Where can React Server Components run?",
       "type": "JavaScript / React.js",
       "options": [
-        "Server-side rendering with zero client bundle impact",
-        "Client-side state management",
-        "Static site generation only",
-        "CSS-in-JS optimization"
+        "In a server environment, including at build time or during a request",
+        "Only in the browser after hydration",
+        "Only in a CSS preprocessor",
+        "Only in a browser service worker"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "Which Python feature was added in 3.12 for better performance called 'Faster CPython'?",
+      "question": "Which interpreter optimization was introduced in CPython 3.11 as part of Faster CPython?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "Adaptive interpreter optimizations",
-        "New garbage collector",
-        "JIT compiler",
-        "Async/await improvements"
+        "An adaptive interpreter that specializes frequently executed instructions",
+        "A tracing JIT compiler",
+        "A new async/await syntax",
+        "Removal of garbage collection"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What is the primary benefit of FastAPI's Pydantic V2 released in 2024?",
+      "question": "Which change helps Pydantic v2 perform validation and serialization?",
       "type": "Python / Django / FastAPI",
       "options": [
-        "10x faster validation and better error messages",
-        "Database ORM integration",
-        "Frontend template engine",
-        "Authentication middleware"
+        "It uses pydantic-core, which is implemented in Rust.",
+        "It uses a database ORM for every validation.",
+        "It compiles frontend templates before validating data.",
+        "It delegates validation to authentication middleware."
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "Which React hook was stabilized in React 19 for handling promises directly?",
+      "question": "Which React API can read a Promise during rendering?",
       "type": "JavaScript / React.js",
       "options": [
-        "use() hook",
+        "use()",
         "useTransition()",
         "useDeferredValue()",
         "useOptimistic()"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     },
     {
-      "question": "What does 'TypeScript 5.6' introduce for better inference in 2026?",
+      "question": "Which TypeScript type operator produces a union of a type's property keys?",
       "type": "JavaScript / React.js",
       "options": [
-        "Improved const type parameters",
-        "Pattern matching",
-        "Union type narrowing",
-        "Effect system"
+        "keyof",
+        "typeof",
+        "infer",
+        "readonly"
       ],
-      "answer": ""
+      "correctOptionIds": ["a"]
     }
   ]
 }

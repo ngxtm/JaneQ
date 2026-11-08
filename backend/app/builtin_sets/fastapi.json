@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "fastapi",
+  "title": "FastAPI",
+  "language": "en",
+  "questions": [
+    {
+      "id": "fastapi-01",
+      "question": "Which decorator defines a FastAPI endpoint that handles HTTP POST at /orders?",
+      "options": { "a": "@app.post('/orders')", "b": "@app.get('/orders')", "c": "@app.put('/orders')", "d": "@app.delete('/orders')" },
+      "correctOptionIds": ["a"],
+      "explanation": "app.post registers a path operation for POST requests at the given path."
+    },
+    {
+      "id": "fastapi-02",
+      "question": "An endpoint is declared as @app.get('/items/{item_id}') with parameters item_id: int and limit: int = 10. Where is limit read from by default?",
+      "options": { "a": "The path segment", "b": "The JSON request body", "c": "The query string", "d": "The Cookie header" },
+      "correctOptionIds": ["c"],
+      "explanation": "A scalar parameter absent from the route template is treated as a query parameter by default."
+    },
+    {
+      "id": "fastapi-03",
+      "question": "A POST endpoint has a parameter named order annotated with a Pydantic BaseModel subclass. Where does FastAPI normally obtain that model's data?",
+      "options": { "a": "A header named order", "b": "The JSON request body", "c": "An environment variable named ORDER", "d": "The response payload" },
+      "correctOptionIds": ["b"],
+      "explanation": "A Pydantic model parameter is interpreted as a request body and validated against its fields."
+    },
+    {
+      "id": "fastapi-04",
+      "question": "A client sends /items/abc to a route whose item_id is typed as int. With default FastAPI validation handling, what status is returned?",
+      "options": { "a": "200", "b": "204", "c": "404", "d": "422" },
+      "correctOptionIds": ["d"],
+      "explanation": "The path matches the default route pattern, but abc fails validation as an integer."
+    },
+    {
+      "id": "fastapi-05",
+      "question": "Which tasks are suitable for a reusable FastAPI dependency declared with Depends? Select all that apply.",
+      "options": { "a": "Provide the authenticated user to multiple endpoints", "b": "Run a browser's onClick handler", "c": "Change a React component's state directly", "d": "Provide a database session with request-scoped cleanup" },
+      "correctOptionIds": ["a", "d"],
+      "explanation": "Dependencies provide shared server-side values and can wrap resource acquisition and cleanup."
+    },
+    {
+      "id": "fastapi-06",
+      "question": "An endpoint returns a dictionary with name and password_hash. Which declaration can validate and filter the normal JSON response using a public model that only declares name?",
+      "options": { "a": "status_code=200", "b": "response_model=PublicUser", "c": "tags=['users']", "d": "include_in_schema=False" },
+      "correctOptionIds": ["b"],
+      "explanation": "For a normal return value, FastAPI uses the response model to validate and serialize the declared public fields."
+    },
+    {
+      "id": "fastapi-07",
+      "question": "A lookup fails inside a path operation. Which statement produces a FastAPI HTTP error response with status 404 and a detail value?",
+      "options": { "a": "return {'status_code': 404}", "b": "raise ValueError('Item not found')", "c": "return HTTPException(status_code=404)", "d": "raise HTTPException(status_code=404, detail='Item not found')" },
+      "correctOptionIds": ["d"],
+      "explanation": "Raising HTTPException invokes FastAPI's HTTP error handling with the specified status and detail."
+    },
+    {
+      "id": "fastapi-08",
+      "question": "An orders router declares a GET path '/'. Which call mounts it so its full path is /orders/?",
+      "options": { "a": "app.add_middleware(router, prefix='/orders')", "b": "app.include_router(router, tags=['orders'])", "c": "app.include_router(router, prefix='/orders')", "d": "app.mount('/', app)" },
+      "correctOptionIds": ["c"],
+      "explanation": "include_router adds an APIRouter's operations to the application. prefix is prepended to their paths."
+    },
+    {
+      "id": "fastapi-09",
+      "question": "Which application setting changes the default Swagger UI URL from /docs to /reference?",
+      "options": { "a": "FastAPI(docs_url='/reference')", "b": "FastAPI(openapi_url='/reference')", "c": "FastAPI(redoc_url='/reference')", "d": "FastAPI(root_path='/reference')" },
+      "correctOptionIds": ["a"],
+      "explanation": "docs_url sets the Swagger UI route. openapi_url sets the schema route, and redoc_url sets the ReDoc route."
+    },
+    {
+      "id": "fastapi-10",
+      "question": "Which declarations explicitly bind the stated HTTP input in FastAPI? Select all that apply.",
+      "options": { "a": "Use Path() to read an arbitrary request header", "b": "Use Query() to constrain a page query parameter", "c": "Use Header() to read a request header", "d": "Use Cookie() to parse a JSON request body" },
+      "correctOptionIds": ["b", "c"],
+      "explanation": "Query describes query parameters and Header describes header inputs. Path and Cookie bind their own request locations."
+    },
+    {
+      "id": "fastapi-11",
+      "question": "An async def endpoint calls time.sleep(2) directly. What effect can that call have?",
+      "options": { "a": "FastAPI automatically turns it into await asyncio.sleep(2)", "b": "It can block the event-loop thread handling that endpoint", "c": "It always runs in FastAPI's thread pool", "d": "It only delays background tasks after the response" },
+      "correctOptionIds": ["b"],
+      "explanation": "time.sleep is a blocking call. Calling it directly in an async endpoint can prevent the event loop from making progress."
+    },
+    {
+      "id": "fastapi-12",
+      "question": "Which FastAPI testing helper supports requests like client.get('/health') without launching a network server?",
+      "options": { "a": "fastapi.BackgroundTasks", "b": "fastapi.APIRouter", "c": "fastapi.UploadFile", "d": "fastapi.testclient.TestClient" },
+      "correctOptionIds": ["d"],
+      "explanation": "TestClient calls the ASGI application in-process and gives tests an HTTP-style client interface."
+    },
+    {
+      "id": "fastapi-13",
+      "question": "A test needs Depends(get_db) to receive a fake database provider. Which mechanism replaces that dependency for the test?",
+      "options": { "a": "app.dependency_overrides[get_db] = fake_get_db", "b": "app.include_router(fake_get_db)", "c": "app.state.get_db = fake_get_db", "d": "app.openapi_url = fake_get_db" },
+      "correctOptionIds": ["a"],
+      "explanation": "dependency_overrides maps the original dependency callable to a replacement. Remove the override after the test."
+    },
+    {
+      "id": "fastapi-14",
+      "question": "A browser frontend on a different origin must read API responses. Which FastAPI middleware can allow that frontend's origin?",
+      "options": { "a": "GZipMiddleware", "b": "TrustedHostMiddleware", "c": "CORSMiddleware", "d": "HTTPSRedirectMiddleware" },
+      "correctOptionIds": ["c"],
+      "explanation": "CORSMiddleware can emit the headers that let a browser expose the response to scripts from an allowed origin."
+    },
+    {
+      "id": "fastapi-15",
+      "question": "Which statements describe FastAPI BackgroundTasks? Select all that apply.",
+      "options": { "a": "They can schedule work to run after the response is sent", "b": "They guarantee jobs survive an application process crash", "c": "They can only accept coroutine functions", "d": "They can run a small in-process follow-up without a separate worker" },
+      "correctOptionIds": ["a", "d"],
+      "explanation": "BackgroundTasks runs response-associated work in the application process. It is not a durable job queue and supports sync or async callables."
+    },
+    {
+      "id": "fastapi-16",
+      "question": "Which FastAPI parameter type exposes an uploaded file's filename and a file-like object backed by a spooled temporary file?",
+      "options": { "a": "bytes", "b": "Response", "c": "Form", "d": "UploadFile" },
+      "correctOptionIds": ["d"],
+      "explanation": "UploadFile exposes file metadata and a spooled file object for multipart uploads."
+    },
+    {
+      "id": "fastapi-17",
+      "question": "An application needs to initialize a shared connection pool at startup and close it at shutdown. Which FastAPI mechanism can wrap both operations?",
+      "options": { "a": "A query parameter default", "b": "An async context manager passed as lifespan", "c": "A route's response_model", "d": "A custom OpenAPI tag" },
+      "correctOptionIds": ["b"],
+      "explanation": "The lifespan context runs setup before serving requests and teardown on shutdown."
+    },
+    {
+      "id": "fastapi-18",
+      "question": "A service needs a default limit of 20 and accepts values from 1 through 100. Which query parameter definition expresses those numeric bounds?",
+      "options": { "a": "limit: int = Query(20, min_length=1, max_length=100)", "b": "limit: int = Path(20, ge=1, le=100)", "c": "limit: int = Query(20, ge=1, le=100)", "d": "limit: int = Query(20, gt=1, lt=100)" },
+      "correctOptionIds": ["c"],
+      "explanation": "ge and le enforce inclusive numeric bounds. gt and lt would reject 1 and 100."
+    },
+    {
+      "id": "fastapi-19",
+      "question": "Which decorator argument declares that a successful create operation normally responds with HTTP 201?",
+      "options": { "a": "status_code=201", "b": "response_model=201", "c": "tags=[201]", "d": "operation_id='201'" },
+      "correctOptionIds": ["a"],
+      "explanation": "status_code sets the default success status for the operation and documents it in OpenAPI."
+    },
+    {
+      "id": "fastapi-20",
+      "question": "Which endpoints are part of FastAPI's default API documentation setup? Select all that apply.",
+      "options": { "a": "/schema.yml for a YAML schema by default", "b": "/openapi.json for the generated OpenAPI schema", "c": "/admin for a database administration page by default", "d": "/docs for the Swagger UI by default" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "The default Swagger UI loads the generated OpenAPI document from /openapi.json."
+    }
+  ]
+}

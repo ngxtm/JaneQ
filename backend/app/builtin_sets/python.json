@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "python",
+  "title": "Python",
+  "language": "en",
+  "questions": [
+    {
+      "id": "python-01",
+      "question": "What does [n * n for n in range(4) if n % 2 == 0] evaluate to?",
+      "options": { "a": "[0, 1, 4, 9]", "b": "[0, 2]", "c": "[0, 4]", "d": "[4, 16]" },
+      "correctOptionIds": ["c"],
+      "explanation": "range(4) yields 0 through 3. Only 0 and 2 pass the filter, producing their squares."
+    },
+    {
+      "id": "python-02",
+      "question": "Which Python type represents an immutable sequence with positional indexing?",
+      "options": { "a": "list", "b": "tuple", "c": "set", "d": "dict" },
+      "correctOptionIds": ["b"],
+      "explanation": "A tuple supports indexing and does not allow its elements to be reassigned."
+    },
+    {
+      "id": "python-03",
+      "question": "What does {'name': 'Ada'}.get('age', 0) return?",
+      "options": { "a": "None", "b": "'age'", "c": "It raises KeyError", "d": "0" },
+      "correctOptionIds": ["d"],
+      "explanation": "dict.get returns its supplied default when the key is absent."
+    },
+    {
+      "id": "python-04",
+      "question": "A function uses def add(value, items=[]): and appends to items. Why can a second call without items see the previous call's append?",
+      "options": { "a": "The default list is created once when the function is defined", "b": "Python passes all lists by copying them", "c": "The interpreter rebuilds the default from the last return value", "d": "The default list is automatically saved to disk" },
+      "correctOptionIds": ["a"],
+      "explanation": "Defaults are evaluated when the function is defined. Calls that omit the argument reuse that list object."
+    },
+    {
+      "id": "python-05",
+      "question": "Given items = ['A', 'B'], which operations modify that original list? Select all that apply.",
+      "options": { "a": "sorted(items)", "b": "items.append('C')", "c": "items + ['C']", "d": "items[0] = 'X'" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "append and index assignment mutate the list. sorted and list concatenation create new lists."
+    },
+    {
+      "id": "python-06",
+      "question": "After first = [1, 2]; second = first; second.append(3), what does first contain?",
+      "options": { "a": "[1, 2, 3]", "b": "[1, 2]", "c": "[3]", "d": "None" },
+      "correctOptionIds": ["a"],
+      "explanation": "Both variables refer to the same mutable list. The append is visible through both."
+    },
+    {
+      "id": "python-07",
+      "question": "What benefit does with open(path) as file: provide when code inside the block raises an exception?",
+      "options": { "a": "It retries the file operation automatically", "b": "It prevents the exception from reaching the caller", "c": "It still closes the file as the block exits", "d": "It rolls back all prior writes to the file" },
+      "correctOptionIds": ["c"],
+      "explanation": "The file's context manager closes it during context exit, including when the block exits through an exception."
+    },
+    {
+      "id": "python-08",
+      "question": "Which expression checks whether a Python variable is the None singleton?",
+      "options": { "a": "not value", "b": "value is None", "c": "value is not True", "d": "bool(value)" },
+      "correctOptionIds": ["b"],
+      "explanation": "is checks identity. Falsy values such as 0 and an empty list are separate objects."
+    },
+    {
+      "id": "python-09",
+      "question": "What is the result of list(range(2, 8, 2))?",
+      "options": { "a": "[2, 4, 6, 8]", "b": "[0, 2, 4, 6]", "c": "[2, 3, 4, 5, 6, 7]", "d": "[2, 4, 6]" },
+      "correctOptionIds": ["d"],
+      "explanation": "range starts at 2, steps by 2, and excludes the stop value 8."
+    },
+    {
+      "id": "python-10",
+      "question": "Which statements describe a generator object created by calling a generator function? Select all that apply.",
+      "options": { "a": "Iteration can resume execution after a yield", "b": "It stores every possible yielded value when created", "c": "Its yielded values can be consumed one at a time", "d": "A second loop automatically restarts the same exhausted generator" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "A generator suspends at yield and resumes when advanced. An exhausted generator stays exhausted."
+    },
+    {
+      "id": "python-11",
+      "question": "Which expression counts the distinct values in the list numbers?",
+      "options": { "a": "len(numbers)", "b": "len(set(numbers))", "c": "len(sorted(numbers))", "d": "numbers.count(0)" },
+      "correctOptionIds": ["b"],
+      "explanation": "For hashable values such as numbers, constructing a set keeps one instance of each distinct value."
+    },
+    {
+      "id": "python-12",
+      "question": "What does list(zip(['A', 'B'], [1, 2, 3])) produce without strict mode?",
+      "options": { "a": "[('A', 1), ('B', 2)]", "b": "[('A', 1), ('B', 2), (None, 3)]", "c": "[('A', 1), ('A', 2), ('B', 3)]", "d": "It raises ValueError" },
+      "correctOptionIds": ["a"],
+      "explanation": "By default, zip stops when its shortest input is exhausted."
+    },
+    {
+      "id": "python-13",
+      "question": "What are a and b after a, b = 1, 2 followed by a, b = b, a?",
+      "options": { "a": "a = 1 and b = 1", "b": "a = 1 and b = 2", "c": "a = 2 and b = 2", "d": "a = 2 and b = 1" },
+      "correctOptionIds": ["d"],
+      "explanation": "Python evaluates the right-hand values before assigning the targets, so the previous values swap."
+    },
+    {
+      "id": "python-14",
+      "question": "Which statement handles only the usual error raised by int('abc') in an except clause?",
+      "options": { "a": "except TypeError:", "b": "except KeyError:", "c": "except ValueError:", "d": "except IndexError:" },
+      "correctOptionIds": ["c"],
+      "explanation": "int accepts a string, but the string abc does not represent an integer, so conversion raises ValueError."
+    },
+    {
+      "id": "python-15",
+      "question": "For a function defined as def collect(*args, **kwargs):, which statements are true? Select all that apply.",
+      "options": { "a": "args is a tuple of positional arguments", "b": "kwargs is a list of keyword names only", "c": "args is a dictionary keyed by position", "d": "kwargs is a dictionary of keyword names and values" },
+      "correctOptionIds": ["a", "d"],
+      "explanation": "The star parameter collects positional arguments into a tuple. The double-star parameter collects keyword arguments into a dict."
+    },
+    {
+      "id": "python-16",
+      "question": "What is the result of sorted(['pear', 'fig', 'apple'], key=len)?",
+      "options": { "a": "['apple', 'fig', 'pear']", "b": "['apple', 'pear', 'fig']", "c": "['pear', 'fig', 'apple']", "d": "['fig', 'pear', 'apple']" },
+      "correctOptionIds": ["d"],
+      "explanation": "The key function supplies each string's length, and sorted orders by that value in ascending order."
+    },
+    {
+      "id": "python-17",
+      "question": "Which condition is true when a Python file is run directly as a script but false when another module imports it normally?",
+      "options": { "a": "__name__ == '__main__'", "b": "__name__ is None", "c": "__file__ == '__main__'", "d": "len(__name__) == 0" },
+      "correctOptionIds": ["a"],
+      "explanation": "Python sets __name__ to __main__ for the entry script. An imported module receives its module name."
+    },
+    {
+      "id": "python-18",
+      "question": "After nested = [[1], [2]] and copy = nested[:], what happens when copy[0].append(9) runs?",
+      "options": { "a": "Only copy[0] becomes [1, 9]", "b": "Both copy[0] and nested[0] become [1, 9]", "c": "Both outer lists gain a third element", "d": "The append raises TypeError" },
+      "correctOptionIds": ["b"],
+      "explanation": "Slicing makes a shallow copy of the outer list. The inner lists are still shared."
+    },
+    {
+      "id": "python-19",
+      "question": "Which expression yields index-value pairs starting at index 1 when iterating over rows?",
+      "options": { "a": "zip(rows, start=1)", "b": "range(rows, 1)", "c": "enumerate(rows, start=1)", "d": "iter(rows, start=1)" },
+      "correctOptionIds": ["c"],
+      "explanation": "enumerate pairs each value with a counter initialized by start."
+    },
+    {
+      "id": "python-20",
+      "question": "Which values can be used directly as keys in a built-in Python dictionary? Select all that apply.",
+      "options": { "a": "[1, 2]", "b": "(1, 2)", "c": "'status'", "d": "{'id': 1}" },
+      "correctOptionIds": ["b", "c"],
+      "explanation": "A tuple of integers and a string are hashable. Built-in lists and dictionaries are unhashable."
+    }
+  ]
+}

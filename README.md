@@ -5,7 +5,7 @@ JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and
 ## Documentation
 
 - [Demo sign-in and Home](docs/features/login-home.md) covers setup, the UI-to-API flow, and acceptance checks.
-- [Set answer key](docs/features/answer-key.md) shows how to turn a fresh Draft into a Ready study set from the UI.
+- [Built-in study sets](docs/features/builtin-sets.md) covers the seeded question bank and the path from Home to Learn.
 - [Study Set and Learn](docs/features/learn.md) covers the layout, local review setup, and Learn acceptance checks.
 - [JaneQ branding](docs/features/branding.md) describes the shared logo and where it appears.
 - [Database reference](docs/database.md) covers the SQLite schema, seed behavior, and read-only inspection.
@@ -36,7 +36,7 @@ npm run dev
 
 Open [JaneQ](http://127.0.0.1:5173/). Vite forwards `/api` to FastAPI on port 8000. [The health endpoint](http://127.0.0.1:5173/api/health) should return `{"status":"ok"}` through the proxy. [FastAPI's OpenAPI UI](http://127.0.0.1:8000/docs) is available on the backend port.
 
-Sign in with the username and password from `backend/.env`. Home shows the six built-in study sets, their question counts, and their answer-key status. JaneQ seeds the 41 source questions into `backend/data/janeq.sqlite3` on first startup. Set `JANEQ_DB_PATH` to use a different SQLite file. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS.
+Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. JaneQ seeds or upgrades the catalog in `backend/data/janeq.sqlite3` on startup. Set `JANEQ_DB_PATH` to use a different SQLite file. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS.
 
 ## Frontend checks
 

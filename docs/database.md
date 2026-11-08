@@ -19,16 +19,16 @@ seed_history tracks completed seed runs independently.
 | `study_sets` | `id TEXT`, `title TEXT`, `description TEXT`, `source_kind TEXT`, `revision INTEGER` | `id` is the primary key. `title`, `description`, `source_kind`, and `revision` are required. `description` defaults to `''`, `revision` to `1`. `source_kind` accepts `builtin` or `custom`. |
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
-| `seed_history` | `name TEXT` | `name` is the primary key. `builtin_questions_v1` marks completion of the current built-in seed. |
+| `seed_history` | `name TEXT` | `name` is the primary key. `builtin_questions_v2` marks completion of the current built-in seed. Upgraded files can also contain `builtin_questions_v1`. |
 | `learn_progress` | `username TEXT`, `study_set_id TEXT`, `revision INTEGER`, `state_json TEXT` | All columns are required. The composite primary key is `(username, study_set_id)`. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. |
 
 Deleting a study set cascades to its questions and their answer options when foreign keys are enabled. The schema allows several options for a question to be marked correct.
 
 ## Built-in data and startup
 
-- JaneQ groups the 41 questions in [questions_en.json](../backend/app/questions_en.json) by `type` into six built-in study sets. Set IDs are slugs of the topic titles. Question IDs follow source order (`q01`, `q02`, …) and option IDs follow option order (`q01-a`, `q01-b`, …). The seed preserves the supplied text and order.
-- On a fresh database, all seeded options have `is_correct = 0`. The supplied answer fields are empty, so all six sets initially appear as **Draft**.
-- Startup acquires a write lock before checking `seed_history`. The seed rows and completion marker commit in the same transaction. On later startups, the marker prevents reseeding, which preserves saved answers and keeps the question count stable.
+- JaneQ groups the 41 reviewed questions in [questions_en.json](../backend/app/questions_en.json) by `type` into six built-in sets. Set IDs are slugs of the topic titles. Question IDs follow source order (`q01`, `q02`, …) and option IDs follow option order (`q01-a`, `q01-b`, …).
+- The [expanded catalog](../backend/app/builtin_sets) adds 12 sets with 20 questions each. Each file supplies its set and question IDs. Option IDs join the question ID and its local choice ID. Both sources list the correct choices in `correctOptionIds`. The seed sets the matching `answer_options.is_correct` flags, so all 18 sets start Ready.
+- Startup acquires a write lock before checking `seed_history`. The seed rows and completion marker commit in the same transaction. On an existing v1 database, the upgrade updates the original prompts, options, and keys in place. It increments the revision once for each existing set whose content or key changed. Subsequent startups skip the completed seed. [Built-in study sets](features/builtin-sets.md)
 
 ## Study set status on Home
 
@@ -42,15 +42,9 @@ Deleting a study set cascades to its questions and their answer options when for
 
 These fields are calculated when Home requests the list. The Learn and preview endpoints use the same question readiness query.
 
-## Saving built-in answer keys
-
-The [answer-key editor](features/answer-key.md) reads `study_sets`, `questions`, and the nonblank `answer_options` in their stored order. A save supplies the current `study_sets.revision` and the selected option IDs for every question. A question may have an empty selection, which leaves it unconfigured. Each selected ID must belong to the corresponding question.
-
-Inside a write transaction, the backend checks the revision, updates the changed `answer_options.is_correct` flags, and increments `study_sets.revision` once. A save with identical selections retains its revision. The existing schema and seed support this operation on both new and existing databases. The answer-key tests use a fresh disposable database, save partial and complete keys, and reopen it to check persistence.
-
 ## Learn progress
 
-Startup creates `learn_progress` on both fresh and existing databases. The seed marker preserves existing study sets and answer keys. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
+Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
 
 A write transaction checks both the study set revision and the saved step version before it updates the snapshot. When a study set revision changes, Learn presents a fresh session and replaces the previous snapshot on the next successful command. Study set authoring must increment the revision when the question or answer content changes. [Learn flow and API](features/learn.md)
 
@@ -77,4 +71,4 @@ db.execute("SELECT COUNT(*) FROM questions JOIN study_sets ON study_sets.id = qu
 db.close()
 ```
 
-For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, six built-in sets, and 41 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify fresh seed data, Learn writes, and restoration after reopening a database with saved feedback. The tests use disposable SQLite files. See the [Learn acceptance checks](features/learn.md#acceptance-checks) and the [Login and Home acceptance checks](features/login-home.md#acceptance-checks).
+For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, 18 built-in sets, and 281 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify the fresh seed and the effect of reopening an existing database with saved keys and progress. Both cases passed using disposable SQLite files. [Built-in catalog acceptance checks](features/builtin-sets.md#acceptance-checks)

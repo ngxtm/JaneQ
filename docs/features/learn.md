@@ -9,7 +9,7 @@ The flow is **Home → Study Set → Learn → round review → finish → Study
 
 | Area | JaneQ design target |
 | --- | --- |
-| Header | Use a 48 px bold title on desktop and 36 px on mobile. Ready metadata uses the MCQ question count, with the built-in edit action as an 18 px icon in a 32 px control. JaneQ retains a compact **Back to Home** above the title. |
+| Header | Use a 48 px bold title on desktop and 36 px on mobile. Ready metadata uses the MCQ question count. JaneQ retains a compact **Back to Home** above the title. |
 | Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and a two-layer shadow. The 24 px Tabler icons use 2 px strokes, a `#4b83ff` foreground, and an offset `#1a5fff` copy blurred by 2 px at 30% opacity. Hover and keyboard focus move the icon layers, with stationary feedback under reduced motion. Flashcards and Test keep the same visual treatment and expose their unavailable state to assistive technology. |
 | Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. JaneQ's three modes occupy two rows above the preview. |
 | Flashcard preview | Match the 500 px height, 12 px corner radius, two-layer shadow, orange progress stripe, and 48 px previous and next controls. Show MCQ prompts and answers, position, and a star action. Use `#0036b4` for outline controls. |
@@ -22,10 +22,10 @@ Learn has a round header with Back and Settings, a progress bar, and one prompt 
 
 ### Confirmed behavior
 
-- **Draft and Ready.** A Ready set opens its overview and can enter Learn. Selecting a built-in Draft set from Home opens the answer-key editor. The Learn API still blocks direct requests for Draft sets. [Set answer key](answer-key.md)
+- **Draft and Ready.** Every built-in set starts Ready and opens its overview with Learn available. The Learn API rejects direct requests for Draft sets. [Built-in study sets](builtin-sets.md)
 - **Answer feedback.** A single-choice selection checks immediately. For multi-select, the learner presses **Check answer**. After a correct answer, mark it on the question card and advance after about one second. After a wrong answer, mark the learner's choice and show the correct answer in the same card. Wait for **Continue** before advancing.
 - **Resume.** Save the current round, question or review step, and each question's learning status by signed-in account, study set, and revision. Reopening Learn resumes at the saved step. If the revision has changed, explain why and start a fresh session for the updated set if it is Ready. If it became Draft, apply the Draft behavior.
-- **Review data.** Use the answer-key editor to prepare the three HTML / CSS answers in a fresh disposable database. Use a separate Draft set to verify the entry behavior.
+- **Review data.** Use the three seeded HTML / CSS questions in a fresh disposable database. The Draft API test clears a key directly in its disposable fixture.
 
 ### How the reference apps handle practice
 
@@ -54,7 +54,7 @@ For the HTML / CSS review case, two correct answers and one wrong answer in roun
 
 ## Review locally
 
-Follow [Review with a fresh database](answer-key.md#review-with-a-fresh-database) to save the three HTML / CSS answers in JaneQ. Open the Ready study set and select **Learn**. Use a different built-in set for the Draft check.
+Start with a fresh database, open the Ready HTML / CSS study set, and select **Learn**. The answers are seeded on startup. [Built-in study sets](builtin-sets.md)
 
 ## API and storage
 
@@ -75,13 +75,23 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 | Study Set appearance | Open the Ready HTML / CSS set and inspect the layout at 1440 and 390 px. Check the mode and preview styles in DevTools. | The desktop mode card measures 160 × 59 px and the preview measures 832 × 500 px. At 390 and 320 px the page has no horizontal overflow. | Pass · browser |
 | Study Set interactions | Hover Learn, enable reduced motion, flip the preview, press Right Arrow, toggle Autoplay, open mobile Settings, and use Enter on Learn. | The icon layers move on hover and stay still under reduced motion. The preview flips and advances. Autoplay shows its active color. Settings opens and Learn enters Round 1. | Pass · browser |
 | Learn entry and return | Open Learn, use Back, and open Learn again. | Learn opens for the selected set. Back returns to its overview. | Pass · browser |
-| Draft entry | Select a built-in Draft from Home and try its Learn URL directly. | Home opens the editor. The direct Learn request returns `409`. | Pass · browser and API |
+| Draft entry | Clear a question's key in a disposable fixture and request Learn directly. | The request returns `409`. | Pass · API |
 | Feedback and rounds | Answer two of three questions correctly and one incorrectly in round 1. Answer all three correctly in round 2. Complete the last Familiar question in a later round. | Correct feedback advances automatically. Wrong feedback waits for **Continue**. Round 1 shows `1 Learning`, `2 Familiar`, `0 Mastered`, and three reviewed rows. **Finish Learn** appears at `3 Mastered` and returns to the set. | Pass · browser. Pass · API for the same flow with a wrong review answer retaining Familiar. |
 | Resume and revision change | Reload during wrong feedback. Then increment the set revision and reopen Learn. | Reload restores the feedback. Opening the changed Ready set shows an explanation and starts round 1. A command from the previous revision is rejected. | Pass · browser and API |
 | Multi-select and retry | Set a second correct option on `q15` and increment the revision in the disposable fixture. Select both, go offline, press **Check answer**, reconnect, and retry. | The failed request preserves both selections. Retry advances after correct feedback. Missing or extra valid choices are incorrect. Duplicate or foreign option IDs return `422`. | Pass · browser and API |
 | Settings and reset | Open Settings during a round summary and dismiss it. Turn on shuffle and reopen Settings after a reload. After completion, select **Reset progress** and confirm. | Settings opens and closes. Shuffle stays enabled after reload. Reset returns to question 1 in a new round 1. | Pass · browser |
 | Keyboard, mobile, and motion | Select options with number keys, continue with Enter, view the round summary at 360 px, and emulate reduced motion. | Keyboard actions work. The summary fits with no horizontal overflow. The progress bar stops animating with reduced motion. | Pass · browser |
-| Existing database | Reopen a disposable seeded database with a saved answer key and no Learn table. | Startup creates the table, preserves the key, and retains 41 built-in questions. | Pass · API |
+| Existing database | Reopen the v1 fixture with saved Learn progress. | Unchanged sets resume and changed sets start a new session on their new revision. | Pass · API |
 | Automated checks | Run backend `uv run --locked --no-sync python -m unittest discover -s tests -v`, then frontend `npm run lint` and `npm run build`. | Backend tests pass. Lint and build complete. | Pass · CLI |
 
 Browser checks used Chromium through Vite, FastAPI, and a disposable SQLite file.
+
+### Settings and Continue controls
+
+JaneQ uses the same Chakra switch for preview answer order and Learn shuffle. The preview keeps a single on/off setting for MCQ cards.
+
+| Check | How to reproduce | Observed result |
+| --- | --- | --- |
+| Continue hover | In Learn, answer incorrectly and hover **Continue**. Press Enter to advance, finish the round, and hover **Continue to round 2**. | Pass · Chromium. Both buttons kept white text as their background changed from `#1858f5` to `#144bd2`. Enter advanced from incorrect feedback. |
+| Preview settings | Open Settings at 1440 px. Use Tab and Space to change the switch, then click **Done**. Reopen Settings at 360 px with reduced motion enabled and press Escape. | Pass · Chromium. The preview showed the answer first. The dialog fit at 360 px with no horizontal overflow, the switch showed visible keyboard focus, and Escape returned focus to Settings. The dialog skipped its animation with reduced motion. |
+| Learn settings | Open Settings during the round summary, use Space to toggle shuffle, and close with **Done**. Reload and open Settings again. | Pass · Chromium through FastAPI and disposable SQLite. The switch kept the saved value after reload. |

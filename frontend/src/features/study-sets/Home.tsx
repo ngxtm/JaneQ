@@ -1,20 +1,18 @@
-import { Box, Button, Heading, HStack, IconButton, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
-import { IconArrowLeft, IconEditCircle } from '@tabler/icons-react'
+import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { IconArrowLeft } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type PropsWithChildren } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
-import type { AnswerKey } from './answer-key-api'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
-import { answerKeyHref, useLibraryNavigation } from './library-navigation'
+import { useLibraryNavigation } from './library-navigation'
 import { StudySetGrid, StudySetGridPlaceholder } from './StudySetGrid'
 import { StudySetModes } from './StudySetModes'
 import './bones/registry'
 
 const Learn = lazy(() => import('../learn/Learn'))
-const AnswerKeyEditor = lazy(() => import('./AnswerKeyEditor'))
 
 type StudySetsState =
   | { kind: 'loading' }
@@ -31,8 +29,8 @@ type HomeProps = {
 
 const emptySets: StudySet[] = []
 const placeholderDelayMs = 200
-// The current seed contains six built-in sets. Loaded cards use the API count.
-const builtInPlaceholderCount = 6
+// Match the seeded catalog while the API is loading.
+const builtInPlaceholderCount = 18
 
 function SetSection({ id, title, busy, children }: PropsWithChildren<{
   id: string
@@ -91,24 +89,10 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                 </Heading>
                 {set ? (
                   <>
-                    <HStack justify="space-between" minH="8">
-                      <Text color="janeq.muted" fontWeight="semibold">
-                        {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-                      </Text>
-                      {set.source_kind === 'builtin' && set.status === 'ready' ? (
-                        <IconButton asChild variant="outline" boxSize="8" minW="8" rounded="lg" bg="transparent"
-                          border="1px solid #cbd5e0" color="#0036b4" _hover={{ bg: '#e0edff' }}
-                          css={{ '& svg': { width: '18px', height: '18px' } }}>
-                          <a href={answerKeyHref(set.id)} aria-label="Edit answer key" title="Edit answer key"><IconEditCircle /></a>
-                        </IconButton>
-                      ) : null}
-                    </HStack>
+                    <Text color="janeq.muted" fontWeight="semibold" minH="8" display="flex" alignItems="center">
+                      {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                    </Text>
                     {set.description ? <Text>{set.description}</Text> : null}
-                    {set.source_kind === 'builtin' && set.status === 'draft' ? (
-                      <Box><Button asChild variant="outline" bg="transparent" borderStyle="solid">
-                        <a href={answerKeyHref(set.id)}>Set answer key</a>
-                      </Button></Box>
-                    ) : null}
                     {set.status === 'draft' ? (
                       <Stack gap="1">
                         <Text role="status">This set is a draft. Finish setting it up before studying.</Text>
@@ -131,7 +115,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
   const [attempt, setAttempt] = useState(0)
   const [showSkeleton, setShowSkeleton] = useState(false)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, viewingEditor, rememberCurrentSet, removeUnavailableRecentSets } =
+  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, rememberCurrentSet, removeUnavailableRecentSets } =
     useLibraryNavigation(username, sets)
 
   useEffect(() => {
@@ -164,24 +148,8 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
     setAttempt((current) => current + 1)
   }
 
-  const updateAnswerKeySummary = useCallback((id: string, key: AnswerKey) => {
-    setState((current) => {
-      if (current.kind !== 'loaded') return current
-      const existing = current.sets.find((set) => set.id === id)
-      if (!existing || (existing.status === key.status && existing.configured_count === key.configured_count)) return current
-      return { kind: 'loaded', sets: current.sets.map((set) => set.id === id
-        ? { ...set, status: key.status, configured_count: key.configured_count }
-        : set) }
-    })
-  }, [])
-
   function renderLibrary() {
     if (viewingSet) {
-      if (viewingEditor && selectedSet?.source_kind === 'builtin') return (
-        <Suspense fallback={<VisuallyHidden role="status">Loading answer key…</VisuallyHidden>}>
-          <AnswerKeyEditor key={selectedSet.id} set={selectedSet} onUpdated={updateAnswerKeySummary} onSessionExpired={onSessionExpired} />
-        </Suspense>
-      )
       if (viewingLearn && selectedSet) return (
         <Suspense fallback={<VisuallyHidden role="status">Loading Learn…</VisuallyHidden>}>
           <Learn key={selectedSet.id} setId={selectedSet.id} onSessionExpired={onSessionExpired} />

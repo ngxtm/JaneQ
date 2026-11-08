@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "typescript",
+  "title": "TypeScript",
+  "language": "en",
+  "questions": [
+    {
+      "id": "typescript-01",
+      "question": "What is the inferred type of let count = 3; when no type annotation is supplied?",
+      "options": { "a": "any", "b": "The literal type 3", "c": "unknown", "d": "number" },
+      "correctOptionIds": ["d"],
+      "explanation": "A mutable let binding initialized with a number literal usually widens to number."
+    },
+    {
+      "id": "typescript-02",
+      "question": "A value has type string | number. Which check narrows it to string in the true branch?",
+      "options": { "a": "value !== null", "b": "typeof value === 'string'", "c": "value === value", "d": "Boolean(value)" },
+      "correctOptionIds": ["b"],
+      "explanation": "TypeScript recognizes typeof checks as type guards and narrows the true branch to string."
+    },
+    {
+      "id": "typescript-03",
+      "question": "Which type accepts arbitrary input while requiring a type check or assertion before accessing its properties?",
+      "options": { "a": "unknown", "b": "any", "c": "never", "d": "string" },
+      "correctOptionIds": ["a"],
+      "explanation": "unknown can hold arbitrary values, but property access requires the compiler to know more about the value."
+    },
+    {
+      "id": "typescript-04",
+      "question": "Which type describes a two-element array whose first element is a string and whose second is a number?",
+      "options": { "a": "(string | number)[]", "b": "[number, string]", "c": "[string, number]", "d": "string[] | number[]" },
+      "correctOptionIds": ["c"],
+      "explanation": "A tuple describes the types at specific positions."
+    },
+    {
+      "id": "typescript-05",
+      "question": "What does the type User = { name: string; age?: number } allow? Select all that apply.",
+      "options": { "a": "{ name: 'Ada' }", "b": "{ age: 42 }", "c": "{ name: 'Ada', age: 42 }", "d": "{ name: 42 }" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "name is required and must be a string. age may be omitted or supplied as a number."
+    },
+    {
+      "id": "typescript-06",
+      "question": "Which declaration preserves the input type as the return type for identity calls with different kinds of values?",
+      "options": { "a": "function identity(x: unknown): unknown", "b": "function identity<T>(x: T): T", "c": "function identity(x: string): string", "d": "function identity(x: string | number): string | number" },
+      "correctOptionIds": ["b"],
+      "explanation": "The generic type parameter T ties the return type to the argument type for each call."
+    },
+    {
+      "id": "typescript-07",
+      "question": "What is keyof { id: number; title: string }?",
+      "options": { "a": "number | string", "b": "keyof number | keyof string", "c": "['id', 'title']", "d": "'id' | 'title'" },
+      "correctOptionIds": ["d"],
+      "explanation": "keyof gives the union of a type's property keys."
+    },
+    {
+      "id": "typescript-08",
+      "question": "Which utility type keeps only id and name from User?",
+      "options": { "a": "Omit<User, 'id' | 'name'>", "b": "Partial<User>", "c": "Pick<User, 'id' | 'name'>", "d": "Readonly<User>" },
+      "correctOptionIds": ["c"],
+      "explanation": "Pick selects the specified keys from the original object type."
+    },
+    {
+      "id": "typescript-09",
+      "question": "Which type makes the top-level properties of User optional for a patch payload?",
+      "options": { "a": "Partial<User>", "b": "Required<User>", "c": "Readonly<User>", "d": "NonNullable<User>" },
+      "correctOptionIds": ["a"],
+      "explanation": "Partial makes each top-level property optional while retaining its value type."
+    },
+    {
+      "id": "typescript-10",
+      "question": "Which statements about TypeScript's compile-time types are true? Select all that apply.",
+      "options": { "a": "An interface validates API responses at runtime", "b": "A type assertion can change the compiler's view of an expression", "c": "Casting with as number converts a string to a number at runtime", "d": "An interface declaration does not create a runtime constructor" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "Assertions and interfaces inform type checking. They do not perform runtime conversion or validation."
+    },
+    {
+      "id": "typescript-11",
+      "question": "A union has variants { kind: 'success'; data: string } and { kind: 'failure'; error: Error }. What check lets the compiler permit result.data?",
+      "options": { "a": "typeof result === 'object'", "b": "result !== undefined", "c": "result.kind === 'success'", "d": "result.kind !== ''" },
+      "correctOptionIds": ["c"],
+      "explanation": "The literal kind property discriminates the union, so the true branch has the success variant."
+    },
+    {
+      "id": "typescript-12",
+      "question": "With strictNullChecks enabled, what happens when const title: string = null; is checked?",
+      "options": { "a": "null is converted to an empty string", "b": "The checker reports a type error", "c": "The type widens to string | null", "d": "The checker reports no error because null matches string" },
+      "correctOptionIds": ["b"],
+      "explanation": "With strict null checking, null must be explicitly included in the type for this assignment to be valid."
+    },
+    {
+      "id": "typescript-13",
+      "question": "A function accepts { name: string }. Can it accept a variable declared as const employee = { name: 'Ada', id: 1 };?",
+      "options": { "a": "Yes, the variable has the required name property with the right type", "b": "No, the two object types must have exactly the same keys", "c": "No, only instances of a named class can be passed", "d": "Yes, but only after deleting employee.id" },
+      "correctOptionIds": ["a"],
+      "explanation": "Structural assignability checks that the variable supplies the required members. Its additional id does not prevent assignment."
+    },
+    {
+      "id": "typescript-14",
+      "question": "Which type represents a branch that is impossible after all variants of a union have been handled?",
+      "options": { "a": "void", "b": "undefined", "c": "unknown", "d": "never" },
+      "correctOptionIds": ["d"],
+      "explanation": "never represents an impossible value and can be used to check that a union switch is exhaustive."
+    },
+    {
+      "id": "typescript-15",
+      "question": "Given const tags: readonly string[] = ['new'];, which operations are allowed by the type checker? Select all that apply.",
+      "options": { "a": "tags.push('sale')", "b": "Read tags[0]", "c": "Assign tags[0] = 'sale'", "d": "Make a mutable copy with const copy = [...tags];" },
+      "correctOptionIds": ["b", "d"],
+      "explanation": "A readonly array permits reads and copying. Its type disallows mutating methods and index assignments."
+    },
+    {
+      "id": "typescript-16",
+      "question": "For a plain object literal, which syntax infers readonly properties with literal value types?",
+      "options": { "a": "{ mode: 'dark' } as const", "b": "{ mode: 'dark' } as object", "c": "{ mode: 'dark' } as any", "d": "{ mode: 'dark' } as { mode: string }" },
+      "correctOptionIds": ["a"],
+      "explanation": "A const assertion prevents literal widening and marks the literal object's properties readonly in the type system."
+    },
+    {
+      "id": "typescript-17",
+      "question": "What is the purpose of const palette = expression satisfies Palette;?",
+      "options": { "a": "Validate palette at runtime", "b": "Change each property to the any type", "c": "Emit a Palette instance instead of the expression", "d": "Check compatibility with Palette without replacing the expression's inferred type with Palette" },
+      "correctOptionIds": ["d"],
+      "explanation": "satisfies checks assignability while retaining the type inferred for the expression."
+    },
+    {
+      "id": "typescript-18",
+      "question": "Which return annotation makes isUser(value) a type guard that can narrow value in an if block?",
+      "options": { "a": ": User", "b": ": boolean | User", "c": ": value is User", "d": ": typeof User" },
+      "correctOptionIds": ["c"],
+      "explanation": "The value is User annotation is a type predicate tied to the function parameter."
+    },
+    {
+      "id": "typescript-19",
+      "question": "Which type requires a number value for each key in the union 'read' | 'write'?",
+      "options": { "a": "Record<number, 'read' | 'write'>", "b": "Record<'read' | 'write', number>", "c": "Pick<number, 'read' | 'write'>", "d": "Partial<Record<'read' | 'write', number>>" },
+      "correctOptionIds": ["b"],
+      "explanation": "Record maps each key in the first type argument to the value type in the second."
+    },
+    {
+      "id": "typescript-20",
+      "question": "Which checks can narrow value from string | number | null to a single primitive type in their true branches? Select all that apply.",
+      "options": { "a": "typeof value === 'number'", "b": "value !== null", "c": "typeof value === 'string'", "d": "value === value" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "The typeof checks each select one union member. Excluding null still leaves string and number."
+    }
+  ]
+}

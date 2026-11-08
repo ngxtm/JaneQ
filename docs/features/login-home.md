@@ -4,7 +4,7 @@
 
 A user signs in with the configured demo account and sees the study sets available in JaneQ. Reloading the page restores a valid session. Signing out returns the user to the sign-in form.
 
-Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card records the visit under Recent. A Ready set shows its study modes and flashcard preview. A built-in Draft opens the [answer-key editor](answer-key.md).
+Home lists the 18 built-in study sets from SQLite. Cards show the question count and status. Opening a card records the visit under Recent. Built-in sets are Ready and open to their study modes and flashcard preview. [Built-in study sets](builtin-sets.md)
 
 The overview links to Learn. Flashcards and Test have reserved entries for their own flows. [Study Set and Learn](learn.md)
 
@@ -77,7 +77,7 @@ The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in 
 | Check | How to reproduce | Expected result | Verification |
 | --- | --- | --- | --- |
 | Missing session | Open JaneQ in a fresh browser session and request `/api/study-sets`. | JaneQ shows Sign in. The API returns `401` with `{"detail":"Sign in first."}`. | **Pass · API** for the endpoint response. |
-| Credentials and Home data | Submit an incorrect password, then sign in with the configured credentials. | The form shows the credential error. A valid sign-in opens Home with six built-in sets and 41 questions on a fresh database. | **Pass · API** for both login responses and the returned set counts. **Pass · browser (earlier milestone)** for valid sign-in. |
+| Credentials and Home data | Submit an incorrect password, then sign in with the configured credentials. | The form shows the credential error. A valid sign-in opens Home with 18 built-in sets and 281 questions on a fresh database. | **Pass · API** for both login responses and the returned set counts. **Pass · browser** for valid sign-in and 18 visible cards. |
 | Session restore and sign-out | Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out clears the session and the final reload shows Sign in. | **Pass · API** and **Pass · browser** against Vite, FastAPI, and a temporary SQLite database. |
 | Sign-out across sessions | While the Home list is pending, intercept logout with a `503`, then let the list return `401` and sign in again. Repeat with a delayed logout that would clear the cookie. | The new Home shows no old sign-out error, and `GET /api/auth/me` returns `200` after the delayed response. | **Pass · browser** in Chromium with intercepted responses. |
 | Login entrance | Reload signed out at 360 px, press Tab during the entrance, and repeat with reduced motion enabled. | Background and form animate with default settings. Tab shows the focused field immediately. Reduced motion shows the final layout on first render. | **Pass · browser** in Chromium. |
@@ -85,7 +85,7 @@ The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in 
 | Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
 | Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
 | Home on a narrow screen | Open Home at 360 px. Focus the account menu, press Enter, press Escape to return focus to the trigger, then reopen it and use End and Enter to sign out. | The menu fits the viewport, Escape restores focus, and keyboard selection returns to Sign in. | **Pass · browser** in Chromium. |
-| Seed and answer-key persistence | Start with a fresh disposable database. Set `answer_options.is_correct` to `1` for `q15-a`, `q16-c`, and `q24-a`, then restart FastAPI with the same file. | Fresh sets are Draft. HTML / CSS stays Ready with three configured questions, and the source total stays at 41. | **Pass · API** for fresh seeded data. **Pass · persistence (earlier milestone)** for restart and seed concurrency checks. |
+| Seed persistence | Start with a disposable v1 database and reopen it twice. | Home lists 18 Ready built-in sets after both restarts. | **Pass · API**. [Catalog upgrade check](builtin-sets.md#acceptance-checks) |
 | Frontend lint and build | Run `npm run lint` and `npm run build` from `frontend/`. | Both commands exit successfully. | **Pass · CLI (Motion verification)**. |
 
 From `backend/`, run the [API regression checks](../../backend/tests/test_login_home.py) with:
@@ -94,7 +94,7 @@ From `backend/`, run the [API regression checks](../../backend/tests/test_login_
 uv run --locked python -m unittest discover -s tests -v
 ```
 
-Each test creates a temporary SQLite file and starts FastAPI through `TestClient`, including startup and seeding. The tests cover the generated OpenAPI contract, invalid credentials, missing sessions, login, the six sets and 41 questions, and logout. Browser and Vite proxy checks run separately.
+Each test creates a temporary SQLite file and starts FastAPI through `TestClient`, including startup and seeding. The tests cover the generated OpenAPI contract, invalid credentials, missing sessions, login, the 18 sets and 281 questions, and logout. Browser and Vite proxy checks run separately.
 
 ### Local proxy regression
 
@@ -116,7 +116,7 @@ The Home layout includes shared navigation, a recent-set grid, study set cards, 
 | --- | --- |
 | Empty dashboard | The illustration uses the JaneQ mark with the same staggered floating motion. The primary action scrolls to Built-in sets because the question bank is already available. |
 | Recent, classes, and news | Recent uses real sets opened by the signed-in demo user. Built-in sets replace What's new. My sets appears when custom sets are available. Classes are outside the JaneQ feature plan. |
-| Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Ready cards open the overview, and built-in Draft cards open the answer-key editor. |
+| Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the overview. |
 | Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
 | Navigation state | [library-navigation.ts](../../frontend/src/features/study-sets/library-navigation.ts) handles browser history with hash URLs and stores up to 16 recent set IDs locally per demo username. The current API list supplies the displayed records. |
 
@@ -152,7 +152,7 @@ JaneQ observes changes to the browser's reduced-motion media query and renders s
 
 ### Quiet loading and the study-set skeleton
 
-[App](../../frontend/src/App.tsx) leaves the screen blank during the session check and lazy screen imports. Sign-in keeps its action label while the submit button is busy. [Home](../../frontend/src/features/study-sets/Home.tsx) shows the ready shell and reserves card space while the list is pending. Recent reserves one slot per saved ID. After a successful response, Home removes IDs that are no longer available, so a grid with stale IDs may shrink. Built-in reserves six slots for the current seed. The card grid controls wrapping and height for both cards and placeholders.
+[App](../../frontend/src/App.tsx) leaves the screen blank during the session check and lazy screen imports. Sign-in keeps its action label while the submit button is busy. [Home](../../frontend/src/features/study-sets/Home.tsx) shows the ready shell and reserves card space while the list is pending. Recent reserves one slot per saved ID. After a successful response, Home removes IDs that are no longer available, so a grid with stale IDs may shrink. Built-in reserves 18 slots for the current seed. The card grid controls wrapping and height for both cards and placeholders.
 
 The card slots and overview body stay visually blank for the first 200 ms, then show static Boneyard placeholders while the API is pending. Pending regions expose their busy state and hide decorative bones from assistive technology. A direct link to a set keeps **Back to Home** available during loading and error. Retrying leaves focus on Back if it is already focused.
 
@@ -168,5 +168,5 @@ The CLI captures the first real Built-in card and the HTML / CSS overview. The [
 | --- | --- | --- |
 | Open two sets, return to Home, and reload with a delayed list response. | Recent reserves its slots. Built-in holds the same top and height when the real cards replace the skeleton. | **Pass · browser** in Chromium at 360, 600, 768, 900, and 1280 px. |
 | While the list is pending, resize Home between 360 and 1280 px, then let the list load. | The skeleton and loaded cards follow the same grid rows at the new width. | **Pass · browser** in Chromium. |
-| Sign in with the local API responding promptly. | The six cards appear without a skeleton flash. | **Pass · browser** in Chromium. |
+| Sign in with the local API responding promptly. | Cards appear without a skeleton flash. | **Pass · browser** in Chromium in the original Home review. |
 | Delay the list response on a direct set link, return an error, then retry. | Back remains available, the body becomes busy before the skeleton appears, and the overview loads without stealing focus from Back. | **Pass · browser** in Chromium. |

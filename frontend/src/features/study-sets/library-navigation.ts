@@ -11,12 +11,10 @@ export function learnHref(id: string) {
   return `${studySetHref(id)}/learn`
 }
 
-export function answerKeyHref(id: string) {
-  return `${studySetHref(id)}/editor`
-}
-
 function setFromHash(sets: StudySet[], hash: string) {
-  return sets.find((set) => studySetHref(set.id) === hash || learnHref(set.id) === hash || answerKeyHref(set.id) === hash)
+  // Old answer-key bookmarks now open the set overview.
+  const overviewHash = hash.endsWith('/editor') ? hash.slice(0, -'/editor'.length) : hash
+  return sets.find((set) => studySetHref(set.id) === overviewHash || learnHref(set.id) === hash)
 }
 
 function readRecent(key: string): string[] {
@@ -81,7 +79,7 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
   const viewingSet = hash.startsWith('#set/')
   return {
     selectedSet, recent, recentCount: recentIds.length,
-    viewingSet, viewingLearn: viewingSet && hash.endsWith('/learn'), viewingEditor: viewingSet && hash.endsWith('/editor'),
+    viewingSet, viewingLearn: viewingSet && hash.endsWith('/learn'),
     rememberCurrentSet, removeUnavailableRecentSets,
   }
 }

@@ -56,8 +56,10 @@ class LoginHomeTests(TestCase):
         response = self.client.get("/api/study-sets")
         self.assertEqual(response.status_code, 200)
         study_sets = response.json()
-        self.assertEqual(len(study_sets), 6)
-        self.assertEqual(sum(study_set["question_count"] for study_set in study_sets), 41)
+        self.assertEqual(len(study_sets), 18)
+        self.assertEqual(sum(study_set["question_count"] for study_set in study_sets), 281)
+        self.assertEqual(sum(study_set["question_count"] == 20 for study_set in study_sets), 12)
+        self.assertTrue(all(study_set["status"] == "ready" for study_set in study_sets))
 
         self.assertEqual(self.client.post("/api/auth/logout").status_code, 204)
         self.assertEqual(self.client.get("/api/auth/me").status_code, 401)

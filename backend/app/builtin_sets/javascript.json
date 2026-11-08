@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "id": "javascript",
+  "title": "JavaScript",
+  "language": "en",
+  "questions": [
+    {
+      "id": "javascript-01",
+      "question": "After const items = ['A']; const result = items.push('B'); what is result?",
+      "options": { "a": "'B'", "b": "['A', 'B']", "c": "2", "d": "undefined" },
+      "correctOptionIds": ["c"],
+      "explanation": "push mutates the array and returns its new length."
+    },
+    {
+      "id": "javascript-02",
+      "question": "What does 0 === '0' evaluate to in JavaScript?",
+      "options": { "a": "false", "b": "true", "c": "0", "d": "undefined" },
+      "correctOptionIds": ["a"],
+      "explanation": "Strict equality does not coerce the number and the string to the same type."
+    },
+    {
+      "id": "javascript-03",
+      "question": "What is the value of city after const city = user?.address?.city ?? 'Unknown'; if user is null?",
+      "options": { "a": "null", "b": "undefined", "c": "An empty string", "d": "'Unknown'" },
+      "correctOptionIds": ["d"],
+      "explanation": "Optional chaining stops at the null user and yields undefined. Nullish coalescing then uses the fallback."
+    },
+    {
+      "id": "javascript-04",
+      "question": "Which expression returns a new array containing only the even values from nums?",
+      "options": { "a": "nums.map(n => n % 2 === 0)", "b": "nums.filter(n => n % 2 === 0)", "c": "nums.find(n => n % 2 === 0)", "d": "nums.some(n => n % 2 === 0)" },
+      "correctOptionIds": ["b"],
+      "explanation": "filter returns all elements that pass its predicate in a new array."
+    },
+    {
+      "id": "javascript-05",
+      "question": "For an ordinary JavaScript array items, which calls leave the array structure unchanged? Select all that apply.",
+      "options": { "a": "items.slice(0, 2)", "b": "items.splice(0, 2)", "c": "items.concat(['new'])", "d": "items.reverse()" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "slice and concat return new arrays. splice and reverse change the original array."
+    },
+    {
+      "id": "javascript-06",
+      "question": "A function returns an inner function that reads a local variable after the outer function has finished. What makes that possible?",
+      "options": { "a": "Prototype inheritance", "b": "Implicit type coercion", "c": "A closure over the surrounding lexical environment", "d": "The event loop's timer queue" },
+      "correctOptionIds": ["c"],
+      "explanation": "A closure retains access to variables in its surrounding lexical scope."
+    },
+    {
+      "id": "javascript-07",
+      "question": "What happens in JavaScript when console.log(value) executes before let value = 5; in the same block?",
+      "options": { "a": "It logs undefined", "b": "It throws a ReferenceError", "c": "It logs 5", "d": "It logs null" },
+      "correctOptionIds": ["b"],
+      "explanation": "The let binding exists but is uninitialized until the declaration executes."
+    },
+    {
+      "id": "javascript-08",
+      "question": "What does an async function return when its body executes return 42;?",
+      "options": { "a": "The number 42 directly", "b": "A generator that yields 42", "c": "A callback that receives 42", "d": "A promise fulfilled with 42" },
+      "correctOptionIds": ["d"],
+      "explanation": "An async function returns a promise. A normal return value becomes the fulfillment value."
+    },
+    {
+      "id": "javascript-09",
+      "question": "Given [1, 2, 3].reduce((total, n) => total + n, 10), what is the result?",
+      "options": { "a": "16", "b": "6", "c": "13", "d": "10" },
+      "correctOptionIds": ["a"],
+      "explanation": "The accumulator starts at 10, then adds 1, 2, and 3."
+    },
+    {
+      "id": "javascript-10",
+      "question": "Which statements about const config = { enabled: true }; are true? Select all that apply.",
+      "options": { "a": "The config binding can be reassigned to a different object", "b": "config.enabled can be reassigned", "c": "A new property can be added to config", "d": "The object is automatically frozen" },
+      "correctOptionIds": ["b", "c"],
+      "explanation": "const fixes the binding. The object created by this literal remains mutable."
+    },
+    {
+      "id": "javascript-11",
+      "question": "When Promise.all([slow, fast]) fulfills, what determines the order of its result array?",
+      "options": { "a": "The order in which the promises fulfilled", "b": "Alphabetical order of their values", "c": "The order in the input array", "d": "A random order chosen by the event loop" },
+      "correctOptionIds": ["c"],
+      "explanation": "Promise.all stores each fulfillment value at the corresponding input position."
+    },
+    {
+      "id": "javascript-12",
+      "question": "A browser click handler logs A, schedules Promise.resolve().then(() => console.log('B')), and logs C. What is the log order?",
+      "options": { "a": "B, A, C", "b": "A, B, C", "c": "C, A, B", "d": "A, C, B" },
+      "correctOptionIds": ["d"],
+      "explanation": "The synchronous logs run first. The promise reaction runs as a microtask after the handler yields."
+    },
+    {
+      "id": "javascript-13",
+      "question": "Which method checks whether key is an own property of obj even when its value is undefined?",
+      "options": { "a": "Boolean(obj[key])", "b": "Object.hasOwn(obj, key)", "c": "obj[key] !== undefined", "d": "key in obj" },
+      "correctOptionIds": ["b"],
+      "explanation": "Object.hasOwn tests property ownership directly. The in operator can also match inherited properties."
+    },
+    {
+      "id": "javascript-14",
+      "question": "Which built-in collection can use an object itself as a key and then retrieve its associated value?",
+      "options": { "a": "Map", "b": "Set", "c": "Array", "d": "String" },
+      "correctOptionIds": ["a"],
+      "explanation": "Map supports object keys and uses object identity for their equality."
+    },
+    {
+      "id": "javascript-15",
+      "question": "Which expressions evaluate to the string 'fallback'? Select all that apply.",
+      "options": { "a": "0 ?? 'fallback'", "b": "false ?? 'fallback'", "c": "null ?? 'fallback'", "d": "undefined ?? 'fallback'" },
+      "correctOptionIds": ["c", "d"],
+      "explanation": "The right operand of ?? is used only when the left operand is null or undefined."
+    },
+    {
+      "id": "javascript-16",
+      "question": "After const copy = { ...original };, both objects have a nested settings object. What happens if copy.settings.mode is changed?",
+      "options": { "a": "Only copy sees the change", "b": "The assignment throws because copy is const", "c": "Both objects see it because they share settings", "d": "original is replaced by copy" },
+      "correctOptionIds": ["c"],
+      "explanation": "Object spread is shallow. It copies the settings reference into the new object."
+    },
+    {
+      "id": "javascript-17",
+      "question": "If a module exports export function format() {}, which statement imports it by name?",
+      "options": { "a": "import format from './utils.js';", "b": "import './utils.js' as format;", "c": "export { format } from './utils.js';", "d": "import { format } from './utils.js';" },
+      "correctOptionIds": ["d"],
+      "explanation": "A named export is imported using a matching name inside braces."
+    },
+    {
+      "id": "javascript-18",
+      "question": "What does new Set([2, 2, 3]).size return?",
+      "options": { "a": "2", "b": "3", "c": "1", "d": "undefined" },
+      "correctOptionIds": ["a"],
+      "explanation": "A Set keeps unique values. This set contains 2 and 3."
+    },
+    {
+      "id": "javascript-19",
+      "question": "What happens when JSON.parse receives the string '{bad json}'?",
+      "options": { "a": "It returns an empty object", "b": "It throws a SyntaxError", "c": "It returns null", "d": "It resolves a rejected promise" },
+      "correctOptionIds": ["b"],
+      "explanation": "JSON.parse is synchronous and throws SyntaxError for text that is not valid JSON."
+    },
+    {
+      "id": "javascript-20",
+      "question": "Which statements about arrow functions are true? Select all that apply.",
+      "options": { "a": "They capture this from the surrounding scope", "b": "They can be called with new as constructors", "c": "An expression body returns its value implicitly", "d": "They always receive their own arguments binding" },
+      "correctOptionIds": ["a", "c"],
+      "explanation": "Arrow functions have lexical this and can implicitly return an expression. They do not have their own arguments binding or constructor behavior."
+    }
+  ]
+}

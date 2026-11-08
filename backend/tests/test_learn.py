@@ -30,11 +30,8 @@ class LearnTests(TestCase):
             self.app = create_app()
         self.client = self.enterContext(TestClient(self.app))
 
-    def configure(self, *, multiple: bool = False) -> None:
+    def sign_in(self) -> None:
         self.assertEqual(self.client.post("/api/auth/login", json=self.credentials).status_code, 200)
-        ids = [*self.key.values(), "q15-b"] if multiple else list(self.key.values())
-        with closing(connect(self.database)) as connection, connection:
-            connection.executemany("UPDATE answer_options SET is_correct = 1 WHERE id = ?", [(item,) for item in ids])
 
     def command(self, view: dict, action: str, expected: int = 200, **fields) -> dict:
         response = self.client.post(self.path, json={
@@ -50,13 +47,15 @@ class LearnTests(TestCase):
             operation = schema["paths"]["/api/study-sets/{set_id}/learn"][method]
             self.assertEqual(operation["security"], [{"SessionCookie": []}])
             self.assertIn("409", operation["responses"])
-        self.client.post("/api/auth/login", json=self.credentials)
+        self.sign_in()
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("UPDATE answer_options SET is_correct = 0 WHERE question_id = 'q15'")
         self.assertEqual(self.client.get(self.path).status_code, 409)
         self.assertEqual(self.client.get("/api/study-sets/missing/learn").status_code, 404)
         self.assertEqual(self.client.get("/api/study-sets/html-css/preview").status_code, 409)
 
     def test_rounds_reach_mastery_and_restore_wrong_feedback(self) -> None:
-        self.configure()
+        self.sign_in()
         view = self.client.get(self.path).json()
         initial_view = view
         self.assertIsNone(view["feedback"])
@@ -90,7 +89,9 @@ class LearnTests(TestCase):
         self.assertEqual((view["phase"], view["mastered"]), ("complete", 3))
 
     def test_multi_select_and_revision_conflict(self) -> None:
-        self.configure(multiple=True)
+        self.sign_in()
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("UPDATE answer_options SET is_correct = 1 WHERE id = 'q15-b'")
         view = self.client.get(self.path).json()
         self.assertTrue(view["question"]["multiple"])
         self.command(view, "check", 422, selected_ids=["q15-a", "q15-a"])
@@ -107,64 +108,76 @@ class LearnTests(TestCase):
         self.assertTrue(refreshed["revision_changed"])
         self.assertEqual((refreshed["revision"], refreshed["round"], refreshed["mastered"]), (2, 1, 0))
 
-    def test_existing_database_keeps_its_answer_key(self) -> None:
-        self.configure()
+    def test_upgrade_replaces_changed_keys_once_and_preserves_unaffected_progress(self) -> None:
+        self.sign_in()
         with closing(connect(self.database)) as connection, connection:
-            connection.execute("DROP TABLE learn_progress")
-        with TestClient(self.app, cookies=self.client.cookies) as reopened:
-            sets = reopened.get("/api/study-sets").json()
-            self.assertEqual(sum(item["question_count"] for item in sets), 41)
-            self.assertEqual(next(item["status"] for item in sets if item["id"] == "html-css"), "ready")
-            self.assertEqual(reopened.get(self.path).json()["phase"], "question")
+            # Model v1 with a manually saved key and progress in two existing sets.
+            connection.execute(
+                """
+                DELETE FROM study_sets WHERE id NOT IN (
+                    SELECT study_set_id FROM questions WHERE id GLOB 'q[0-9][0-9]'
+                )
+                """,
+            )
+            connection.execute("UPDATE seed_history SET name = 'builtin_questions_v1'")
+            connection.execute("UPDATE answer_options SET is_correct = (id = 'q16-a') WHERE question_id = 'q16'")
+            connection.execute("UPDATE questions SET prompt = 'Old prompt' WHERE id = 'q01'")
+            connection.execute("INSERT INTO study_sets (id, title, source_kind) VALUES ('custom', 'Custom', 'custom')")
+        html = self.command(self.client.get(self.path).json(), "check", selected_ids=["q15-a"])
 
-    def test_seeded_draft_can_be_saved_and_opened_in_learn(self) -> None:
+        api_path = "/api/study-sets/api-http/learn"
+        api = self.client.get(api_path).json()
+        self.assertEqual(self.client.post(api_path, json={
+            "action": "check", "revision": api["revision"], "version": api["version"], "selected_ids": ["q11-a"],
+        }).status_code, 200)
+
+        for _ in range(2):
+            with TestClient(self.app, cookies=self.client.cookies) as reopened:
+                sets = reopened.get("/api/study-sets").json()
+                builtins = [item for item in sets if item["source_kind"] == "builtin"]
+                self.assertEqual(len(builtins), 18)
+                self.assertEqual(sum(item["question_count"] for item in builtins), 281)
+                self.assertTrue(all(item["status"] == "ready" for item in builtins))
+                self.assertIn("custom", {item["id"] for item in sets})
+                updated = reopened.get(self.path).json()
+                self.assertEqual((updated["revision"], updated["phase"]), (html["revision"] + 1, "question"))
+                self.assertTrue(updated["revision_changed"])
+                unaffected = reopened.get(api_path).json()
+                self.assertEqual((unaffected["revision"], unaffected["phase"]), (api["revision"], "feedback"))
+                self.assertFalse(unaffected["revision_changed"])
+        with closing(connect(self.database)) as connection:
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
+            self.assertEqual(connection.execute(
+                "SELECT id FROM answer_options WHERE question_id = 'q16' AND is_correct = 1",
+            ).fetchone()["id"], "q16-c")
+            self.assertNotEqual(connection.execute(
+                "SELECT prompt FROM questions WHERE id = 'q01'",
+            ).fetchone()["prompt"], "Old prompt")
+
+    def test_all_built_in_sets_open_without_an_editor(self) -> None:
+        self.sign_in()
+        sets = self.client.get("/api/study-sets").json()
+        for study_set in sets:
+            with self.subTest(study_set=study_set["id"]):
+                path = f"/api/study-sets/{study_set['id']}"
+                response = self.client.get(f"{path}/learn")
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["total_questions"], study_set["question_count"])
+                self.assertNotIn("correct_ids", response.json()["question"])
         editor_path = "/api/study-sets/html-css/editor"
-        self.assertEqual(self.client.get(editor_path).status_code, 401)
-        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": {}}).status_code, 401)
-        schema = self.client.get("/openapi.json").json()
-        for operation in schema["paths"]["/api/study-sets/{set_id}/editor"].values():
-            self.assertEqual(operation["security"], [{"SessionCookie": []}])
-            self.assertIn("409", operation["responses"])
-        self.assertEqual(self.client.post("/api/auth/login", json=self.credentials).status_code, 200)
-        editor = self.client.get(editor_path).json()
-        self.assertEqual((editor["status"], editor["configured_count"], editor["revision"]), ("draft", 0, 1))
-        answers = {"q15": ["q15-a"], "q16": [], "q24": []}
-        saved = self.client.put(editor_path, json={"revision": 1, "answers": answers})
-        self.assertEqual(saved.status_code, 200)
-        self.assertEqual((saved.json()["status"], saved.json()["configured_count"], saved.json()["revision"]), ("draft", 1, 2))
-        self.assertEqual(self.client.get(self.path).status_code, 409)
+        self.assertEqual(self.client.get(editor_path).status_code, 404)
+        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": {}}).status_code, 404)
 
-        answers = {question: [option] for question, option in self.key.items()}
-        answers["q15"].append("q15-b")
-        saved = self.client.put(editor_path, json={"revision": 2, "answers": answers})
-        self.assertEqual((saved.json()["status"], saved.json()["configured_count"], saved.json()["revision"]), ("ready", 3, 3))
-        unchanged = self.client.put(editor_path, json={"revision": 3, "answers": answers})
-        self.assertEqual(unchanged.json(), saved.json())
+    def test_new_set_grades_seeded_multi_select(self) -> None:
+        self.sign_in()
+        self.path = "/api/study-sets/python/learn"
         view = self.client.get(self.path).json()
+        for answer in ("c", "b", "d", "a"):
+            option_id = f"{view['question']['id']}-{answer}"
+            view = self.command(view, "check", selected_ids=[option_id])
+            self.assertTrue(view["feedback"]["correct"])
+            view = self.command(view, "advance")
+        self.assertEqual(view["question"]["id"], "python-05")
         self.assertTrue(view["question"]["multiple"])
-        self.assertTrue(self.command(view, "check", selected_ids=answers["q15"])["feedback"]["correct"])
-
-        with TestClient(self.app, cookies=self.client.cookies) as reopened:
-            self.assertEqual(reopened.get(editor_path).json(), saved.json())
-            self.assertEqual(reopened.get(self.path).json()["phase"], "feedback")
-
-    def test_answer_key_rejects_invalid_and_stale_changes(self) -> None:
-        editor_path = "/api/study-sets/html-css/editor"
-        self.configure()
-        original = self.client.get(editor_path).json()
-        initial_learn = self.client.get(self.path).json()
-        answers = {question: [option] for question, option in self.key.items()}
-        for invalid in ({**answers, "q24": ["q16-c"]}, {**answers, "q24": ["q24-a", "q24-a"]}, {"q15": ["q15-a"]}):
-            self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": invalid}).status_code, 422)
-        self.assertEqual(self.client.get(editor_path).json(), original)
-
-        self.command(initial_learn, "check", selected_ids=["q15-a"])
-        cleared = self.client.put(editor_path, json={"revision": 1, "answers": {**answers, "q24": []}})
-        self.assertEqual(cleared.status_code, 200)
-        self.assertEqual(cleared.json()["status"], "draft")
-        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": answers}).status_code, 409)
-        self.assertEqual(self.client.get(self.path).status_code, 409)
-        self.assertEqual(self.client.put(editor_path, json={"revision": 2, "answers": answers}).status_code, 200)
-        refreshed = self.client.get(self.path).json()
-        self.assertTrue(refreshed["revision_changed"])
-        self.assertEqual((refreshed["revision"], refreshed["phase"]), (3, "question"))
+        feedback = self.command(view, "check", selected_ids=["python-05-d", "python-05-b"])["feedback"]
+        self.assertTrue(feedback["correct"])
