@@ -1,3 +1,11 @@
+.brandAccent {
+  padding-inline: 0.14em 0.2em;
+  border-radius: 0.16em;
+  background-color: #ffe575;
+  font-family: Georgia, Cambria, serif;
+  font-style: italic;
+}
+
 .backdrop {
   position: absolute;
   inset: 0;

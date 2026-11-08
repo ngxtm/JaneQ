@@ -39,7 +39,7 @@ export default function SessionUnavailable({ retrying, onRetry }: SessionUnavail
           <VStack role="alert" gap={{ base: '4', md: '5' }} maxW="36rem">
             <Heading as="h1" fontFamily="heading" fontSize={{ base: '4xl', md: '6xl' }}
               fontWeight="700" lineHeight="1.05" textWrap="balance">
-              Could not connect to JaneQ.
+              Could not connect to <span className={styles.brandAccent}>JaneQ</span>.
             </Heading>
             <Text color="janeq.muted" fontSize={{ base: 'md', md: 'lg' }} textWrap="balance">
               We couldn’t check your session. Please try again in a moment.

@@ -80,6 +80,8 @@ JaneQ uses its own mark and session-specific copy so users know what they can re
 
 The supplied visual reference adds soft light and orbital lines around the error content. JaneQ uses pale blue and violet light, three faint ellipses, and four drifting symbols drawn from study materials and math. On narrow screens the symbols sit above and below the message. The background is decorative, allows pointer input to pass through, and stays still when reduced motion is enabled. [Background styles](../../frontend/src/features/auth/session-unavailable.module.css)
 
+The error heading highlights the JaneQ name with italic Georgia on yellow. The heading wraps within the viewport and keeps the full message as one heading. Verified in Chromium at 1280 × 720 and 320 × 568. [Heading styles](../../frontend/src/features/auth/session-unavailable.module.css)
+
 ## Acceptance checks
 
 | Check | How to reproduce | Expected result | Verification |
