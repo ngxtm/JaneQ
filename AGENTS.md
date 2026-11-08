@@ -21,6 +21,12 @@
 3. Add or update one readable document per feature or flow in `docs/features/`. Link it from the README. Include the scope, how to use it, the path from the UI to the API and data, key decisions, reproducible checks, and the verified outcome.
 4. Commit the verified milestone. Keep unresolved acceptance criteria visible and close the current milestone before starting another one.
 
+## Write commit messages
+
+- Use `<type>: <summary>` for the commit subject. Write the summary in English as a short imperative phrase, with no trailing period.
+- Choose the type that describes the change. Use `feat` for features, `fix` for bug fixes, `refactor` for code restructuring, `docs` for documentation, `test` for tests, and `chore` for maintenance.
+- Describe the change in JaneQ. For example, `fix: refine the study set list and mode layouts` or `feat: add a themed 404 page`.
+
 ## Document API contracts and acceptance checks
 
 1. Use FastAPI's generated OpenAPI as the API reference. When adding or changing an endpoint, declare its request and response models, and add OpenAPI metadata for relevant authentication requirements, error responses, and useful examples. Link the generated reference from the feature doc.
