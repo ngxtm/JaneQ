@@ -8,13 +8,13 @@ const Home = lazy(() => import('./features/study-sets/Home'))
 
 type Session =
   | { kind: 'checking' }
-  | { kind: 'unavailable' }
+  | { kind: 'unavailable'; retrying: boolean }
   | { kind: 'signed-out' }
   | { kind: 'signed-in'; user: User; signOut: 'idle' | 'pending' | 'error' }
 
 function App() {
   const [session, setSession] = useState<Session>({ kind: 'checking' })
-  const [attempt, setAttempt] = useState(0)
+  const checkingSession = session.kind === 'checking' || (session.kind === 'unavailable' && session.retrying)
   const signOutRequest = useRef<AbortController | null>(null)
   const startSession = useCallback((user: User) => {
     setSession({ kind: 'signed-in', user, signOut: 'idle' })
@@ -26,21 +26,24 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (!checkingSession) return
+
     const controller = new AbortController()
     getUser(controller.signal).then((user) => {
       if (!controller.signal.aborted) startSession(user)
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return
-      setSession({ kind: isUnauthorized(error) ? 'signed-out' : 'unavailable' })
+      setSession(isUnauthorized(error) ? { kind: 'signed-out' } : { kind: 'unavailable', retrying: false })
     })
     return () => controller.abort()
-  }, [attempt, startSession])
+  }, [checkingSession, startSession])
 
   useEffect(() => () => signOutRequest.current?.abort(), [])
 
   function retrySession() {
-    setSession({ kind: 'checking' })
-    setAttempt((current) => current + 1)
+    setSession((current) => current.kind === 'unavailable' && !current.retrying
+      ? { kind: 'unavailable', retrying: true }
+      : current)
   }
 
   async function handleSignOut() {
@@ -63,7 +66,7 @@ function App() {
     <>
       {session.kind === 'unavailable' ? (
         <Suspense fallback={null}>
-          <SessionUnavailable onRetry={retrySession} />
+          <SessionUnavailable retrying={session.retrying} onRetry={retrySession} />
         </Suspense>
       ) : null}
       {session.kind === 'signed-out' ? (

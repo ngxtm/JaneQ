@@ -1,0 +1,31 @@
+@media (prefers-reduced-motion: no-preference) {
+  .mark {
+    animation: mark-enter 350ms ease-out both;
+  }
+
+  .tassel {
+    transform-origin: 23px 31px;
+    animation: tassel-sway 3.6s ease-in-out infinite;
+  }
+
+  .retryIcon {
+    display: inline-flex;
+    animation: retry-spin 900ms linear infinite;
+  }
+}
+
+@keyframes mark-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes tassel-sway {
+  25% { transform: rotate(-7deg); }
+  75% { transform: rotate(7deg); }
+}
+
+@keyframes retry-spin {
+  to { transform: rotate(1turn); }
+}
