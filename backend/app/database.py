@@ -32,6 +32,26 @@ CREATE TABLE IF NOT EXISTS answer_options (
     UNIQUE (question_id, position)
 );
 CREATE TABLE IF NOT EXISTS seed_history (name TEXT PRIMARY KEY);
+CREATE TABLE IF NOT EXISTS learn_progress (
+    username TEXT NOT NULL,
+    study_set_id TEXT NOT NULL REFERENCES study_sets(id) ON DELETE CASCADE,
+    revision INTEGER NOT NULL,
+    state_json TEXT NOT NULL,
+    PRIMARY KEY (username, study_set_id)
+);
+"""
+
+QUESTION_STATUS = """
+    SELECT q.id, q.study_set_id,
+        CASE
+            WHEN trim(q.prompt) <> ''
+                AND COUNT(CASE WHEN trim(o.text) <> '' THEN 1 END) >= 2
+                AND COUNT(CASE WHEN trim(o.text) <> '' AND o.is_correct = 1 THEN 1 END) > 0
+            THEN 1 ELSE 0
+        END AS configured
+    FROM questions AS q
+    LEFT JOIN answer_options AS o ON o.question_id = q.id
+    GROUP BY q.id
 """
 
 
@@ -87,19 +107,8 @@ def initialize_database(path: Path) -> None:
 def list_study_sets(path: Path) -> list[sqlite3.Row]:
     with closing(connect(path)) as connection:
         return connection.execute(
-            """
-            WITH question_status AS (
-                SELECT q.id, q.study_set_id,
-                    CASE
-                        WHEN trim(q.prompt) <> ''
-                            AND COUNT(CASE WHEN trim(o.text) <> '' THEN 1 END) >= 2
-                            AND COUNT(CASE WHEN trim(o.text) <> '' AND o.is_correct = 1 THEN 1 END) > 0
-                        THEN 1 ELSE 0
-                    END AS configured
-                FROM questions AS q
-                LEFT JOIN answer_options AS o ON o.question_id = q.id
-                GROUP BY q.id
-            )
+            f"""
+            WITH question_status AS ({QUESTION_STATUS})
             SELECT s.id, s.title, s.description, s.source_kind,
                 COUNT(q.id) AS question_count,
                 COALESCE(SUM(q.configured), 0) AS configured_count,
@@ -113,3 +122,45 @@ def list_study_sets(path: Path) -> list[sqlite3.Row]:
             ORDER BY s.title COLLATE NOCASE, s.id
             """
         ).fetchall()
+
+
+def read_study_set(connection: sqlite3.Connection, set_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT id, title, revision FROM study_sets WHERE id = ?", (set_id,)
+    ).fetchone()
+
+
+def read_study_questions(connection: sqlite3.Connection, set_id: str) -> list[sqlite3.Row]:
+    return connection.execute(
+        f"""
+        WITH question_status AS ({QUESTION_STATUS})
+        SELECT q.id, q.prompt, qs.configured, o.id AS option_id, o.text, o.is_correct
+        FROM questions AS q
+        JOIN question_status AS qs ON qs.id = q.id
+        LEFT JOIN answer_options AS o ON o.question_id = q.id AND trim(o.text) <> ''
+        WHERE q.study_set_id = ?
+        ORDER BY q.position, o.position
+        """,
+        (set_id,),
+    ).fetchall()
+
+
+def read_learn_progress(connection: sqlite3.Connection, username: str, set_id: str) -> sqlite3.Row | None:
+    return connection.execute(
+        "SELECT revision, state_json FROM learn_progress WHERE username = ? AND study_set_id = ?",
+        (username, set_id),
+    ).fetchone()
+
+
+def save_learn_progress(
+    connection: sqlite3.Connection, username: str, set_id: str, revision: int, state_json: str
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO learn_progress (username, study_set_id, revision, state_json)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT (username, study_set_id) DO UPDATE
+        SET revision = excluded.revision, state_json = excluded.state_json
+        """,
+        (username, set_id, revision, state_json),
+    )

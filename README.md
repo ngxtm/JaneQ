@@ -5,6 +5,7 @@ JaneQ is a multiple-choice quiz app. `backend/` contains the FastAPI service and
 ## Documentation
 
 - [Demo sign-in and Home](docs/features/login-home.md) covers setup, the UI-to-API flow, and acceptance checks.
+- [Study Set and Learn](docs/features/learn.md) covers the layout, local review setup, and Learn acceptance checks.
 - [JaneQ branding](docs/features/branding.md) describes the shared logo and where it appears.
 - [Database reference](docs/database.md) covers the SQLite schema, seed behavior, and read-only inspection.
 - [Frontend UI guide](docs/frontend.md) covers shared components, interaction states, and verification.

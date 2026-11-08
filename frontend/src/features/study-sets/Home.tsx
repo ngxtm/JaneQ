@@ -1,7 +1,7 @@
 import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowLeft } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
-import { useEffect, useRef, useState, type PropsWithChildren } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
 import { getStudySets, type StudySet } from './api'
@@ -9,7 +9,10 @@ import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
 import { useLibraryNavigation } from './library-navigation'
 import { StudySetGrid, StudySetGridPlaceholder } from './StudySetGrid'
+import { StudySetModes } from './StudySetModes'
 import './bones/registry'
+
+const Learn = lazy(() => import('../learn/Learn'))
 
 type StudySetsState =
   | { kind: 'loading' }
@@ -51,11 +54,13 @@ function StudySetLoadError({ onRetry }: { onRetry: () => void }) {
   )
 }
 
-function StudySetOverview({ set, status, showSkeleton, onRetry }: {
+function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSessionExpired }: {
   set: StudySet | undefined
   status: StudySetsState['kind']
   showSkeleton: boolean
   onRetry: () => void
+  username: string
+  onSessionExpired: () => void
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
@@ -78,7 +83,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry }: {
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
             {status === 'loaded' ? (
               <Stack gap="4">
-                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize="3xl">
+                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '3xl', md: '5xl' }}>
                   {set?.title ?? 'Study set not found'}
                 </Heading>
                 {set ? (
@@ -87,7 +92,12 @@ function StudySetOverview({ set, status, showSkeleton, onRetry }: {
                       {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
                     </Text>
                     {set.description ? <Text>{set.description}</Text> : null}
-                    <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
+                    {set.status === 'draft' ? (
+                      <Stack gap="1">
+                        <Text role="status">This set is a draft. Finish setting it up before studying.</Text>
+                        <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
+                      </Stack>
+                    ) : <Box mt="5"><StudySetModes key={set.id} setId={set.id} username={username} onSessionExpired={onSessionExpired} /></Box>}
                   </>
                 ) : <Text color="janeq.muted">Choose an available study set from Home.</Text>}
               </Stack>
@@ -104,7 +114,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
   const [attempt, setAttempt] = useState(0)
   const [showSkeleton, setShowSkeleton] = useState(false)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, recentCount, viewingSet, rememberCurrentSet, removeUnavailableRecentSets } =
+  const { selectedSet, recent, recentCount, viewingSet, viewingLearn, rememberCurrentSet, removeUnavailableRecentSets } =
     useLibraryNavigation(username, sets)
 
   useEffect(() => {
@@ -139,7 +149,13 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
 
   function renderLibrary() {
     if (viewingSet) {
-      return <StudySetOverview set={selectedSet} status={state.kind} showSkeleton={showSkeleton} onRetry={retry} />
+      if (viewingLearn && selectedSet) return (
+        <Suspense fallback={<VisuallyHidden role="status">Loading Learn…</VisuallyHidden>}>
+          <Learn key={selectedSet.id} setId={selectedSet.id} onSessionExpired={onSessionExpired} />
+        </Suspense>
+      )
+      return <StudySetOverview set={selectedSet} status={state.kind} showSkeleton={showSkeleton} onRetry={retry}
+        username={username} onSessionExpired={onSessionExpired} />
     }
     if (state.kind === 'error') return <StudySetLoadError onRetry={retry} />
 

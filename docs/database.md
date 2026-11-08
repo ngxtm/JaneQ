@@ -10,6 +10,7 @@ JaneQ uses SQLite through Python's `sqlite3` module. The default file is `backen
 
 ```text
 study_sets 1 ──── * questions 1 ──── * answer_options
+study_sets 1 ──── * learn_progress
 seed_history tracks completed seed runs independently.
 ```
 
@@ -19,6 +20,7 @@ seed_history tracks completed seed runs independently.
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
 | `seed_history` | `name TEXT` | `name` is the primary key. `builtin_questions_v1` marks completion of the current built-in seed. |
+| `learn_progress` | `username TEXT`, `study_set_id TEXT`, `revision INTEGER`, `state_json TEXT` | All columns are required. The composite primary key is `(username, study_set_id)`. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. |
 
 Deleting a study set cascades to its questions and their answer options when foreign keys are enabled. The schema allows several options for a question to be marked correct.
 
@@ -38,7 +40,13 @@ Deleting a study set cascades to its questions and their answer options when for
 | `configured_count` | Number of questions with a nonblank prompt, at least two nonblank options, and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
 | `status` | `ready` when the set has at least one question and every question is configured. Otherwise it is `draft`. |
 
-These fields are calculated when Home requests the list.
+These fields are calculated when Home requests the list. The Learn and preview endpoints use the same question readiness query.
+
+## Learn progress
+
+Startup creates `learn_progress` on both fresh and existing databases. The seed marker preserves existing study sets and answer keys. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
+
+A write transaction checks both the study set revision and the saved step version before it updates the snapshot. When a study set revision changes, Learn presents a fresh session and replaces the previous snapshot on the next successful command. Study set authoring must increment the revision when the question or answer content changes. [Learn flow and API](features/learn.md)
 
 ## Inspect a local database
 
@@ -63,4 +71,4 @@ db.execute("SELECT COUNT(*) FROM questions JOIN study_sets ON study_sets.id = qu
 db.close()
 ```
 
-For a fresh seeded database, expect the four tables above, an empty list from `foreign_key_check`, six built-in sets, and 41 built-in questions. See the [Login and Home acceptance checks](features/login-home.md#acceptance-checks) for the API and UI expectations.
+For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, six built-in sets, and 41 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify fresh seed data, Learn writes, and restoration after reopening a database with saved feedback. The tests use disposable SQLite files. See the [Learn acceptance checks](features/learn.md#acceptance-checks) and the [Login and Home acceptance checks](features/login-home.md#acceptance-checks).

@@ -4,7 +4,9 @@
 
 A user signs in with the configured demo account and sees the study sets available in JaneQ. Reloading the page restores a valid session. Signing out returns the user to the sign-in form.
 
-Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card shows a read-only overview with answer-key coverage and records the visit under Recent. Creating and editing sets belong to the authoring flow.
+Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card records the visit under Recent. A Ready set shows its study modes and flashcard preview. A Draft set shows its answer-key coverage and an explanation of why it is unavailable for study.
+
+The overview links to Learn. Flashcards and Test have reserved entries for their own flows. [Study Set and Learn](learn.md)
 
 ## Run the flow
 

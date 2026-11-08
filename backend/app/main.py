@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from .auth import SESSION_COOKIE_NAME, router as auth_router
 from .database import initialize_database
+from .learn import router as learn_router
 from .study_sets import router as study_sets_router
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -51,6 +52,7 @@ def create_app() -> FastAPI:
     app.add_api_route("/api/health", health, methods=["GET"], tags=["health"])
     app.include_router(auth_router)
     app.include_router(study_sets_router)
+    app.include_router(learn_router)
     return app
 
 
