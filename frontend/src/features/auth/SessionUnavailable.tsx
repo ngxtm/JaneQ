@@ -1,17 +1,34 @@
 import { Box, Button, Center, Heading, Text, VStack } from '@chakra-ui/react'
-import { IconRotateClockwise2 } from '@tabler/icons-react'
+import { IconBook2, IconBooks, IconMathPi, IconRotateClockwise2, IconSquareRoot2 } from '@tabler/icons-react'
 import janeqMark from '../../assets/janeq-mark.svg?no-inline'
 import { UiProvider } from '../../ui/UiProvider'
 import styles from './session-unavailable.module.css'
 
 type SessionUnavailableProps = { retrying: boolean; onRetry: () => void }
 
+function StudyBackdrop() {
+  return (
+    <div className={styles.backdrop} aria-hidden="true">
+      <svg className={styles.orbits} viewBox="0 0 1280 720" preserveAspectRatio="none" focusable="false">
+        <ellipse cx="640" cy="360" rx="418" ry="215" vectorEffect="non-scaling-stroke" />
+        <ellipse cx="640" cy="360" rx="506" ry="269" vectorEffect="non-scaling-stroke" />
+        <ellipse cx="640" cy="360" rx="595" ry="324" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <span className={`${styles.symbol} ${styles.book}`}><IconBook2 stroke={1.5} /></span>
+      <span className={`${styles.symbol} ${styles.pi}`}><IconMathPi stroke={1.5} /></span>
+      <span className={`${styles.symbol} ${styles.root}`}><IconSquareRoot2 stroke={1.5} /></span>
+      <span className={`${styles.symbol} ${styles.books}`}><IconBooks stroke={1.5} /></span>
+    </div>
+  )
+}
+
 export default function SessionUnavailable({ retrying, onRetry }: SessionUnavailableProps) {
   return (
     <UiProvider>
-      <Center as="main" minH="100svh" px="6" py="10" textAlign="center"
+      <Center as="main" minH="100svh" px="6" py="10" textAlign="center" pos="relative"
         bg="janeq.library" color="janeq.ink" fontFamily="body">
-        <VStack gap={{ base: '6', md: '8' }}>
+        <StudyBackdrop />
+        <VStack gap={{ base: '6', md: '8' }} pos="relative">
           <Box className={styles.mark} boxSize={{ base: '32', md: '52' }} opacity="0.24"
             css={{ maskImage: 'linear-gradient(black 15%, transparent 94%)' }} aria-hidden="true">
             <svg viewBox="0 0 100 100" width="100%" height="100%" focusable="false">
