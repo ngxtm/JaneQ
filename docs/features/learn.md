@@ -21,10 +21,10 @@ Learn has a round header with Back and Settings, a progress bar, and one prompt 
 
 ### Confirmed behavior
 
-- **Draft and Ready.** A Ready set opens its overview and can enter Learn. Selecting a Draft set from Home will open its authoring screen once the Create / Edit flow is available. Until then, show a message such as “This set is a draft. Finish setting it up before studying.” Direct links to Learn for a Draft set must also be blocked.
+- **Draft and Ready.** A Ready set opens its overview and can enter Learn. Selecting a built-in Draft set from Home opens the answer-key editor. The Learn API still blocks direct requests for Draft sets. [Set answer key](answer-key.md)
 - **Answer feedback.** A single-choice selection checks immediately. For multi-select, the learner presses **Check answer**. After a correct answer, mark it on the question card and advance after about one second. After a wrong answer, mark the learner's choice and show the correct answer in the same card. Wait for **Continue** before advancing.
 - **Resume.** Save the current round, question or review step, and each question's learning status by signed-in account, study set, and revision. Reopening Learn resumes at the saved step. If the revision has changed, explain why and start a fresh session for the updated set if it is Ready. If it became Draft, apply the Draft behavior.
-- **Review data.** Use the Ready HTML / CSS set with three configured answers in a disposable SQLite database. Use a separate Draft set to verify the entry behavior. The authoring flow will provide the path from a fresh database to a Ready set through the UI.
+- **Review data.** Use the answer-key editor to prepare the three HTML / CSS answers in a fresh disposable database. Use a separate Draft set to verify the entry behavior.
 
 ### How the reference apps handle practice
 
@@ -53,23 +53,7 @@ For the HTML / CSS review case, two correct answers and one wrong answer in roun
 
 ## Review locally
 
-1. Follow [local development](../../README.md#local-development). Set `JANEQ_DB_PATH` to a disposable file before starting FastAPI, for example `$env:JANEQ_DB_PATH = Join-Path $env:TEMP "janeq-learn-$([guid]::NewGuid()).sqlite3"` in PowerShell.
-2. After startup creates the database, run `uv run --locked --no-sync python` in another `backend/` terminal with the same `JANEQ_DB_PATH` and prepare the HTML / CSS set.
-
-   ```python
-   import os
-   from contextlib import closing
-   from pathlib import Path
-   from app.database import connect
-
-   with closing(connect(Path(os.environ["JANEQ_DB_PATH"]))) as db, db:
-       db.executemany(
-           "UPDATE answer_options SET is_correct = 1 WHERE id = ?",
-           [("q15-a",), ("q16-c",), ("q24-a",)],
-       )
-   ```
-
-3. Sign in to JaneQ, open **HTML / CSS**, and select **Learn**. Use a different built-in set for the Draft check. Keep this fixture separate from a database that already contains Learn sessions.
+Follow [Review with a fresh database](answer-key.md#review-with-a-fresh-database) to save the three HTML / CSS answers in JaneQ. Open the Ready study set and select **Learn**. Use a different built-in set for the Draft check.
 
 ## API and storage
 
@@ -89,13 +73,13 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 | --- | --- | --- | --- |
 | Study Set layout | Open the Ready HTML / CSS set and flip the first preview card. | Learn, Flashcards, and Test appear in that order. The card flips to its answer side. | Pass · browser at 1440 px and 360 px |
 | Learn entry and return | Open Learn, use Back, and open Learn again. | Learn opens for the selected set. Back returns to its overview. | Pass · browser |
-| Draft entry | Select a Draft set from Home and try its Learn URL directly. | The temporary message explains why the set cannot be studied. The direct request returns `409`. | Pass · browser and API |
+| Draft entry | Select a built-in Draft from Home and try its Learn URL directly. | Home opens the editor. The direct Learn request returns `409`. | Pass · browser and API |
 | Feedback and rounds | Answer two of three questions correctly and one incorrectly in round 1. Answer all three correctly in round 2. Complete the last Familiar question in a later round. | Correct feedback advances automatically. Wrong feedback waits for **Continue**. Round 1 shows `1 Learning`, `2 Familiar`, `0 Mastered`, and three reviewed rows. **Finish Learn** appears at `3 Mastered` and returns to the set. | Pass · browser. Pass · API for the same flow with a wrong review answer retaining Familiar. |
 | Resume and revision change | Reload during wrong feedback. Then increment the set revision and reopen Learn. | Reload restores the feedback. Opening the changed Ready set shows an explanation and starts round 1. A command from the previous revision is rejected. | Pass · browser and API |
 | Multi-select and retry | Set a second correct option on `q15` and increment the revision in the disposable fixture. Select both, go offline, press **Check answer**, reconnect, and retry. | The failed request preserves both selections. Retry advances after correct feedback. Missing or extra valid choices are incorrect. Duplicate or foreign option IDs return `422`. | Pass · browser and API |
 | Settings and reset | Open Settings during a round summary and dismiss it. Turn on shuffle and reopen Settings after a reload. After completion, select **Reset progress** and confirm. | Settings opens and closes. Shuffle stays enabled after reload. Reset returns to question 1 in a new round 1. | Pass · browser |
 | Keyboard, mobile, and motion | Select options with number keys, continue with Enter, view the round summary at 360 px, and emulate reduced motion. | Keyboard actions work. The summary fits with no horizontal overflow. The progress bar stops animating with reduced motion. | Pass · browser |
 | Existing database | Reopen a disposable seeded database with a saved answer key and no Learn table. | Startup creates the table, preserves the key, and retains 41 built-in questions. | Pass · API |
-| Automated checks | Run backend `uv run --locked --no-sync python -m unittest discover -s tests -v`, then frontend `npm run lint` and `npm run build`. | All six backend tests pass. Lint and build complete. | Pass · CLI |
+| Automated checks | Run backend `uv run --locked --no-sync python -m unittest discover -s tests -v`, then frontend `npm run lint` and `npm run build`. | Backend tests pass. Lint and build complete. | Pass · CLI |
 
 Browser checks used Chromium through Vite, FastAPI, and a disposable SQLite file.

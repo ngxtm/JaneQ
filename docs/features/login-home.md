@@ -4,7 +4,7 @@
 
 A user signs in with the configured demo account and sees the study sets available in JaneQ. Reloading the page restores a valid session. Signing out returns the user to the sign-in form.
 
-Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card records the visit under Recent. A Ready set shows its study modes and flashcard preview. A Draft set shows its answer-key coverage and an explanation of why it is unavailable for study.
+Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card records the visit under Recent. A Ready set shows its study modes and flashcard preview. A built-in Draft opens the [answer-key editor](answer-key.md).
 
 The overview links to Learn. Flashcards and Test have reserved entries for their own flows. [Study Set and Learn](learn.md)
 
@@ -116,7 +116,7 @@ The Home layout includes shared navigation, a recent-set grid, study set cards, 
 | --- | --- |
 | Empty dashboard | The illustration uses the JaneQ mark with the same staggered floating motion. The primary action scrolls to Built-in sets because the question bank is already available. |
 | Recent, classes, and news | Recent uses real sets opened by the signed-in demo user. Built-in sets replace What's new. My sets appears when custom sets are available. Classes are outside the JaneQ feature plan. |
-| Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the read-only overview, with editing and testing assigned to their own flows. |
+| Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Ready cards open the overview, and built-in Draft cards open the answer-key editor. |
 | Navigation and footer | The header uses JaneQ branding and an account trigger with avatar, username, and chevron at desktop and mobile widths. The menu offers Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls belong to separate features. |
 | Navigation state | [library-navigation.ts](../../frontend/src/features/study-sets/library-navigation.ts) handles browser history with hash URLs and stores up to 16 recent set IDs locally per demo username. The current API list supplies the displayed records. |
 

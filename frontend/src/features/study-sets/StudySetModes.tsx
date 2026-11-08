@@ -4,8 +4,8 @@ import {
   IconPlayerPause, IconPlayerPlay, IconSettings, IconStar,
 } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
-import { isUnauthorized } from '../../http'
-import { getStudyPreview, learnError, type StudyCard } from '../learn/api'
+import { httpErrorMessage, isUnauthorized } from '../../http'
+import { getStudyPreview, type StudyCard } from '../learn/api'
 import { learnHref } from './library-navigation'
 
 const previewOutline = { variant: 'outline', bg: 'transparent', borderStyle: 'solid', borderColor: 'janeq.line' } as const
@@ -136,7 +136,7 @@ export function StudySetModes({ setId, username, onSessionExpired }: {
     }).catch((failure: unknown) => {
       if (controller.signal.aborted) return
       if (isUnauthorized(failure)) onSessionExpired()
-      else setError(learnError(failure, 'Could not load the flashcard preview.'))
+      else setError(httpErrorMessage(failure, 'Could not load the flashcard preview.'))
     })
     return () => controller.abort()
   }, [attempt, onSessionExpired, setId])

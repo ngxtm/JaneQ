@@ -126,7 +126,7 @@ def list_study_sets(path: Path) -> list[sqlite3.Row]:
 
 def read_study_set(connection: sqlite3.Connection, set_id: str) -> sqlite3.Row | None:
     return connection.execute(
-        "SELECT id, title, revision FROM study_sets WHERE id = ?", (set_id,)
+        "SELECT id, title, source_kind, revision FROM study_sets WHERE id = ?", (set_id,)
     ).fetchone()
 
 
@@ -150,6 +150,13 @@ def read_learn_progress(connection: sqlite3.Connection, username: str, set_id: s
         "SELECT revision, state_json FROM learn_progress WHERE username = ? AND study_set_id = ?",
         (username, set_id),
     ).fetchone()
+
+
+def write_answer_key(
+    connection: sqlite3.Connection, set_id: str, changes: list[tuple[bool, str]],
+) -> None:
+    connection.executemany("UPDATE answer_options SET is_correct = ? WHERE id = ?", changes)
+    connection.execute("UPDATE study_sets SET revision = revision + 1 WHERE id = ?", (set_id,))
 
 
 def save_learn_progress(

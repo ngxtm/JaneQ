@@ -116,3 +116,55 @@ class LearnTests(TestCase):
             self.assertEqual(sum(item["question_count"] for item in sets), 41)
             self.assertEqual(next(item["status"] for item in sets if item["id"] == "html-css"), "ready")
             self.assertEqual(reopened.get(self.path).json()["phase"], "question")
+
+    def test_seeded_draft_can_be_saved_and_opened_in_learn(self) -> None:
+        editor_path = "/api/study-sets/html-css/editor"
+        self.assertEqual(self.client.get(editor_path).status_code, 401)
+        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": {}}).status_code, 401)
+        schema = self.client.get("/openapi.json").json()
+        for operation in schema["paths"]["/api/study-sets/{set_id}/editor"].values():
+            self.assertEqual(operation["security"], [{"SessionCookie": []}])
+            self.assertIn("409", operation["responses"])
+        self.assertEqual(self.client.post("/api/auth/login", json=self.credentials).status_code, 200)
+        editor = self.client.get(editor_path).json()
+        self.assertEqual((editor["status"], editor["configured_count"], editor["revision"]), ("draft", 0, 1))
+        answers = {"q15": ["q15-a"], "q16": [], "q24": []}
+        saved = self.client.put(editor_path, json={"revision": 1, "answers": answers})
+        self.assertEqual(saved.status_code, 200)
+        self.assertEqual((saved.json()["status"], saved.json()["configured_count"], saved.json()["revision"]), ("draft", 1, 2))
+        self.assertEqual(self.client.get(self.path).status_code, 409)
+
+        answers = {question: [option] for question, option in self.key.items()}
+        answers["q15"].append("q15-b")
+        saved = self.client.put(editor_path, json={"revision": 2, "answers": answers})
+        self.assertEqual((saved.json()["status"], saved.json()["configured_count"], saved.json()["revision"]), ("ready", 3, 3))
+        unchanged = self.client.put(editor_path, json={"revision": 3, "answers": answers})
+        self.assertEqual(unchanged.json(), saved.json())
+        view = self.client.get(self.path).json()
+        self.assertTrue(view["question"]["multiple"])
+        self.assertTrue(self.command(view, "check", selected_ids=answers["q15"])["feedback"]["correct"])
+
+        with TestClient(self.app, cookies=self.client.cookies) as reopened:
+            self.assertEqual(reopened.get(editor_path).json(), saved.json())
+            self.assertEqual(reopened.get(self.path).json()["phase"], "feedback")
+
+    def test_answer_key_rejects_invalid_and_stale_changes(self) -> None:
+        editor_path = "/api/study-sets/html-css/editor"
+        self.configure()
+        original = self.client.get(editor_path).json()
+        initial_learn = self.client.get(self.path).json()
+        answers = {question: [option] for question, option in self.key.items()}
+        for invalid in ({**answers, "q24": ["q16-c"]}, {**answers, "q24": ["q24-a", "q24-a"]}, {"q15": ["q15-a"]}):
+            self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": invalid}).status_code, 422)
+        self.assertEqual(self.client.get(editor_path).json(), original)
+
+        self.command(initial_learn, "check", selected_ids=["q15-a"])
+        cleared = self.client.put(editor_path, json={"revision": 1, "answers": {**answers, "q24": []}})
+        self.assertEqual(cleared.status_code, 200)
+        self.assertEqual(cleared.json()["status"], "draft")
+        self.assertEqual(self.client.put(editor_path, json={"revision": 1, "answers": answers}).status_code, 409)
+        self.assertEqual(self.client.get(self.path).status_code, 409)
+        self.assertEqual(self.client.put(editor_path, json={"revision": 2, "answers": answers}).status_code, 200)
+        refreshed = self.client.get(self.path).json()
+        self.assertTrue(refreshed["revision_changed"])
+        self.assertEqual((refreshed["revision"], refreshed["phase"]), (3, "question"))

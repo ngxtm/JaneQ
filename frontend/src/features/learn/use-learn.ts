@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { isUnauthorized } from '../../http'
-import { getLearn, learnError, learnStepChanged, updateLearn, type LearnAction, type LearnView } from './api'
+import { httpErrorMessage, httpStatus, isUnauthorized } from '../../http'
+import { getLearn, updateLearn, type LearnAction, type LearnView } from './api'
 
 export function useLearn(setId: string, onSessionExpired: () => void) {
   const [view, setView] = useState<LearnView>()
@@ -22,7 +22,7 @@ export function useLearn(setId: string, onSessionExpired: () => void) {
     }).catch((failure: unknown) => {
       if (controller.signal.aborted) return
       if (isUnauthorized(failure)) onSessionExpired()
-      else setError(learnError(failure, 'Could not load Learn.'))
+      else setError(httpErrorMessage(failure, 'Could not load Learn.'))
     }).finally(() => {
       if (!controller.signal.aborted) setLoading(false)
     })
@@ -51,10 +51,10 @@ export function useLearn(setId: string, onSessionExpired: () => void) {
     } catch (failure) {
       if (controller.signal.aborted) return false
       if (isUnauthorized(failure)) onSessionExpired()
-      else if (learnStepChanged(failure)) {
+      else if (httpStatus(failure) === 409) {
         setNotice('Your Learn progress was refreshed.')
         reload()
-      } else setError(learnError(failure, 'Could not save your progress. Try again.'))
+      } else setError(httpErrorMessage(failure, 'Could not save your progress. Try again.'))
       return false
     } finally {
       inFlight.current = false

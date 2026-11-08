@@ -3,7 +3,7 @@ import { IconProgress } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import type { StudySet } from './api'
-import { studySetHref } from './library-navigation'
+import { answerKeyHref, studySetHref } from './library-navigation'
 
 const gridStyles = {
   templateColumns: 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))',
@@ -46,7 +46,7 @@ function StudySetCard({ set, username }: { set: StudySet; username: string }) {
       <Stack h="full" justify="space-between" gap="3">
         <Stack gap="2" direction={draft ? 'column-reverse' : 'column'}>
           <Heading as="h3" fontFamily="heading" fontSize="lg" lineHeight="1.25" lineClamp={2} overflowWrap="anywhere">
-            <LinkOverlay href={studySetHref(set.id)} _focusVisible={{ outline: 'none' }}>{set.title}</LinkOverlay>
+            <LinkOverlay href={draft && builtIn ? answerKeyHref(set.id) : studySetHref(set.id)} _focusVisible={{ outline: 'none' }}>{set.title}</LinkOverlay>
           </Heading>
           <HStack color="janeq.muted" gap="1.5" fontSize="sm">
             {draft ? <IconProgress size={16} aria-hidden="true" /> : null}

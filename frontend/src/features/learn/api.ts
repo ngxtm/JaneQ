@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { http } from '../../http'
 
 export type StudyCard = { id: string; prompt: string; answers: string[] }
@@ -82,22 +81,9 @@ export async function getLearn(id: string, signal: AbortSignal): Promise<LearnVi
   const { data } = await http.get<unknown>(`${studySetPath(id)}/learn`, { signal })
   return validateView(data)
 }
-
 export async function updateLearn(id: string, view: LearnView, action: LearnAction, signal: AbortSignal): Promise<LearnView> {
   const { data } = await http.post<unknown>(`${studySetPath(id)}/learn`, {
     ...action, revision: view.revision, version: view.version,
   }, { signal })
   return validateView(data)
-}
-
-export function learnError(error: unknown, fallback: string): string {
-  const data: unknown = axios.isAxiosError(error) ? error.response?.data : null
-  if (!record(data)) return fallback
-  if (typeof data.detail === 'string') return data.detail
-  const issue: unknown = Array.isArray(data.detail) ? data.detail[0] : null
-  return record(issue) && typeof issue.msg === 'string' ? issue.msg : fallback
-}
-
-export function learnStepChanged(error: unknown): boolean {
-  return axios.isAxiosError(error) && error.response?.status === 409
 }

@@ -42,6 +42,12 @@ Deleting a study set cascades to its questions and their answer options when for
 
 These fields are calculated when Home requests the list. The Learn and preview endpoints use the same question readiness query.
 
+## Saving built-in answer keys
+
+The [answer-key editor](features/answer-key.md) reads `study_sets`, `questions`, and the nonblank `answer_options` in their stored order. A save supplies the current `study_sets.revision` and the selected option IDs for every question. A question may have an empty selection, which leaves it unconfigured. Each selected ID must belong to the corresponding question.
+
+Inside a write transaction, the backend checks the revision, updates the changed `answer_options.is_correct` flags, and increments `study_sets.revision` once. A save with identical selections retains its revision. The existing schema and seed support this operation on both new and existing databases. The answer-key tests use a fresh disposable database, save partial and complete keys, and reopen it to check persistence.
+
 ## Learn progress
 
 Startup creates `learn_progress` on both fresh and existing databases. The seed marker preserves existing study sets and answer keys. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
