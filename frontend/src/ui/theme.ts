@@ -10,6 +10,7 @@ const janeqTheme = defineConfig({
           line: { value: '#c5d1df' },
           divider: { value: '#e3ebf1' },
           canvas: { value: '#f4f7f9' },
+          library: { value: '#f7fafc' },
           blue: { value: '#1858f5' },
           blueHover: { value: '#144bd2' },
           focus: { value: '#0042da' },
@@ -44,7 +45,7 @@ const janeqTheme = defineConfig({
   },
 })
 
-// Apply Chakra styles through components while the other screens use their existing CSS.
+// Component recipes supply the styling while the app shell owns its global reset.
 export const uiSystem = createSystem(
   { ...defaultConfig, preflight: false, globalCss: {} },
   janeqTheme,

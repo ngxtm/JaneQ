@@ -4,13 +4,13 @@
 
 A user signs in with the configured demo account and sees the study sets available in JaneQ. Reloading the page restores a valid session. Signing out returns the user to the sign-in form.
 
-Home lists the six built-in study sets from SQLite and shows the question count, answer-key coverage, and Draft or Ready status of each. Opening a card and tracking recent sets belong to the study-set navigation flow. Creating and editing sets belong to the authoring flow.
+Home lists the six built-in study sets from SQLite. Cards show the question count and Draft or Ready status. Opening a card shows a read-only overview with answer-key coverage and records the visit under Recent. Creating and editing sets belong to the authoring flow.
 
 ## Run the flow
 
 1. Follow the [local setup](../../README.md#local-development) to configure the demo account and start both servers.
 2. Open [JaneQ](http://127.0.0.1:5173/) and sign in with the username and password from `backend/.env`.
-3. Inspect **Built-in sets**, reload, and select **Sign out**.
+3. Open a card from **Built-in sets**. Select **Back to Home** to see it under **Recent**. Reload, then choose **Sign out** from the account menu.
 
 ## Follow the code
 
@@ -64,3 +64,21 @@ During verification on Windows, rapid requests through Vite sometimes failed wit
 ```
 
 Expect 120 responses with status `401` because the requests carry no session cookie.
+
+## Home design
+
+The Home layout includes shared navigation, a recent-set grid, study set cards, and an empty dashboard.
+
+| Surface | JaneQ adaptation |
+| --- | --- |
+| Empty dashboard | The illustration uses the JaneQ mark with the same staggered floating motion. The primary action scrolls to Built-in sets because the question bank is already available. |
+| Recent, classes, and news | Recent uses real sets opened by the signed-in demo user. Built-in sets replace What's new. My sets appears when custom sets are available. Classes are outside the JaneQ feature plan. |
+| Study set cards | Cards keep the 156 px height, 256 px minimum grid column, matching loading placeholders, and 150 ms hover lift. Metadata uses question counts and Draft or Ready status. Cards open the read-only overview, with editing and testing assigned to their own flows. |
+| Navigation and footer | The header uses JaneQ branding and a compact account menu on mobile. The current actions are Home and Sign out. Create and import belong to authoring. Profile, settings, and theme controls are outside this milestone. |
+| Navigation state | [library-navigation.ts](../../frontend/src/features/study-sets/library-navigation.ts) handles browser history with hash URLs and stores up to 16 recent set IDs locally per demo username. The current API list supplies the displayed records. |
+
+[LibraryLayout](../../frontend/src/features/study-sets/LibraryLayout.tsx) owns the shell and menu. [StudySetGrid](../../frontend/src/features/study-sets/StudySetGrid.tsx) renders both grids and their loading placeholders. [Home](../../frontend/src/features/study-sets/Home.tsx) loads the study sets and selects the current view. Reduced-motion preferences disable the floating illustration and card movement.
+
+To verify Home, sign in with a fresh browser profile and check the animated empty dashboard. Select **Browse study sets**, open two different cards, and use browser Back and **Back to Home**. Recent should be ordered newest first and survive reload. At 360 px the cards fit in one column and the account menu supports keyboard navigation and sign-out. Enable reduced motion to verify that the illustration and hover lift stay still.
+
+Verified in Chromium at 1320 px and 360 px. Checks covered card dimensions and hover motion, reduced motion, overview focus, browser Back, Recent ordering after reload, an unknown study-set link, retry after a network failure, and sign-out from the account menu.

@@ -1,13 +1,11 @@
 import {
-  Box, Button, Center, ChakraProvider, Field, Heading, Image, Input,
+  Box, Button, Center, Field, Heading, Image, Input,
   Separator, Stack, Text, VisuallyHidden,
 } from '@chakra-ui/react'
-import '@fontsource-variable/open-sans'
-import '@fontsource-variable/outfit'
 import { type SubmitEvent, useState } from 'react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import { isUnauthorized } from '../../http'
-import { uiSystem } from '../../ui/theme'
+import { UiProvider } from '../../ui/UiProvider'
 import { signIn, type User } from './api'
 
 type LoginProps = { onSignIn: (user: User) => void }
@@ -34,7 +32,7 @@ export default function Login({ onSignIn }: LoginProps) {
   }
 
   return (
-    <ChakraProvider value={uiSystem}>
+    <UiProvider>
       <Center
         as="main"
         minH="100svh"
@@ -103,6 +101,6 @@ export default function Login({ onSignIn }: LoginProps) {
           </Stack>
         </Stack>
       </Center>
-    </ChakraProvider>
+    </UiProvider>
   )
 }

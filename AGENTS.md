@@ -1,5 +1,11 @@
 # JaneQ contributor instructions
 
+## Design and verify JaneQ screens
+
+1. Before implementing each JaneQ screen, review the shared theme and the closest existing feature for layout, spacing, typography, color, icons, and responsive states.
+2. Match the interaction and motion as well as the appearance. Check navigation, keyboard and pointer behavior, loading and empty states, hover and focus feedback, and animation timing. Honor reduced-motion preferences.
+3. Verify the result at desktop and mobile widths. In the feature document, record design decisions, why they were made, and any feature dependencies.
+
 ## Close one feature or flow at a time
 
 1. Define the user outcome, scope, and observable acceptance criteria before coding. Group backend, frontend, and data changes into a complete flow that can be exercised through the app.

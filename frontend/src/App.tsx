@@ -1,9 +1,9 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import { getUser, signOut, type User } from './features/auth/api'
-import Home from './features/study-sets/Home'
 import { isUnauthorized } from './http'
 
 const Login = lazy(() => import('./features/auth/Login'))
+const Home = lazy(() => import('./features/study-sets/Home'))
 
 type Session =
   | { kind: 'checking' }
@@ -62,21 +62,15 @@ function App() {
         </Suspense>
       ) : null}
       {session.kind === 'signed-in' ? (
-        <>
-          <header className="site-header">
-            <div className="header-inner">
-              <span className="wordmark">JaneQ</span>
-              <div className="account">
-                <span className="username">{session.user.username}</span>
-                <button className="plain-button" type="button" onClick={handleSignOut} disabled={signingOut}>
-                  {signingOut ? 'Signing out…' : 'Sign out'}
-                </button>
-              </div>
-            </div>
-          </header>
-          {signOutError ? <p className="page error" role="alert">{signOutError}</p> : null}
-          <Home onSessionExpired={expireSession} />
-        </>
+        <Suspense fallback={<main className="page"><p role="status">Loading Home…</p></main>}>
+          <Home
+            username={session.user.username}
+            signingOut={signingOut}
+            signOutError={signOutError}
+            onSignOut={handleSignOut}
+            onSessionExpired={expireSession}
+          />
+        </Suspense>
       ) : null}
     </>
   )
