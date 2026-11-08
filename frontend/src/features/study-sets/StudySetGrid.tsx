@@ -1,12 +1,15 @@
-import { Avatar, Grid, Heading, HStack, LinkBox, LinkOverlay, Stack, Text } from '@chakra-ui/react'
+import { Avatar, Box, Grid, Heading, HStack, LinkBox, LinkOverlay, Stack, Text } from '@chakra-ui/react'
 import { IconProgress } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import janeqMark from '../../assets/janeq-mark.svg'
 import type { StudySet } from './api'
 import { studySetHref } from './library-navigation'
-import './bones/registry'
 
-const columns = 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))'
+const gridStyles = {
+  templateColumns: 'repeat(auto-fill, minmax(min(100%, 256px), 1fr))',
+  gap: '4',
+} as const
+const cardSkeletonName = 'study-set-card'
 const cardStyles = {
   h: '156px',
   p: '5',
@@ -64,22 +67,35 @@ function StudySetCard({ set, username }: { set: StudySet; username: string }) {
   )
 }
 
-export function StudySetGrid({ sets, username }: { sets: StudySet[]; username: string }) {
+export function StudySetGrid({ sets, username, captureCard = false }: {
+  sets: StudySet[]
+  username: string
+  captureCard?: boolean
+}) {
   return (
-    <Grid templateColumns={columns} gap="4">
-      {sets.map((set) => <StudySetCard key={set.id} set={set} username={username} />)}
+    <Grid {...gridStyles}>
+      {sets.map((set, index) => captureCard && index === 0 ? (
+        <Skeleton key={set.id} name={cardSkeletonName} loading={false}>
+          <StudySetCard set={set} username={username} />
+        </Skeleton>
+      ) : <StudySetCard key={set.id} set={set} username={username} />)}
     </Grid>
   )
 }
 
-export function BuiltInStudySetGrid({ sets, username, loading }: {
-  sets: StudySet[]
-  username: string
-  loading: boolean
-}) {
+export function StudySetGridPlaceholder({ count, visible }: { count: number; visible: boolean }) {
   return (
-    <Skeleton name="built-in-study-sets" loading={loading} select="viewport" animate="solid" color="#e3ebf1">
-      <StudySetGrid sets={sets} username={username} />
-    </Skeleton>
+    <Grid {...gridStyles} aria-hidden="true">
+      {Array.from({ length: count }, (_, index) => (
+        <Box key={index} h={cardStyles.h}>
+          {/* The grid owns responsive rows. Boneyard only paints inside one fixed-height card. */}
+          {visible ? (
+            <Skeleton name={cardSkeletonName} loading animate="solid" color="var(--chakra-colors-janeq-divider)">
+              {null}
+            </Skeleton>
+          ) : null}
+        </Box>
+      ))}
+    </Grid>
   )
 }

@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
-from .auth import router as auth_router
+from .auth import SESSION_COOKIE_NAME, router as auth_router
 from .database import initialize_database
 from .study_sets import router as study_sets_router
 
@@ -43,7 +43,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         SessionMiddleware,
         secret_key=secret,
-        session_cookie="janeq_session",
+        session_cookie=SESSION_COOKIE_NAME,
         max_age=8 * 60 * 60,
         same_site="lax",
         https_only=os.getenv("JANEQ_COOKIE_SECURE", "false").lower() == "true",

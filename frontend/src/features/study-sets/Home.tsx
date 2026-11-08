@@ -1,5 +1,6 @@
-import { Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { Box, Button, Heading, HStack, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowLeft } from '@tabler/icons-react'
+import { Skeleton } from 'boneyard-js/react'
 import { useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
@@ -7,7 +8,8 @@ import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
 import { useLibraryNavigation } from './library-navigation'
-import { BuiltInStudySetGrid, StudySetGrid } from './StudySetGrid'
+import { StudySetGrid, StudySetGridPlaceholder } from './StudySetGrid'
+import './bones/registry'
 
 type StudySetsState =
   | { kind: 'loading' }
@@ -24,6 +26,8 @@ type HomeProps = {
 
 const emptySets: StudySet[] = []
 const placeholderDelayMs = 200
+// The current seed contains six built-in sets. Loaded cards use the API count.
+const builtInPlaceholderCount = 6
 
 function SetSection({ id, title, busy, children }: PropsWithChildren<{
   id: string
@@ -38,31 +42,59 @@ function SetSection({ id, title, busy, children }: PropsWithChildren<{
   )
 }
 
-function StudySetOverview({ set }: { set: StudySet | undefined }) {
+function StudySetLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <HStack flexWrap="wrap" gap="4">
+      <Text color="red.700" role="alert">Could not load study sets.</Text>
+      <Button variant="outline" fontFamily="body" onClick={onRetry}>Try again</Button>
+    </HStack>
+  )
+}
+
+function StudySetOverview({ set, status, showSkeleton, onRetry }: {
+  set: StudySet | undefined
+  status: StudySetsState['kind']
+  showSkeleton: boolean
+  onRetry: () => void
+}) {
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
+  const pending = status === 'loading'
 
   useEffect(() => {
-    heading.current?.focus()
-  }, [setId])
+    // Do not take focus away from navigation during a delayed response.
+    if (status === 'loaded' && document.activeElement === document.body) heading.current?.focus()
+  }, [setId, status])
 
   return (
     <Stack align="start" gap="4">
       <Button asChild variant="ghost" fontFamily="body" color="janeq.ink">
         <a href="#home"><IconArrowLeft size={18} /> Back to Home</a>
       </Button>
-      <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize="3xl">
-        {set?.title ?? 'Study set not found'}
-      </Heading>
-      {set ? (
-        <>
-          <Text color="janeq.muted">
-            {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-          </Text>
-          {set.description ? <Text>{set.description}</Text> : null}
-          <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
-        </>
-      ) : <Text color="janeq.muted">Choose an available study set from Home.</Text>}
+      {pending ? <VisuallyHidden role="status">Loading study set…</VisuallyHidden> : null}
+      {status === 'error' ? <StudySetLoadError onRetry={onRetry} /> : null}
+      <Box w="full" aria-busy={pending || undefined}>
+        <div aria-hidden={pending || undefined}>
+          <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
+            {status === 'loaded' ? (
+              <Stack gap="4">
+                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize="3xl">
+                  {set?.title ?? 'Study set not found'}
+                </Heading>
+                {set ? (
+                  <>
+                    <Text color="janeq.muted">
+                      {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                    </Text>
+                    {set.description ? <Text>{set.description}</Text> : null}
+                    <Text color="janeq.muted">{set.configured_count} of {set.question_count} answer keys set</Text>
+                  </>
+                ) : <Text color="janeq.muted">Choose an available study set from Home.</Text>}
+              </Stack>
+            ) : null}
+          </Skeleton>
+        </div>
+      </Box>
     </Stack>
   )
 }
@@ -72,7 +104,8 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
   const [attempt, setAttempt] = useState(0)
   const [showSkeleton, setShowSkeleton] = useState(false)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, hasRecentHistory, viewingSet, rememberCurrentSet } = useLibraryNavigation(username, sets)
+  const { selectedSet, recent, recentCount, viewingSet, rememberCurrentSet, removeUnavailableRecentSets } =
+    useLibraryNavigation(username, sets)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -80,6 +113,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
     const timer = window.setTimeout(() => setShowSkeleton(true), placeholderDelayMs)
     getStudySets(controller.signal).then((sets) => {
       if (controller.signal.aborted) return
+      removeUnavailableRecentSets(sets)
       rememberCurrentSet(sets)
       setState({ kind: 'loaded', sets })
     }).catch((error: unknown) => {
@@ -95,7 +129,7 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
       controller.abort()
       window.clearTimeout(timer)
     }
-  }, [attempt, onSessionExpired, rememberCurrentSet])
+  }, [attempt, onSessionExpired, rememberCurrentSet, removeUnavailableRecentSets])
 
   function retry() {
     setShowSkeleton(false)
@@ -104,37 +138,30 @@ export default function Home({ username, signingOut, signOutError, onSignOut, on
   }
 
   function renderLibrary() {
-    if (state.kind === 'error') {
-      return (
-        <HStack flexWrap="wrap" gap="4">
-          <Text color="red.700" role="alert">Could not load study sets.</Text>
-          <Button variant="outline" fontFamily="body" onClick={retry}>Try again</Button>
-        </HStack>
-      )
-    }
-    const pending = state.kind === 'loading'
     if (viewingSet) {
-      return pending ? <VisuallyHidden role="status">Loading study set…</VisuallyHidden> : (
-        <StudySetOverview set={selectedSet} />
-      )
+      return <StudySetOverview set={selectedSet} status={state.kind} showSkeleton={showSkeleton} onRetry={retry} />
     }
+    if (state.kind === 'error') return <StudySetLoadError onRetry={retry} />
 
+    const pending = state.kind === 'loading'
     const builtInSets = sets.filter((set) => set.source_kind === 'builtin')
     const mySets = sets.filter((set) => set.source_kind === 'custom')
-    const showWelcome = pending ? !hasRecentHistory : recent.length === 0
+    const showRecent = (pending ? recentCount : recent.length) > 0
 
     return (
       <Stack gap="12">
         {pending ? <VisuallyHidden role="status">Loading study sets…</VisuallyHidden> : null}
-        {showWelcome ? <EmptyLibrary /> : <VisuallyHidden as="h1">Home</VisuallyHidden>}
-        {recent.length ? (
-          <SetSection id="recent" title="Recent"><StudySetGrid sets={recent} username={username} /></SetSection>
+        {showRecent ? <VisuallyHidden as="h1">Home</VisuallyHidden> : <EmptyLibrary />}
+        {showRecent ? (
+          <SetSection id="recent" title="Recent" busy={pending}>
+            {pending ? <StudySetGridPlaceholder count={recentCount} visible={showSkeleton} /> : (
+              <StudySetGrid sets={recent} username={username} />
+            )}
+          </SetSection>
         ) : null}
         <SetSection id="built-in-sets" title="Built-in sets" busy={pending}>
-          {pending && showSkeleton ? (
-            <div aria-hidden="true"><BuiltInStudySetGrid sets={emptySets} username={username} loading /></div>
-          ) : null}
-          {builtInSets.length ? <BuiltInStudySetGrid sets={builtInSets} username={username} loading={false} /> : null}
+          {pending ? <StudySetGridPlaceholder count={builtInPlaceholderCount} visible={showSkeleton} /> : null}
+          {builtInSets.length ? <StudySetGrid sets={builtInSets} username={username} captureCard /> : null}
           {!pending && !builtInSets.length ? <Text color="janeq.muted">No study sets are available.</Text> : null}
         </SetSection>
         {mySets.length ? (

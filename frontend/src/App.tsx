@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { getUser, signOut, type User } from './features/auth/api'
 import { isUnauthorized } from './http'
 
@@ -9,25 +9,33 @@ type Session =
   | { kind: 'checking' }
   | { kind: 'unavailable' }
   | { kind: 'signed-out' }
-  | { kind: 'signed-in'; user: User }
+  | { kind: 'signed-in'; user: User; signOut: 'idle' | 'pending' | 'error' }
 
 function App() {
   const [session, setSession] = useState<Session>({ kind: 'checking' })
   const [attempt, setAttempt] = useState(0)
-  const [signingOut, setSigningOut] = useState(false)
-  const [signOutError, setSignOutError] = useState('')
-  const expireSession = useCallback(() => setSession({ kind: 'signed-out' }), [])
+  const signOutRequest = useRef<AbortController | null>(null)
+  const startSession = useCallback((user: User) => {
+    setSession({ kind: 'signed-in', user, signOut: 'idle' })
+  }, [])
+  const expireSession = useCallback(() => {
+    // Cancel the cookie-clearing request before another sign-in can begin.
+    signOutRequest.current?.abort()
+    setSession({ kind: 'signed-out' })
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
     getUser(controller.signal).then((user) => {
-      if (!controller.signal.aborted) setSession({ kind: 'signed-in', user })
+      if (!controller.signal.aborted) startSession(user)
     }).catch((error: unknown) => {
       if (controller.signal.aborted) return
       setSession({ kind: isUnauthorized(error) ? 'signed-out' : 'unavailable' })
     })
     return () => controller.abort()
-  }, [attempt])
+  }, [attempt, startSession])
+
+  useEffect(() => () => signOutRequest.current?.abort(), [])
 
   function retrySession() {
     setSession({ kind: 'checking' })
@@ -35,15 +43,18 @@ function App() {
   }
 
   async function handleSignOut() {
-    setSigningOut(true)
-    setSignOutError('')
+    if (session.kind !== 'signed-in' || signOutRequest.current) return
+
+    const controller = new AbortController()
+    signOutRequest.current = controller
+    setSession({ ...session, signOut: 'pending' })
     try {
-      await signOut()
-      expireSession()
+      await signOut(controller.signal)
+      if (!controller.signal.aborted) setSession({ kind: 'signed-out' })
     } catch {
-      setSignOutError('Could not sign out. Please try again.')
+      if (!controller.signal.aborted) setSession({ ...session, signOut: 'error' })
     } finally {
-      setSigningOut(false)
+      signOutRequest.current = null
     }
   }
 
@@ -57,15 +68,15 @@ function App() {
       ) : null}
       {session.kind === 'signed-out' ? (
         <Suspense fallback={null}>
-          <Login onSignIn={(user) => setSession({ kind: 'signed-in', user })} />
+          <Login onSignIn={startSession} />
         </Suspense>
       ) : null}
       {session.kind === 'signed-in' ? (
         <Suspense fallback={null}>
           <Home
             username={session.user.username}
-            signingOut={signingOut}
-            signOutError={signOutError}
+            signingOut={session.signOut === 'pending'}
+            signOutError={session.signOut === 'error' ? 'Could not sign out. Please try again.' : ''}
             onSignOut={handleSignOut}
             onSessionExpired={expireSession}
           />

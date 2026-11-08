@@ -15,7 +15,8 @@ function readRecent(key: string): string[] {
   try {
     const stored: unknown = JSON.parse(window.localStorage.getItem(key) ?? '[]')
     if (Array.isArray(stored)) {
-      return [...new Set(stored.filter((id): id is string => typeof id === 'string'))].slice(0, recentLimit)
+      return [...new Set(stored.filter((id): id is string => typeof id === 'string' && id.trim().length > 0))]
+        .slice(0, recentLimit)
     }
   } catch {
     // Browsing still works if local storage is blocked or its data is invalid.
@@ -34,6 +35,14 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
     if (id) {
       setRecentIds((ids) => ids[0] === id ? ids : [id, ...ids.filter((item) => item !== id)].slice(0, recentLimit))
     }
+  }, [])
+
+  const removeUnavailableRecentSets = useCallback((availableSets: StudySet[]) => {
+    const availableIds = new Set(availableSets.map((set) => set.id))
+    setRecentIds((ids) => {
+      const availableRecentIds = ids.filter((id) => availableIds.has(id))
+      return availableRecentIds.length === ids.length ? ids : availableRecentIds
+    })
   }, [])
 
   useEffect(() => {
@@ -62,7 +71,7 @@ export function useLibraryNavigation(username: string, sets: StudySet[]) {
   })
 
   return {
-    selectedSet, recent, hasRecentHistory: recentIds.length > 0,
-    viewingSet: hash.startsWith('#set/'), rememberCurrentSet,
+    selectedSet, recent, recentCount: recentIds.length,
+    viewingSet: hash.startsWith('#set/'), rememberCurrentSet, removeUnavailableRecentSets,
   }
 }

@@ -20,6 +20,6 @@ export async function signIn(username: string, password: string): Promise<User> 
   return readUser(data)
 }
 
-export async function signOut(): Promise<void> {
-  await http.post('/auth/logout')
+export async function signOut(signal: AbortSignal): Promise<void> {
+  await http.post('/auth/logout', undefined, { signal })
 }

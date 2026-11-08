@@ -52,7 +52,7 @@ Here is a one-item excerpt from the `GET /api/study-sets` response on a fresh da
 ]
 ```
 
-The backend declares this shape in `StudySetSummary` and the frontend checks it in `getStudySets()`. The `401` responses above describe observed runtime behavior. The generated schema currently covers the success responses, and the authentication errors are documented here alongside their UI effects. [FastAPI study sets router](../../backend/app/study_sets.py) · [React study sets client](../../frontend/src/features/study-sets/api.ts)
+The backend declares this shape in `StudySetSummary` and the frontend checks it in `getStudySets()`. OpenAPI describes the `401` responses and lists the `janeq_session` cookie requirement for `/api/auth/me` and `/api/study-sets`. Both routes use the same session dependency, and the session middleware verifies the cookie signature. A sign-out error belongs to the current session. If that session expires during sign-out, the app cancels the pending request before returning to Login. [FastAPI authentication router](../../backend/app/auth.py) · [React study sets client](../../frontend/src/features/study-sets/api.ts)
 
 ## Design references
 
@@ -68,7 +68,7 @@ JaneQ's Vite sign-in uses a centered layout, outlined inputs, Outfit headings, O
 
 [The JaneQ theme](../../frontend/src/ui/theme.ts) defines the outline input. On keyboard focus, Chakra uses the same color on the field border and the adjacent ring with zero gap. The sign-in route loads the Chakra components and bundled fonts on demand.
 
-Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and a sign-in, session restore, and sign-out pass.
+The Login background fades in over 1.5 s after a 0.2 s delay. The form fades in and moves down 16 px over 0.3 s after a 0.1 s delay. Reduced motion shows the final layout immediately, and keyboard focus brings the form into view immediately if the user tabs in during the entrance. The demo form uses a username and password with JaneQ's logo.
 
 ## Acceptance checks
 
@@ -76,7 +76,9 @@ Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and 
 | --- | --- | --- | --- |
 | Missing session | Open JaneQ in a fresh browser session and request `/api/study-sets`. | JaneQ shows Sign in. The API returns `401` with `{"detail":"Sign in first."}`. | **Pass · API** for the endpoint response. |
 | Credentials and Home data | Submit an incorrect password, then sign in with the configured credentials. | The form shows the credential error. A valid sign-in opens Home with six built-in sets and 41 questions on a fresh database. | **Pass · API** for both login responses and the returned set counts. **Pass · browser (earlier milestone)** for valid sign-in. |
-| Session restore and sign-out | Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out clears the session and the final reload shows Sign in. | **Pass · API** for session lookup and cookie clearing. **Pass · browser (earlier milestone)** for reload and sign-out. |
+| Session restore and sign-out | Reload Home, sign out, then reload again. | The first reload restores Home. Sign-out clears the session and the final reload shows Sign in. | **Pass · API** and **Pass · browser** against Vite, FastAPI, and a temporary SQLite database. |
+| Sign-out across sessions | While the Home list is pending, intercept logout with a `503`, then let the list return `401` and sign in again. Repeat with a delayed logout that would clear the cookie. | The new Home shows no old sign-out error, and `GET /api/auth/me` returns `200` after the delayed response. | **Pass · browser** in Chromium with intercepted responses. |
+| Login entrance | Reload signed out at 360 px, press Tab during the entrance, and repeat with reduced motion enabled. | Background and form animate with default settings. Tab shows the focused field immediately. Reduced motion shows the final layout on first render. | **Pass · browser** in Chromium. |
 | Login on a narrow screen | At 360 px, use Tab to focus the username and password fields. | The form fits, the fields have accessible names, and each focused field shows a continuous blue ring. | **Pass · browser (Login design verification)**. |
 | Home retry | Block `/api/study-sets`, unblock it, then select **Try again**. | Home shows a load error and then restores the cards. | **Pass · browser (Home design verification)** for retry after a network failure. |
 | Home navigation and Recent | With a fresh browser profile, select **Browse study sets**, open two different cards, return Home, and reload. | Both visits appear under Recent, newest first, and persist after reload. | **Pass · browser (Home design verification)** for browser Back and Recent ordering after reload. |
@@ -84,7 +86,13 @@ Verified in Chromium with Tab navigation on both fields, a 360 px viewport, and 
 | Seed and answer-key persistence | Start with a fresh disposable database. Set `answer_options.is_correct` to `1` for `q15-a`, `q16-c`, and `q24-a`, then restart FastAPI with the same file. | Fresh sets are Draft. HTML / CSS stays Ready with three configured questions, and the source total stays at 41. | **Pass · API** for fresh seeded data. **Pass · persistence (earlier milestone)** for restart and seed concurrency checks. |
 | Frontend lint and build | Run `npm run lint` and `npm run build` from `frontend/`. | Both commands exit successfully. | **Pass · CLI (Motion verification)**. |
 
-The API checks above were rerun with FastAPI's `TestClient` and a fresh in-memory SQLite database. Browser and Vite proxy checks are separate from that run.
+From `backend/`, run the [API regression checks](../../backend/tests/test_login_home.py) with:
+
+```sh
+uv run --locked python -m unittest discover -s tests -v
+```
+
+Each test creates a temporary SQLite file and starts FastAPI through `TestClient`, including startup and seeding. The tests cover the generated OpenAPI contract, invalid credentials, missing sessions, login, the six sets and 41 questions, and logout. Browser and Vite proxy checks run separately.
 
 ### Local proxy regression
 
@@ -96,7 +104,7 @@ During verification on Windows, rapid requests through Vite sometimes failed wit
 } | Group-Object -NoElement
 ```
 
-Expect 120 responses with status `401` because the requests carry no session cookie.
+**Pass · Vite proxy** on Windows. The isolated Vite and FastAPI servers returned 120 responses with status `401` and zero connection errors. The requests carried no session cookie.
 
 ## Home design
 
@@ -142,20 +150,21 @@ JaneQ observes changes to the browser's reduced-motion media query and renders s
 
 ### Quiet loading and the study-set skeleton
 
-[App](../../frontend/src/App.tsx) leaves the screen blank during the session check and lazy screen imports. Sign-in keeps its action label while the submit button is busy. [Home](../../frontend/src/features/study-sets/Home.tsx) shows the ready shell and first-visit panel while the list is pending. The Built-in sets region stays blank for the first 200 ms and then uses the static [Boneyard skeleton](../../frontend/src/features/study-sets/bones/built-in-study-sets.bones.json). The section exposes busy state and hides decorative placeholders from assistive technology.
+[App](../../frontend/src/App.tsx) leaves the screen blank during the session check and lazy screen imports. Sign-in keeps its action label while the submit button is busy. [Home](../../frontend/src/features/study-sets/Home.tsx) shows the ready shell and reserves card space while the list is pending. Recent reserves one slot per saved ID. After a successful response, Home removes IDs that are no longer available, so a grid with stale IDs may shrink. Built-in reserves six slots for the current seed. The card grid controls wrapping and height for both cards and placeholders.
 
-Regenerate the bones when the built-in card layout changes. Start JaneQ and sign in with a dedicated Chromium test profile that exposes a CDP port. From `frontend/`, run the following using that port and the same origin used to sign in:
+The card slots and overview body stay visually blank for the first 200 ms, then show static Boneyard placeholders while the API is pending. Pending regions expose their busy state and hide decorative bones from assistive technology. A direct link to a set keeps **Back to Home** available during loading and error. Retrying leaves focus on Back if it is already focused.
+
+Regenerate the [card and overview bones](../../frontend/src/features/study-sets/bones) when their layout changes. Start JaneQ and sign in with a dedicated Chromium test profile that exposes a CDP port. From `frontend/`, run the following using that port and the same origin used to sign in:
 
 ```sh
-npm exec -- boneyard-js build http://127.0.0.1:5173/ --out ./src/features/study-sets/bones --breakpoints 360,592,864,1136 --no-scan --wait 1200 --force --cdp 9222
+npm exec -- boneyard-js build "http://127.0.0.1:5173/#home" "http://127.0.0.1:5173/#set/html-css" --out ./src/features/study-sets/bones --breakpoints 360,768,1280 --no-scan --wait 1000 --force --cdp 9222
 ```
 
-The captured widths follow the built-in grid's one-, two-, three-, and four-column layouts. The [registry](../../frontend/src/features/study-sets/bones/registry.ts) loads with the Home grid module.
+The CLI captures the first real Built-in card and the HTML / CSS overview. The [registry](../../frontend/src/features/study-sets/bones/registry.ts) loads with the Home module.
 
 | Check | Expected result | Observed outcome |
 | --- | --- | --- |
-| Hold the session and study-set API responses in a Chromium test profile. | The session starts blank. The ready Home shell appears with a skeleton after the list wait reaches 200 ms. | **Pass · browser**. |
-| Release the study-set response at 360, 768, 900, and 1280 px. | The six cards replace the skeleton at the same top position and height. | **Pass · browser** at all four widths. |
-| Reload with the local API responding promptly. | The six cards appear without a skeleton flash. | **Pass · browser**. |
-| Delay sign-in, send an invalid password, then retry a failed study-set request. | Sign-in keeps its label while pending. Errors remain visible and retry restores the six cards. | **Pass · browser**. |
-| Run `npm run lint` and `npm run build` from `frontend/`. | Both checks pass. | **Pass · CLI**. |
+| Open two sets, return to Home, and reload with a delayed list response. | Recent reserves its slots. Built-in holds the same top and height when the real cards replace the skeleton. | **Pass · browser** in Chromium at 360, 600, 768, 900, and 1280 px. |
+| While the list is pending, resize Home between 360 and 1280 px, then let the list load. | The skeleton and loaded cards follow the same grid rows at the new width. | **Pass · browser** in Chromium. |
+| Sign in with the local API responding promptly. | The six cards appear without a skeleton flash. | **Pass · browser** in Chromium. |
+| Delay the list response on a direct set link, return an error, then retry. | Back remains available, the body becomes busy before the skeleton appears, and the overview loads without stealing focus from Back. | **Pass · browser** in Chromium. |

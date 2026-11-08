@@ -3,13 +3,14 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 
-from .auth import require_user
+from .auth import SESSION_REQUIRED_RESPONSES, require_user
 from .database import list_study_sets
 
 router = APIRouter(
     prefix="/api/study-sets",
     tags=["study sets"],
     dependencies=[Depends(require_user)],
+    responses=SESSION_REQUIRED_RESPONSES,
 )
 
 
