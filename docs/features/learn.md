@@ -24,6 +24,8 @@ Rest the mouse on a Ready card for 120 ms or focus it with the keyboard to start
 
 The overview puts a quiet **Back to Home** link, title, and question count above the modes and flashcard preview. [Study Set overview](../../frontend/src/features/study-sets/Home.tsx) · [Modes and preview](../../frontend/src/features/study-sets/StudySetModes.tsx)
 
+![SQL study set overview with the first flashcard open and Learn and Test buttons beside it](../readme/study-set-flashcard-preview.png)
+
 | Area | JaneQ design target |
 | --- | --- |
 | Header | Use a bold 48 px title on desktop and 36 px on mobile. Place the status, question count, and description on the next line and wrap the description as needed. Owned sets show the attached **Edit set** and **More actions** icons beside the title. The menu reuses the editor's delete confirmation. [Authoring and deletion](study-set-authoring.md) |
@@ -78,6 +80,8 @@ Learn shows one prompt at a time below a round header with Back, Settings, and p
 3. For the three-question review set, present every question once in the first round. In later rounds, include questions still working toward their first correct answer and **Familiar** questions due for review. Finish when all three questions are **Mastered**.
 
 ### Learn screen design
+
+![Round 1 in Learn showing the same SQL question as the flashcard, now with four answer choices](../readme/learn-round.png)
 
 The round summary keeps the round number, Back, Settings, and progress at the top. Below, it shows mastery status counts and the questions reviewed that round. **Continue to round 2** includes an Enter shortcut when applicable.
 

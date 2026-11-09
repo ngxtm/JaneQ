@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="#features">Features</a> ·
-  <a href="#create-your-own-study-set">Screenshots</a> ·
+  <a href="#take-a-timed-test">Screenshots</a> ·
   <a href="#local-development">Quick start</a> ·
   <a href="#documentation">Documentation</a>
 </p>
@@ -24,6 +24,12 @@
 - **Build mastery one question at a time.** Flip through a set’s flashcard preview, then switch to Learn for immediate feedback and saved progress. [Study Set and Learn](docs/features/learn.md)
 - **Take a practice or timed test.** Jump between questions, submit for a score, and review or download the results. [Sample PDF report](docs/features/test-results.sample.pdf)
 - **Create private study sets.** Write questions and answer choices, mark every correct option, and revisit your sets from **My sets**. [My sets and Create/Edit](docs/features/study-set-authoring.md)
+
+## Take a timed test
+
+Use the question navigator to jump between questions and the countdown to see how much time you have left. [Test and Results guide](docs/features/test-results.md#run-the-flow)
+
+![Timed SQL test with a countdown, a question navigator, and one answer selected](docs/readme/timed-test.png)
 
 ## Create your own study set
 

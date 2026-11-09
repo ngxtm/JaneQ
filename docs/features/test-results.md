@@ -21,6 +21,10 @@ The exported filename uses the set title. After the UUID upgrade, submitting HTM
 
 Results stay on the Test route in the current browser view. Reloading a practice test clears its local selections. Reloading a timed test in the same tab recovers the saved paper, selections, and deadline or displays its saved result, even if the source set becomes Draft or is deleted. Opening **Test** from the overview starts a fresh attempt. The backend saves completed attempts and exposes them through Test history. Results and the PDF share the percentage and option labels derived from the grading response. Each **Download PDF** click starts a Web Worker that loads React PDF and generates the file locally. If the worker cannot load or render the report, the inline error leaves the existing Results ready for another click. The sample uses the seeded catalog and a disposable demo account. [Shared review data](../../frontend/src/features/test/result-review.ts)
 
+For a timed run, select **Timed test** in the mode picker. This SQL example shows the question navigator and the remaining time in a 30-minute test.
+
+![Timed SQL test with a countdown, a question navigator, and one answer selected](../readme/timed-test.png)
+
 ## PDF archive
 
 The tracked [sample report](test-results.sample.pdf) is the repository's assignment export. When running from a Git checkout, each click on **Download PDF** also saves the generated report under `output/pdf/test-results/<attempt-id>.pdf`. Downloading again replaces the saved copy for that attempt. Git ignores the runtime archive.
