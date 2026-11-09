@@ -11,6 +11,8 @@ Use the [local setup](../../README.md#local-development) with `JANEQ_DB_PATH` po
 
 Only the owner can open an editor or study a custom set. The signed-in library also includes the seeded catalog. Home shows recently opened sets. Previously saved custom Drafts open directly in the editor from My sets, Recent, or an old overview or study-mode URL. Their content can be completed or deleted from the editor.
 
+In **My sets**, click anywhere on a Ready set card to open its overview. The row uses the same Chakra link overlay as Home and shows a focus outline when reached with Tab. **Edit** has its own link and Tab stop.
+
 ## Editor design
 
 The Edit page has a floating action bar with the saved count and time, a **Done** button, and a three-dot **Delete set** menu. Below it are the large editable title, question count, full-width description, and toolbar. The numbered white cards put the prompt beside its answer choices on desktop and stack them on mobile. Drag the grip on desktop or choose **Move up** or **Move down** from the grip menu. The toolbar shows private visibility, reverses the question order, and lists keyboard shortcuts.
@@ -41,6 +43,7 @@ The [router](../../backend/app/study_sets.py) sends reads and writes through [SQ
 
 | Check | Reproduce and expect | Observed |
 | --- | --- | --- |
+| My sets card navigation | Click the blank center of a Ready card to open its overview. Go Back and click **Edit** to open the editor. Tab to the card and press Enter. | Pass · Chromium. Center click and Edit opened their respective views at 1440 px and 360 px. The border highlighted on hover, and the header stayed mounted during overview navigation and Back. At 360 px, the card showed a focus outline, Edit had a separate Tab stop, and Enter on the card opened the overview. |
 | Quick Create | From Home, select **Create**. Go Back and use Enter on the link at a narrow viewport. | Pass · Chromium at 1440 px and 320 px. Both actions opened `/my-sets/new`. The header stayed mounted, fit the viewport, and the account menu opened. |
 | Invalid save | Try an empty form, then try saving with two incomplete questions. Repeat at 360 px with reduced motion. | Pass · Chromium. The first invalid control got focus. The two cards turned red, the editor shook once, one toast appeared, and the browser sent no create request. The reduced-motion branch kept focus and inline errors without running the shake. |
 | Complete save and grade | Create a set with a complete answer key and submit a Test with all correct options selected. | Pass · Chromium at 360 px and API. The complete set opened as Ready and the multi-answer Test scored 1/1. |

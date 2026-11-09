@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Heading, HStack, Link, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { Box, Button, Flex, Heading, HStack, LinkBox, LinkOverlay, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import { IconFolder, IconPlus } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import { useEffect, useRef } from 'react'
@@ -10,11 +10,14 @@ import './bones/registry'
 
 function SetRow({ set }: { set: StudySet }) {
   return (
-    <Flex align="center" justify="space-between" gap="4" p="5" bg="white" border="1px solid"
-      borderColor="janeq.divider" rounded="xl">
+    <LinkBox display="flex" alignItems="center" justifyContent="space-between" gap="4" p="5" bg="white"
+      border="1px solid" borderColor="janeq.divider" rounded="xl" _hover={{ borderColor: 'blue.400' }}>
       <Stack minW="0" gap="1">
         <Heading as="h2" fontFamily="heading" fontSize="lg" overflowWrap="anywhere">
-          <Link href={librarySetHref(set)}>{set.title}</Link>
+          <LinkOverlay href={librarySetHref(set)} cursor="pointer" _focusVisible={{
+            outline: 'none',
+            _before: { outline: '2px solid', outlineColor: 'janeq.focus', outlineOffset: '2px', rounded: 'xl' },
+          }}>{set.title}</LinkOverlay>
         </Heading>
         <HStack gap="2" flexWrap="wrap" color="janeq.muted" fontSize="sm">
           <Text fontWeight="semibold">{set.status === 'draft' ? 'Draft' : 'Ready'}</Text>
@@ -25,7 +28,7 @@ function SetRow({ set }: { set: StudySet }) {
       <Button asChild variant="outline" size="sm" fontFamily="body" flexShrink="0" aria-label={`Edit ${set.title}`}>
         <a href={studySetHref(set.id, 'editor')}>Edit</a>
       </Button>
-    </Flex>
+    </LinkBox>
   )
 }
 
