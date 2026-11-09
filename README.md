@@ -16,7 +16,7 @@
   <a href="#documentation">Documentation</a>
 </p>
 
-![JaneQ Home with a prompt to open your first study set and a list of built-in sets](docs/readme/home.png)
+![JaneQ Home with a prompt to open your first study set and a list of built-in sets](docs/readme/home-first-study-set.png)
 
 ## Features
 
