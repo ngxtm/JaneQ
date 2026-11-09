@@ -1,0 +1,66 @@
+services:
+  janeq-api:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM python:3.13-slim
+        COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /usr/local/bin/uv
+        WORKDIR /app
+        COPY backend/pyproject.toml backend/uv.lock backend/.python-version ./
+        RUN uv sync --locked --no-dev --no-install-project --no-cache
+        COPY backend/app ./app
+        RUN install -d -o 10001 -g 10001 /data
+        USER 10001:10001
+        CMD ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      JANEQ_DEMO_USERNAME: ${JANEQ_DEMO_USERNAME:-demo}
+      JANEQ_DEMO_PASSWORD: ${JANEQ_DEMO_PASSWORD:?Set JANEQ_DEMO_PASSWORD}
+      JANEQ_SESSION_SECRET: ${JANEQ_SESSION_SECRET:?Set JANEQ_SESSION_SECRET}
+      JANEQ_DB_PATH: /data/janeq.sqlite3
+      JANEQ_COOKIE_SECURE: "true"
+    volumes:
+      - janeq-data:/data
+    restart: unless-stopped
+
+  janeq-web:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:24-bookworm-slim AS build
+        WORKDIR /app
+        COPY frontend/package.json frontend/package-lock.json ./
+        RUN npm ci
+        COPY frontend/ ./
+        RUN npm run build
+        FROM caddy:2-alpine
+        COPY --from=build /app/dist/ /srv/
+    configs:
+      - source: caddy-site
+        target: /etc/caddy/Caddyfile
+    depends_on:
+      - janeq-api
+    restart: unless-stopped
+
+volumes:
+  janeq-data:
+
+configs:
+  caddy-site:
+    content: |
+      :8080 {
+        root * /srv
+
+        @api path /api /api/*
+        handle @api {
+          reverse_proxy janeq-api:8000
+        }
+
+        handle /assets/* {
+          file_server
+        }
+
+        handle {
+          try_files {path} /index.html
+          file_server
+        }
+      }

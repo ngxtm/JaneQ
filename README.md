@@ -40,6 +40,10 @@ Open [JaneQ](http://127.0.0.1:5173/). Vite forwards `/api` to FastAPI on port 80
 
 Sign in with the username and password from `backend/.env`. Home shows 18 built-in study sets with 281 questions and ready-to-use answer keys. Open **My sets** to create and edit private study sets. The MVP seeds `backend/data/janeq-mvp.sqlite3` on first startup. An existing MVP database upgrades on startup and retains Learn progress. A fresh file starts with empty Learn progress. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. [Database upgrade](docs/database.md#study-set-identity-and-upgrade)
 
+## Deployment
+
+Deploy JaneQ with Docker Compose and Dokploy. [Dokploy deployment guide](docs/features/deploy-dokploy.md)
+
 ## Frontend checks
 
 Run from `frontend/`:
