@@ -58,3 +58,33 @@ def save_standard_result(
             result.model_dump_json(exclude_none=True),
         ),
     )
+
+
+def create_timed_attempt(
+    connection: sqlite3.Connection, *, attempt_id: UUID, username: str, start_id: UUID,
+    set_id: str, title: str, revision: int, total: int, state_json: str,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO test_attempts (id, username, mode, request_key, set_id, title, revision, total, state_json)
+        VALUES (?, ?, 'timed', ?, ?, ?, ?, ?, ?)
+        """,
+        (str(attempt_id), username, str(start_id), set_id, title, revision, total, state_json),
+    )
+
+
+def save_timed_progress(connection: sqlite3.Connection, attempt_id: UUID, state_json: str) -> None:
+    connection.execute("UPDATE test_attempts SET state_json = ? WHERE id = ?", (state_json, str(attempt_id)))
+
+
+def complete_timed_attempt(connection: sqlite3.Connection, result: TestResult) -> None:
+    connection.execute(
+        """
+        UPDATE test_attempts SET state_json = NULL, submitted_at = ?, score = ?, result_json = ?
+        WHERE id = ?
+        """,
+        (
+            result.submitted_at.isoformat(timespec="microseconds"), result.score,
+            result.model_dump_json(exclude_none=True), str(result.attempt_id),
+        ),
+    )

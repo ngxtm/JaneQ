@@ -136,6 +136,21 @@ class TestResultsTests(TestCase):
         self.assertEqual(self.client.get(detail).status_code, 404)
         self.assertEqual(self.client.get(history, params={"before": saved["attempt_id"]}).status_code, 404)
 
+    def test_startup_adds_history_to_an_existing_database(self) -> None:
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("DROP TABLE test_attempts")
+            question_count = connection.execute("SELECT COUNT(*) FROM questions").fetchone()[0]
+
+        with TestClient(self.client.app) as restarted:
+            self.assertEqual(restarted.post("/api/auth/login", json=self.credentials).status_code, 200)
+            response = restarted.get("/api/test-attempts")
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json(), {"attempts": [], "next_before": None})
+
+        with closing(connect(self.database)) as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM questions").fetchone()[0], question_count)
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
+
     def test_rejects_incomplete_duplicate_foreign_and_single_choice_answers(self) -> None:
         self.sign_in()
         answer = {"question_id": "q15", "selected_ids": ["q15-a"]}

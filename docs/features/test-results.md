@@ -54,6 +54,20 @@ The [Test router](../../backend/app/test.py) checks readiness and revision with 
 
 Sign in and use the session cookie for both routes. `GET /api/test-attempts` returns completed attempts newest first, with `limit` from 1 to 100 (default 20). Pass `next_before` as `before` for the next page. `GET /api/test-attempts/{attempt_id}` returns the complete saved result. A missing attempt or cursor, including one owned by another account, returns `404`. Unsigned requests return `401`. [History router](../../backend/app/test_history.py) · [OpenAPI](http://127.0.0.1:8000/docs)
 
+### Timed Test API
+
+Use the signed session cookie. Timed Test is available through the API. The current browser flow uses standard Test.
+
+| Request | Contract |
+| --- | --- |
+| `POST /api/study-sets/{set_id}/timed-test` | Send `{ "start_id": "<uuid>" }` for a Ready set. It captures the questions and answer key at the current revision and starts the first 60-second window. Replay the key with the same set reference to recover the attempt. Using the key with a different reference returns `409` with `detail.code` equal to `start_id_reused`. A Draft set returns `409` with `detail.code` equal to `draft`. |
+| `GET /api/test-attempts/{attempt_id}/state` | Read the current question without changing the deadline or position. An `in_progress` response has `question`, `position`, `total`, `server_now`, `deadline_at`, and `expired`. A `completed` response contains the saved `result`. |
+| `POST /api/test-attempts/{attempt_id}/advance` | Send the current `question_id` and `selected_ids`. Before the deadline, invalid or empty selections return `422`. At or after the deadline, the server records a timeout and accepts an empty selection. It returns the next question with a new deadline or the completed result. |
+
+The server checks when it received the answer against the saved deadline. A state read after the deadline keeps the same question and marks it expired. The next clock starts when the server processes an advance. If an advance reached the server and its response was lost, retrying that question reads the current state with its existing deadline. A question already processed cannot be changed, and a future or unknown question returns `409` with `detail.code` equal to `question_changed`. Attempt access is scoped to the signed-in account. Active responses contain no answer key.
+
+Completed results use `mode: "timed"` and include `timed_out` for each question. An expired question has an empty `selected_ids` list and earns zero points. History lists the result only after the final advance. The saved paper and result retain their original content if the set changes. [Timed router](../../backend/app/timed_test.py) · [OpenAPI](http://127.0.0.1:8000/docs) · [Database reference](../database.md#test-attempts)
+
 ## Reproduce failure checks
 
 Use the disposable database from setup. Before changing it, open the HTML / CSS paper at revision 1 and answer all three questions. Then apply the following SQL to that database.
@@ -93,7 +107,9 @@ Browser checks used Chromium with Vite, FastAPI, and disposable SQLite databases
 | Incomplete data and session | Apply the second fixture to the built-in set and navigate directly to its Test URL. Run the unsigned GET and POST tests. | Pass · API. The Test API returned 409 for the incomplete fixture, and both unsigned calls returned 401. The earlier browser run confirmed the direct Test route displayed no questions. Existing custom Draft links now open the editor. |
 | Loading and network retry | Delay the paper request, then let it finish. Abort a load and retry. Abort a submit after all questions are answered, then restore the request and submit again. | Pass · Chromium. The Test header was visible immediately and the skeleton appeared during the delayed response. Both retries succeeded. The failed submit retained all three choices and the answered count. |
 | Saved history | Submit the HTML / CSS sample with a `submission_id`, read it through history, then replay it. Delete its source set in a disposable database and restart. Read the result as the original account and as another account. | Pass · API and SQLite. The keyed replay kept the same attempt and score. After restart the original account read the full snapshot. The other account received `404`. |
-| Backend, lint, and build | Run the checks below from the indicated directories. | Pass · CLI. All 13 backend tests passed. Lint and build completed. Vite emitted the PDF worker as a separate asset. |
+| Timed grading | Run the timed backend tests below. Start HTML / CSS, submit a correct multi-select just before the first deadline, submit an incorrect answer, and submit the correct selection at the last deadline. Change the source set after starting. | Pass · API. The original paper was graded `1/3`, with the last question marked `timed_out`. History returned the same result. |
+| Timed resume and retry | Advance the test clock past the first deadline, reopen the same database through a fresh app, and send two overlapping advances for the expired question. | Pass · API and SQLite. The saved deadline survived reopening. Both advances returned question 2 with the same new deadline. Another account received `404`. |
+| Backend, lint, and build | Run the checks below from the indicated directories. | Pass · CLI. All 27 backend tests passed. Lint, build, and the separate PDF worker were verified in the PDF milestone. |
 
 From `backend/`:
 

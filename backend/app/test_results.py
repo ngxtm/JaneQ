@@ -49,7 +49,7 @@ def grade_question(
 
 
 def build_result(
-    attempt_id: UUID, mode: TestMode, set_id: str, title: str, revision: int,
+    *, attempt_id: UUID, mode: TestMode, set_id: str, title: str, revision: int,
     username: str, submitted_at: datetime, questions: list[GradedQuestion],
 ) -> TestResult:
     return TestResult(

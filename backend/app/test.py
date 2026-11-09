@@ -152,8 +152,8 @@ def submit_test(
         if submission.revision != bank.revision:
             raise HTTPException(409, StaleTest(code="revision_changed").model_dump())
         result = build_result(
-            uuid4(), "standard", set_id, bank.title, bank.revision,
-            user.username, submitted_at, grade_test(bank, submission),
+            attempt_id=uuid4(), mode="standard", set_id=set_id, title=bank.title, revision=bank.revision,
+            username=user.username, submitted_at=submitted_at, questions=grade_test(bank, submission),
         )
         save_standard_result(connection, result, submission.submission_id, request_hash)
     return result
