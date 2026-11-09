@@ -13,6 +13,7 @@
 2. Record screen-specific layout, states, and deliberate design departures in the feature document. Explain which user need a departure serves and how to verify it. Treat shared defaults as a starting point for screen-specific design.
 3. Check applicable loading, empty, error, and success states. Verify keyboard navigation, visible focus, layout at mobile and desktop widths, and reduced motion when the screen uses animation. Record the checks actually run.
 4. Render ready sections immediately. Leave brief pending regions visually blank. For data that can take noticeably longer, use a layout-matched Boneyard skeleton scoped to the pending region. Follow the frontend guide for visible copy and accessible status.
+5. Flag any existing or proposed screen that looks unfinished, including a full-page error or empty state with only a message and an optional button on an otherwise blank page. Tell the user which screen and condition are affected and what is missing. Get the user's design direction before implementing a replacement or treating the screen as finished. Keep the brief loading behavior described above.
 
 ## Keep shared UI stable during navigation
 
@@ -39,6 +40,7 @@ Keep UI shared by the source and destination mounted during in-app navigation. P
 
 ## Keep responsibilities clear
 
+- Reuse existing implementations for the same behavior. Extract repeated logic, including session checks, into a named function, hook, or module. Extract repeated UI with the same purpose into a reusable component. Keep the code in its owning feature until multiple features need it, and verify the affected callers when consolidating existing code.
 - Use short English code comments to explain decisions and constraints that are easy to miss, such as why a transaction or a session check is necessary. Use clear names and control flow for routine behavior.
 - Keep backend startup and middleware in `backend/app/main.py`. Organize REST routes by feature, keep SQL in persistence code, and keep business rules independently testable.
 - Keep frontend screens, feature types, and endpoint calls together under `frontend/src/features/`. Send all frontend HTTP requests through the shared Axios instance in `frontend/src/http.ts`. Read `response.data` in feature clients and validate the payload at that boundary. Keep app-wide session orchestration in `App.tsx`.

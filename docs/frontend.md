@@ -44,4 +44,6 @@ For slow or variable data requests, give quick responses time to arrive before s
 
 Start with the existing patterns for navigation, actions, and feedback. Choose the layout, illustration, and content hierarchy that fit the task on that screen. For example, Results can emphasize the score and group missed questions while following the same action and focus rules as Home.
 
+A full-page error or empty state needs a deliberate layout, a clear heading and explanation, and a recovery action when one exists. If a screen looks unfinished, such as a bare message and retry button on an otherwise blank page, tell the user where it appears and what triggers it. Agree on a design direction before treating that screen as finished.
+
 For a new screen or shared component, record its hierarchy, variants, responsive behavior, and loading, empty, error, and success states in the feature doc. Link the existing components it reuses. Record keyboard, desktop and mobile, and reduced-motion checks that were actually run. Update this guide when a pattern becomes shared across features.
