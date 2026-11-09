@@ -1,3 +1,4 @@
+import { http } from '../../http'
 import { readPdfMark, type PdfMark } from './pdf-mark'
 import type { ResultReview } from './result-review'
 
@@ -29,5 +30,14 @@ export async function generateResultPdf(result: ResultReview, signal: AbortSigna
   } finally {
     if (abort) deadline.removeEventListener('abort', abort)
     worker.terminate()
+  }
+}
+
+export async function archiveResultPdf(attemptId: string, file: Blob, signal: AbortSignal): Promise<void> {
+  const { data } = await http.put<unknown>(`/test-attempts/${encodeURIComponent(attemptId)}/pdf`, file, {
+    signal, timeout: 10_000, headers: { 'Content-Type': 'application/pdf' },
+  })
+  if (!data || typeof data !== 'object' || !('saved' in data) || typeof data.saved !== 'boolean') {
+    throw new Error('Unexpected PDF export response.')
   }
 }

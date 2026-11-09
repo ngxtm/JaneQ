@@ -1,8 +1,10 @@
 import { Spinner, Text } from '@chakra-ui/react'
 import { IconDownload } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
+import { isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
-import { generateResultPdf } from './pdf-download'
+import { historyResultHref, navigateLibrary } from '../navigation/app-location'
+import { archiveResultPdf, generateResultPdf } from './pdf-download'
 import type { ResultReview } from './result-review'
 
 function downloadPdf(file: Blob, title: string) {
@@ -18,7 +20,11 @@ function downloadPdf(file: Blob, title: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export function DownloadResultButton({ result, onError }: { result: ResultReview; onError: (error: string) => void }) {
+export function DownloadResultButton({ result, onError, onSessionExpired }: {
+  result: ResultReview
+  onError: (error: string) => void
+  onSessionExpired: () => void
+}) {
   const [generating, setGenerating] = useState(false)
   const pending = useRef<AbortController | null>(null)
 
@@ -38,7 +44,20 @@ export function DownloadResultButton({ result, onError }: { result: ResultReview
         return
       }
       if (reply.kind === 'error') throw new Error('Could not generate the PDF.')
-      downloadPdf(reply.file, result.title)
+      try {
+        await archiveResultPdf(result.attempt_id, reply.file, controller.signal)
+      } catch (error) {
+        if (controller.signal.aborted) return
+        if (isUnauthorized(error)) {
+          // Resume at the saved attempt, even when the download began on the Test route.
+          navigateLibrary(historyResultHref(result.attempt_id))
+          onSessionExpired()
+          return
+        }
+        onError('Could not save the repository copy. Select Download PDF to try again.')
+        return
+      }
+      if (!controller.signal.aborted) downloadPdf(reply.file, result.title)
     } catch {
       if (!controller.signal.aborted) onError('Could not create the PDF. Select Download PDF to try again.')
     } finally {

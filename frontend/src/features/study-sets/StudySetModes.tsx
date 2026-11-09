@@ -9,7 +9,10 @@ import { httpErrorMessage, isUnauthorized } from '../../http'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import type { StudyCard } from '../learn/api'
-import { studySetHref } from '../navigation/app-location'
+import { navigateLibrary, studySetHref } from '../navigation/app-location'
+import { SetHistorySection } from '../test-history/SetHistorySection'
+import { TestModeDialog } from '../test/TestModeDialog'
+import { saveTestMode, type TestMode } from '../test/test-mode'
 import { PreviewCard } from './PreviewCard'
 import { showPreviewProgressIfSlow } from './preview-progress'
 
@@ -24,23 +27,13 @@ const previewOutline = {
   _hover: { bg: actionHover }, _disabled: { opacity: 0.4, bg: 'transparent' },
   css: iconSize,
 } as const
-const previewHeight = '500px'
+const previewHeight = { base: 'clamp(17.5rem, 42svh, 27rem)', lg: 'clamp(20rem, 50svh, 31.25rem)' }
 const previewSkeletonName = 'flashcard-preview'
 const previewSkeletonDelayMs = 200
 
-function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href: string }) {
-  return <Flex asChild align="center" gap="3" py="4" px="5" rounded="xl" bg="white" color="janeq.ink"
-    borderBottom="3px solid #e2e8f0" boxShadow={modeShadow} minW="0" outline="2px solid transparent"
-    transition="transform 150ms ease-in-out, border-color 150ms ease-in-out, box-shadow 150ms ease-in-out"
-    _motionReduce={{ transition: 'none' }}
-    _hover={{ boxShadow: hoverShadow, borderBottomColor: '#7ea6ff', transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } }}
-    _focusVisible={{ outlineColor: '#4b83ff', bg: 'janeq.library' }}
-    css={{
-      '@media (max-width: 359px)': { px: '2.5', gap: '2' },
-      '&:is(:hover, :focus-visible) .mode-icon': { transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } },
-      '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
-    }}>
-    <a href={href}>
+function ModeCard({ label, icon, href, onClick }: { label: string; icon: ReactNode; href?: string; onClick?: () => void }) {
+  const content = (
+    <>
       <Box aria-hidden="true" position="relative" boxSize="6" flexShrink="0" css={{ '& svg': { display: 'block' } }}>
         <Box className="mode-icon-shadow" position="absolute" top="1" left="-1" color="#1a5fff"
           filter="blur(2px)" opacity="0.3" transition="transform 300ms ease-in-out" _motionReduce={{ transition: 'none' }}>
@@ -52,8 +45,38 @@ function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href:
         </Box>
       </Box>
       <Text as="span" fontFamily="heading" fontSize="md" fontWeight="bold" lineHeight="1.2">{label}</Text>
-    </a>
-  </Flex>
+    </>
+  )
+
+  const cardStyle = {
+    align: 'center' as const, gap: '3', py: '4', px: '5', rounded: 'xl', bg: 'white', color: 'janeq.ink',
+    border: '1px solid', borderColor: 'janeq.divider', borderBottomWidth: '3px',
+    boxShadow: modeShadow, minW: '0', outline: '2px solid transparent', outlineOffset: '2px',
+    transition: 'transform 150ms ease-in-out, border-color 150ms ease-in-out, box-shadow 150ms ease-in-out',
+    _motionReduce: { transition: 'none' },
+    _hover: { boxShadow: hoverShadow, borderBottomColor: '#7ea6ff', transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } },
+    _focusVisible: { outlineColor: 'janeq.focus', bg: 'janeq.library' },
+    css: {
+      '@media (max-width: 359px)': { px: '2.5', gap: '2' },
+      '&:is(:hover, :focus-visible) .mode-icon': { transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } },
+      '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
+    },
+  }
+
+  if (onClick) {
+    return (
+      <Button {...cardStyle} variant="plain" fontFamily="body" justifyContent="start" cursor="pointer"
+        textAlign="left" h="auto" w="full" onClick={onClick}>
+        {content}
+      </Button>
+    )
+  }
+
+  return (
+    <Flex asChild {...cardStyle}>
+      <a href={href}>{content}</a>
+    </Flex>
+  )
 }
 
 function readStars(key: string, legacyKey?: string): string[] {
@@ -128,7 +151,7 @@ function Preview({ cards, starKey, legacyStarKey }: { cards: StudyCard[]; starKe
     <Flex data-study-preview direction="column" h={previewHeight} bg="white" rounded="xl" boxShadow={flashcardShadow} overflow="hidden" minW="0" pb="1">
       <Box bg="#ffa54c" h="1" flexShrink="0" w={`${(index + 1) / order.length * 100}%`}
         transition="width 100ms ease-in-out" _motionReduce={{ transition: 'none' }} />
-      <Flex direction="column" flex="1" minH="0" p="8">
+      <Flex direction="column" flex="1" minH="0" p={{ base: '5', lg: '8' }}>
         <Grid templateColumns="repeat(3, minmax(0, 1fr))" alignItems="center">
           <Text color="#718096" fontWeight="bold">{showingAnswer ? 'Answer' : 'Question'}</Text>
           <Text fontSize="lg" fontWeight="bold" textAlign="center" aria-live="polite">{index + 1} / {order.length}</Text>
@@ -148,19 +171,17 @@ function Preview({ cards, starKey, legacyStarKey }: { cards: StudyCard[]; starKe
   )
   return <>
     <Skeleton name={previewSkeletonName} loading={false}>{previewCard}</Skeleton>
-    <Stack gap="4" minW="0">
-      <Grid templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: '1fr' }} gap="3">
-        <Button {...previewOutline} h="10" color={actionColor} fontFamily="body" fontSize="md" fontWeight="semibold"
-          disabled={cards.length < 2} onClick={shuffleCards}><IconArrowsShuffle /> Shuffle</Button>
-        <Button {...previewOutline} h="10" color={actionColor} fontFamily="body" fontSize="md" fontWeight="semibold"
-          _pressed={{ bg: '#1a5fff', color: 'white', borderColor: '#1a5fff', _hover: { bg: '#4b83ff' } }}
-          aria-pressed={autoplay} onClick={() => setAutoplay((value) => !value)}><IconPlayerPlay /> Autoplay</Button>
-      </Grid>
-      <Button hideBelow="lg" variant="ghost" h="10" rounded="lg" border="0" color={actionColor} fontFamily="body" fontSize="md"
+    <Grid templateColumns={{ base: 'repeat(2, minmax(0, 1fr)) auto', lg: '1fr' }} gap={{ base: '2', lg: '3' }} minW="0">
+      <Button {...previewOutline} h="10" px="2" color={actionColor} fontFamily="body" fontSize="md" fontWeight="semibold"
+        disabled={cards.length < 2} onClick={shuffleCards}><IconArrowsShuffle /> Shuffle</Button>
+      <Button {...previewOutline} h="10" px="2" color={actionColor} fontFamily="body" fontSize="md" fontWeight="semibold"
+        _pressed={{ bg: '#1a5fff', color: 'white', borderColor: '#1a5fff', _hover: { bg: '#4b83ff' } }}
+        aria-pressed={autoplay} onClick={() => setAutoplay((value) => !value)}><IconPlayerPlay /> Autoplay</Button>
+      <Button hideBelow="lg" mt="1" variant="ghost" h="10" rounded="lg" border="0" color={actionColor} fontFamily="body" fontSize="md"
         fontWeight="semibold" css={iconSize} _hover={{ bg: actionHover }} onClick={() => setSettings(true)}><IconSettings /> Settings</Button>
-      <IconButton hideFrom="lg" alignSelf="end" variant="ghost" rounded="full" border="0" color="janeq.ink" css={iconSize}
+      <IconButton hideFrom="lg" variant="ghost" rounded="full" border="0" color="janeq.ink" css={iconSize}
         aria-label="Settings" onClick={() => setSettings(true)}><IconSettings /></IconButton>
-    </Stack>
+    </Grid>
     <Dialog.Root open={settings} onOpenChange={({ open }) => setSettings(open)} placement="center">
       <Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content>
         <Dialog.Header><Dialog.Title>Flashcard preview settings</Dialog.Title></Dialog.Header>
@@ -210,25 +231,45 @@ export function StudySetModes({ setId, legacyId, username, onSessionExpired, loa
     }
   }, [attempt, loadPreview, onSessionExpired, setId])
 
-  return <Grid templateColumns={{ base: 'minmax(0, 1fr)', lg: '10rem minmax(0, 1fr) 10rem' }} gap="8" alignItems="start">
-    <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: '1fr' }} gap="4">
-      <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={studySetHref(setId, 'learn')} />
-      <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={studySetHref(setId, 'test')} />
-    </Grid>
-    {pending ? <>
-      <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden>
-      <Box aria-busy="true" h={previewHeight} minW="0">
-        {showSkeleton ? <Box aria-hidden="true">
-          <Skeleton name={previewSkeletonName} loading animate="solid" color="var(--chakra-colors-janeq-divider)">{null}</Skeleton>
-        </Box> : null}
-      </Box>
-    </> : null}
-    {cards ? <Preview cards={cards} starKey={`janeq:preview-stars:v1:${username}:${setId}`}
-      legacyStarKey={legacyId ? `janeq:preview-stars:v1:${username}:${legacyId}` : undefined} /> : null}
-    {error ? <Stack align="start" role="alert"><Text color="red.700">{error}</Text><Button variant="outline" onClick={() => {
-      setError('')
-      setShowSkeleton(false)
-      setAttempt((value) => value + 1)
-    }}>Try again</Button></Stack> : null}
-  </Grid>
+  const [showTestMode, setShowTestMode] = useState(false)
+
+  function handleSelectMode(mode: TestMode) {
+    saveTestMode(setId, mode)
+    setShowTestMode(false)
+    navigateLibrary(studySetHref(setId, 'test'))
+  }
+
+  return (
+    <>
+      <Grid templateColumns={{ base: 'minmax(0, 1fr)', lg: '10rem minmax(0, 1fr) 10rem' }}
+        columnGap="8" rowGap={{ base: '4', lg: '5' }} alignItems="start">
+        <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: '1fr' }} gap="4">
+          <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={studySetHref(setId, 'learn')} />
+          <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} onClick={() => setShowTestMode(true)} />
+        </Grid>
+        {pending ? <>
+          <VisuallyHidden role="status">Loading flashcard preview…</VisuallyHidden>
+          <Box aria-busy="true" h={previewHeight} minW="0">
+            {showSkeleton ? <Box aria-hidden="true" h="full"
+              css={{
+                // The reserved panel sets the height when the viewport shrinks during loading.
+                '& > .preview-skeleton': { height: '100%', minHeight: '0 !important' },
+              }}>
+              <Skeleton name={previewSkeletonName} className="preview-skeleton" select="viewport"
+                loading animate="solid" color="var(--chakra-colors-janeq-divider)">{null}</Skeleton>
+            </Box> : null}
+          </Box>
+        </> : null}
+        {cards ? <Preview cards={cards} starKey={`janeq:preview-stars:v1:${username}:${setId}`}
+          legacyStarKey={legacyId ? `janeq:preview-stars:v1:${username}:${legacyId}` : undefined} /> : null}
+        {error ? <Stack align="start" role="alert"><Text color="red.700">{error}</Text><Button variant="outline" onClick={() => {
+          setError('')
+          setShowSkeleton(false)
+          setAttempt((value) => value + 1)
+        }}>Try again</Button></Stack> : null}
+        <SetHistorySection setId={setId} onSessionExpired={onSessionExpired} />
+      </Grid>
+      <TestModeDialog open={showTestMode} onOpenChange={setShowTestMode} onSelectMode={handleSelectMode} />
+    </>
+  )
 }

@@ -3,11 +3,11 @@ import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
 from hashlib import sha256
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect
@@ -26,18 +26,25 @@ class TestPaper(BaseModel):
 class TestAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question_id: str
-    selected_ids: list[str] = Field(min_length=1)
+    selected_ids: list[str]
 
 
 class TestSubmission(BaseModel):
     model_config = ConfigDict(extra="forbid")
     revision: int = Field(strict=True, examples=[1])
     submission_id: UUID | None = Field(default=None, description="Reuse this UUID when retrying the same submission.")
+    allow_unanswered: bool = Field(default=False, strict=True, description="Set after confirming that blank answers should be graded zero.")
     answers: list[TestAnswer] = Field(min_length=1, examples=[[
         {"question_id": "q15", "selected_ids": ["q15-a"]},
         {"question_id": "q16", "selected_ids": ["q16-a"]},
         {"question_id": "q24", "selected_ids": ["q24-a"]},
     ]])
+
+    @model_validator(mode="after")
+    def require_confirmation_for_blank_answers(self) -> Self:
+        if not self.allow_unanswered and any(not answer.selected_ids for answer in self.answers):
+            raise ValueError("Confirm the submission before leaving answers blank.")
+        return self
 
 
 class DraftTest(BaseModel):
@@ -91,11 +98,11 @@ def grade_test(bank: QuestionBank, submission: TestSubmission) -> list[GradedQue
         question = bank.questions.get(answer.question_id)
         if question is None or answer.question_id in selections:
             raise invalid_answer("Submit each question exactly once.", index, "question_id")
-        if not question.accepts(answer.selected_ids):
+        if answer.selected_ids and not question.accepts(answer.selected_ids):
             raise invalid_answer("Choose valid options for this question.", index, "selected_ids")
         selections[answer.question_id] = answer.selected_ids
     if len(selections) != len(bank.questions):
-        raise invalid_answer("Answer every question before submitting.")
+        raise invalid_answer("Include an entry for every question.")
 
     return [
         grade_question(question, selections[question_id], bank.correct_ids[question_id])

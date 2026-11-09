@@ -18,9 +18,11 @@ class TestResultsTests(TestCase):
     def setUp(self) -> None:
         directory = self.enterContext(TemporaryDirectory())
         self.database = Path(directory) / "test-results.sqlite3"
+        self.exports = Path(directory) / "pdf"
         self.credentials = {"username": "review", "password": "test-password"}
         with patch.dict(os.environ, {
             "JANEQ_DB_PATH": str(self.database),
+            "JANEQ_PDF_EXPORT_DIR": str(self.exports),
             "JANEQ_DEMO_USERNAME": self.credentials["username"],
             "JANEQ_DEMO_PASSWORD": self.credentials["password"],
             "JANEQ_SESSION_SECRET": "disposable-test-session-secret-12345",
@@ -136,6 +138,78 @@ class TestResultsTests(TestCase):
         self.assertEqual(self.client.get(detail).status_code, 404)
         self.assertEqual(self.client.get(history, params={"before": saved["attempt_id"]}).status_code, 404)
 
+    def test_history_filters_by_set_before_pagination_and_accepts_legacy_references(self) -> None:
+        self.sign_in()
+        history = "/api/test-attempts"
+        older = self.submit().json()
+        with closing(connect(self.database)) as connection:
+            set_id = connection.execute("SELECT id FROM study_sets WHERE legacy_id = 'html-css'").fetchone()["id"]
+        paper = self.client.get(f"/api/study-sets/{set_id}/test").json()
+        newer = self.client.post(f"/api/study-sets/{set_id}/test", json={
+            "revision": paper["revision"],
+            "answers": [{"question_id": q["id"], "selected_ids": [q["options"][0]["id"]]} for q in paper["questions"]],
+        }).json()
+        other = self.client.post("/api/study-sets/python/timed-test", json={
+            "start_id": str(uuid4()), "duration_minutes": 1,
+        }).json()
+        other_result = self.client.post(f"{history}/{other['attempt_id']}/finish").json()
+
+        global_page = self.client.get(history, params={"limit": 1}).json()
+        self.assertEqual(global_page["attempts"][0]["attempt_id"], other_result["attempt_id"])
+        filtered = self.client.get(history, params={"set_id": set_id, "limit": 1}).json()
+        self.assertEqual(filtered["attempts"][0]["attempt_id"], newer["attempt_id"])
+        next_page = self.client.get(history, params={"set_id": "html-css", "before": filtered["next_before"]}).json()
+        self.assertEqual([attempt["attempt_id"] for attempt in next_page["attempts"]], [older["attempt_id"]])
+        self.assertEqual(self.client.get(history, params={"set_id": set_id, "before": other["attempt_id"]}).status_code, 404)
+
+    def test_export_archives_pdf_by_attempt_and_retries_replace_the_same_file(self) -> None:
+        self.sign_in()
+        result = self.submit().json()
+        attempt_id = result["attempt_id"]
+        path = f"/api/test-attempts/{attempt_id}/pdf"
+        file = self.exports / f"{attempt_id}.pdf"
+        headers = {"Content-Type": "application/pdf"}
+        sample = Path(__file__).resolve().parents[2] / "docs" / "features" / "test-results.sample.pdf"
+        content = sample.read_bytes()
+
+        for exported in (content, content + b"\n"):
+            response = self.client.put(path, headers=headers, content=exported)
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertEqual(response.json(), {"saved": True})
+            self.assertEqual(response.headers["Cache-Control"], "no-store")
+            self.assertEqual(file.read_bytes(), exported)
+        self.assertEqual(list(self.exports.iterdir()), [file])
+
+        invalid = b"%PDF-1.7\nnot a PDF document\n%%EOF\n"
+        self.assertEqual(self.client.put(path, headers=headers, content=invalid).status_code, 400)
+        self.assertEqual(file.read_bytes(), content + b"\n")
+
+        self.client.app.state.pdf_export_dir = self.exports / file.name
+        self.assertEqual(self.client.put(path, headers=headers, content=content).status_code, 503)
+        self.client.app.state.pdf_export_dir = None
+        self.assertEqual(self.client.put(path, headers=headers, content=content).json(), {"saved": False})
+        self.assertEqual(file.read_bytes(), content + b"\n")
+
+    def test_export_rejects_unsigned_unknown_incomplete_and_invalid_uploads(self) -> None:
+        headers = {"Content-Type": "application/pdf"}
+        self.assertEqual(self.client.put(f"/api/test-attempts/{uuid4()}/pdf", headers=headers).status_code, 401)
+        self.sign_in()
+        attempt_id = self.submit().json()["attempt_id"]
+        path = f"/api/test-attempts/{attempt_id}/pdf"
+        active = self.client.post("/api/study-sets/html-css/timed-test", json={
+            "start_id": str(uuid4()), "duration_minutes": 1,
+        }).json()
+        self.assertEqual(self.client.put(f"/api/test-attempts/{active['attempt_id']}/pdf", headers=headers).status_code, 404)
+        self.assertEqual(self.client.put(path, content=b"unknown type").status_code, 415)
+        self.assertEqual(self.client.put(path, headers=headers, content=b"%PDF-1.4\n").status_code, 400)
+        with patch("app.test_pdf.MAX_PDF_BYTES", 16):
+            self.assertEqual(self.client.put(path, headers=headers, content=b"x" * 17).status_code, 413)
+        self.client.app.state.demo_username = "other-reviewer"
+        self.credentials["username"] = "other-reviewer"
+        self.sign_in()
+        self.assertEqual(self.client.put(path, headers=headers).status_code, 404)
+        self.assertFalse(self.exports.exists())
+
     def test_startup_adds_history_to_an_existing_database(self) -> None:
         with closing(connect(self.database)) as connection, connection:
             connection.execute("DROP TABLE test_attempts")
@@ -182,3 +256,23 @@ class TestResultsTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response.json()["score"], expected_score)
                 self.assertEqual(response.json()["questions"][0]["correct_ids"], ["q15-a", "q15-b"])
+
+    def test_confirmed_blank_answers_are_graded_zero_and_saved(self) -> None:
+        self.sign_in()
+        payload = {
+            "revision": 1, "submission_id": str(uuid4()),
+            "answers": [
+                {"question_id": "q15", "selected_ids": []},
+                {"question_id": "q16", "selected_ids": ["q16-c"]},
+                {"question_id": "q24", "selected_ids": []},
+            ],
+        }
+        self.assertEqual(self.client.post(self.path, json=payload).status_code, 422)
+        confirmed = {**payload, "allow_unanswered": True}
+        response = self.client.post(self.path, json=confirmed)
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual((result["score"], result["total"]), (1, 3))
+        self.assertEqual([question["selected_ids"] for question in result["questions"]], [[], ["q16-c"], []])
+        self.assertEqual(self.client.post(self.path, json=confirmed).json(), result)
+        self.assertEqual(self.client.post(self.path, json=payload).status_code, 422)

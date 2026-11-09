@@ -15,6 +15,7 @@ dist/
 *.sqlite3
 *.sqlite3-*
 *.log
+/output/pdf/test-results/
 
 .idea/
 .vscode/

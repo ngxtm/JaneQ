@@ -3,8 +3,13 @@ import { useLayoutEffect, useMemo, useSyncExternalStore, type MouseEvent } from 
 export const homeHref = import.meta.env.BASE_URL
 export const mySetsHref = `${homeHref}my-sets`
 export const createSetHref = `${mySetsHref}/new`
+export const historyHref = `${homeHref}history`
 const notFoundHref = `${homeHref}404`
 const navigationEvent = 'janeq:navigate'
+
+export function historyResultHref(attemptId: string) {
+  return `${historyHref}/${encodeURIComponent(attemptId)}`
+}
 
 type SetMode = 'learn' | 'test' | 'editor'
 type SetRoute = { kind: 'set'; id: string; mode: 'overview' | SetMode }
@@ -130,6 +135,19 @@ function readRoute(path: string) {
   if (path === homeHref) return { kind: 'home' as const }
   if (path === mySetsHref || path === `${mySetsHref}/`) return { kind: 'my-sets' as const }
   if (path === createSetHref || path === `${createSetHref}/`) return { kind: 'create' as const }
+  if (path === historyHref || path === `${historyHref}/`) return { kind: 'history' as const }
+  const historyPrefix = `${historyHref}/`
+  if (path.startsWith(historyPrefix)) {
+    const segment = path.slice(historyPrefix.length).replace(/\/$/, '')
+    if (segment && !segment.includes('/')) {
+      try {
+        const attemptId = decodeURIComponent(segment)
+        return { kind: 'history-result' as const, attemptId }
+      } catch {
+        return null
+      }
+    }
+  }
   if (path === notFoundHref || path === `${notFoundHref}/`) return null
   return path.startsWith(homeHref) ? readSetRoute(path.slice(homeHref.length)) : null
 }

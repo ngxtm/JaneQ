@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, model_serializer
 
 from .question_bank import Question
 
@@ -29,6 +29,14 @@ class TestAttemptSummary(BaseModel):
         description="Server time when the attempt was completed, in UTC.",
         examples=["2026-11-08T09:30:00Z"],
     )
+    time_per_question: int | None = Field(default=None, description="Configured seconds per question for timed tests.")
+
+    @model_serializer(mode="wrap")
+    def _serialize(self, handler):
+        data = handler(self)
+        if isinstance(data, dict) and data.get("time_per_question") is None:
+            data.pop("time_per_question", None)
+        return data
 
 
 class TestResult(TestAttemptSummary):
@@ -51,9 +59,11 @@ def grade_question(
 def build_result(
     *, attempt_id: UUID, mode: TestMode, set_id: str, title: str, revision: int,
     username: str, submitted_at: datetime, questions: list[GradedQuestion],
+    time_per_question: int | None = None,
 ) -> TestResult:
     return TestResult(
         attempt_id=attempt_id, mode=mode, set_id=set_id, title=title, revision=revision,
         score=sum(question.correct for question in questions), total=len(questions),
         submitted_by=username, submitted_at=submitted_at, questions=questions,
+        time_per_question=time_per_question,
     )

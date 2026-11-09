@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { replaceStudySetAlias, studySetHref, type LibraryRoute } from '../navigation/app-location'
+import { readTestMode } from '../test/test-mode'
 import type { StudySet } from './api'
 
 const recentLimit = 16
@@ -32,7 +33,11 @@ export function useLibraryNavigation(username: string, sets: StudySet[], route: 
     ? sets.find((set) => set.id === route.id) ?? sets.find((set) => set.legacy_id === route.id)
     : undefined
   const selectedId = selectedSet?.id
-  const mode = route.kind === 'set' ? needsEditor(selectedSet) ? 'editor' : route.mode : undefined
+  const savedTestMode = route.kind === 'set' && route.mode === 'test' ? readTestMode(selectedId ?? route.id) : null
+  const resumingTimedTest = savedTestMode?.kind === 'timed'
+  const mode = route.kind === 'set'
+    ? needsEditor(selectedSet) && !resumingTimedTest ? 'editor' : route.mode
+    : undefined
   const editorId = route.kind === 'set' && mode === 'editor' ? selectedId ?? route.id : undefined
 
   if (selectedId && recentIds[0] !== selectedId) {
@@ -78,7 +83,7 @@ export function useLibraryNavigation(username: string, sets: StudySet[], route: 
 
   const viewingSet = route.kind === 'set'
   return {
-    selectedSet, recent, recentCount: recentIds.length, editorId,
+    selectedSet, recent, recentCount: recentIds.length, editorId, savedTestMode, resumingTimedTest,
     viewingSet, viewingLearn: viewingSet && route.mode === 'learn', viewingTest: viewingSet && route.mode === 'test',
     removeUnavailableRecentSets,
   }

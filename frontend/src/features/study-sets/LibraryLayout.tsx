@@ -11,6 +11,8 @@ type LibraryLayoutProps = PropsWithChildren<{
   signingOut: boolean
   signOutError: string
   onSignOut: () => void
+  showFooter?: boolean
+  compactContent?: boolean
 }>
 
 function Brand({ size }: { size: 'sm' | 'lg' }) {
@@ -48,23 +50,24 @@ function LibraryNavigation({ username, inMySets, signingOut, onSignOut }: Naviga
 }
 
 export function LibraryLayout({
-  children, username, inMySets, signingOut, signOutError, onSignOut,
+  children, username, inMySets, signingOut, signOutError, onSignOut, showFooter = true, compactContent = false,
 }: LibraryLayoutProps) {
   return (
     <Flex onClick={followLibraryLink} direction="column" minH="100svh" bg="janeq.library" color="janeq.ink" fontFamily="body">
       <LibraryNavigation username={username} inMySets={inMySets} signingOut={signingOut} onSignOut={onSignOut} />
-      <Container as="main" maxW="7xl" mt="10" pb={{ base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
+      <Container as="main" maxW="7xl" mt={compactContent ? '4' : '10'}
+        pb={compactContent ? '8' : { base: '20', md: '30' }} px={{ base: '4', sm: '8' }} flex="1">
         {signOutError ? <Text role="alert" color="red.700" mb="4">{signOutError}</Text> : null}
         {children}
       </Container>
-      <Box as="footer" bg="white" borderTop="1px solid" borderColor="gray.200">
+      {showFooter ? <Box as="footer" bg="white" borderTop="1px solid" borderColor="gray.200">
         <Container maxW="7xl" px={{ base: '4', sm: '8' }} py="10">
           <HStack justify="space-between">
             <Brand size="sm" />
             <Link href={homeHref} fontSize="sm" color="janeq.muted">Home</Link>
           </HStack>
         </Container>
-      </Box>
+      </Box> : null}
     </Flex>
   )
 }

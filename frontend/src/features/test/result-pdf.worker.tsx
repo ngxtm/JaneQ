@@ -34,6 +34,7 @@ const styles = StyleSheet.create({
   questionNumber: { fontSize: 9, color: '#4c5f77', fontWeight: 700 },
   correct: { fontSize: 9, fontWeight: 700, color: '#186345' },
   incorrect: { fontSize: 9, fontWeight: 700, color: '#a12532' },
+  timedOut: { fontSize: 9, fontWeight: 700, color: '#c53030' },
   prompt: { marginBottom: 5 },
   answer: { flexDirection: 'row', gap: 10, fontSize: 10.5, marginTop: 3 },
   answerLabel: { width: 95, fontWeight: 700, color: '#4c5f77' },
@@ -106,6 +107,11 @@ function ResultPdf({ result, exportedAt, mark, fonts }: PdfRequest & { fonts: Pd
             <Text style={styles.scoreDetails}>{result.score} correct / {result.total - result.score} incorrect</Text>
           </View>
           <View style={styles.submission}>
+            {result.mode === 'timed' ? (
+              <Text style={styles.metadata}>
+                <Text style={styles.label}>Mode</Text>  Timed Test{result.time_per_question ? ` (${result.time_per_question}s / question)` : ''}
+              </Text>
+            ) : null}
             <Text style={styles.metadata}><Text style={styles.label}>Submitted by</Text>  {fontRuns(fonts, result.submitted_by)}</Text>
             <Text style={styles.metadata}><Text style={styles.label}>Submitted at</Text>  {submittedAt}</Text>
           </View>
@@ -119,12 +125,19 @@ function ResultPdf({ result, exportedAt, mark, fonts }: PdfRequest & { fonts: Pd
             <View style={style} key={question.id} wrap={!fitsWithReview(question.prompt, selected, correct)}>
               <View style={styles.questionHeading} minPresenceAhead={32}>
                 <Text style={styles.questionNumber}>Question {index + 1}</Text>
-                <Text style={question.correct ? styles.correct : styles.incorrect}>
-                  {question.correct ? 'Correct' : 'Incorrect'}
+                <Text style={question.correct ? styles.correct : (question.timed_out ? styles.timedOut : styles.incorrect)}>
+                  {question.correct ? 'Correct' : question.timed_out ? 'Time expired' : question.unanswered ? 'Unanswered' : 'Incorrect'}
                 </Text>
               </View>
               <Text style={styles.prompt}>{fontRuns(fonts, question.prompt)}</Text>
-              <AnswerLine label="Your answer" answers={selected} fonts={fonts} />
+              {question.timed_out ? (
+                <View style={styles.answer}>
+                  <Text style={[styles.answerLabel, { color: '#c53030' }]}>Time expired</Text>
+                  <Text style={[styles.answerValues, { color: '#c53030' }]}>No answer submitted before time expired</Text>
+                </View>
+              ) : (
+                <AnswerLine label="Your answer" answers={selected} fonts={fonts} />
+              )}
               <AnswerLine label="Correct answer" answers={correct} fonts={fonts} />
             </View>
           )

@@ -22,7 +22,7 @@
 
 - **Browse 18 built-in study sets with 281 questions** across topics such as React, Python, SQL, HTTP, and cybersecurity. The catalog includes both single-answer and multiple-select questions. [Question bank](docs/features/builtin-sets.md)
 - **Build mastery one question at a time.** Flip through a set’s flashcard preview, then switch to Learn for immediate feedback and saved progress. [Study Set and Learn](docs/features/learn.md)
-- **Take a practice test.** Submit the full set for a score, review each answer, and download a PDF report. [Sample PDF report](docs/features/test-results.sample.pdf)
+- **Take a practice or timed test.** Jump between questions, submit for a score, and review or download the results. [Sample PDF report](docs/features/test-results.sample.pdf)
 - **Create private study sets.** Write questions and answer choices, mark every correct option, and revisit your sets from **My sets**. [My sets and Create/Edit](docs/features/study-set-authoring.md)
 
 ## Create your own study set
@@ -75,7 +75,7 @@ Sign in with the credentials from `backend/.env`, open a built-in set, and selec
 
 Vite proxies `/api` to FastAPI on port 8000. The proxied health endpoint should return `{"status":"ok"}`. [Health check](http://127.0.0.1:5173/api/health) · [Interactive API reference](http://127.0.0.1:8000/docs)
 
-JaneQ seeds `backend/data/janeq-mvp.sqlite3` on first startup. Use `JANEQ_DB_PATH` to start with a separate SQLite file. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. [Database setup and upgrades](docs/database.md#built-in-data-and-startup)
+JaneQ seeds `backend/data/janeq-mvp.sqlite3` on first startup. Use `JANEQ_DB_PATH` to start with a separate SQLite file. Set `JANEQ_COOKIE_SECURE=true` when serving JaneQ over HTTPS. In a Git checkout, **Download PDF** saves a second copy under `output/pdf/test-results/`. Set `JANEQ_PDF_EXPORT_DIR` to use a different directory. [Database setup and upgrades](docs/database.md#built-in-data-and-startup) · [PDF export](docs/features/test-results.md#pdf-archive)
 
 ## Documentation
 

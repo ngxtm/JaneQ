@@ -11,6 +11,7 @@ from .learn import router as learn_router
 from .study_sets import router as study_sets_router
 from .test import router as test_router
 from .test_history import router as test_history_router
+from .test_pdf import pdf_export_directory
 from .timed_test import router as timed_test_router
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
     app.state.database_path = BACKEND_DIR / os.getenv(
         "JANEQ_DB_PATH", "data/janeq-mvp.sqlite3"
     )
+    app.state.pdf_export_dir = pdf_export_directory(BACKEND_DIR.parent, os.getenv("JANEQ_PDF_EXPORT_DIR"))
     app.add_middleware(
         SessionMiddleware,
         secret_key=secret,

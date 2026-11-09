@@ -1,4 +1,4 @@
-import { Box, Button, Heading, HStack, IconButton, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
+import { Box, Button, Flex, Heading, HStack, IconButton, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowLeft, IconEditCircle } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
@@ -6,6 +6,8 @@ import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
 import { SetDeleteMenu, type OnSetDeleted } from '../authoring/SetDeleteMenu'
 import { homeHref, mySetsHref, navigateLibrary, studySetHref, type LibraryRoute } from '../navigation/app-location'
+import { TestModeDialog } from '../test/TestModeDialog'
+import { saveTestMode, type TestMode } from '../test/test-mode'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
 import { LibraryLayout } from './LibraryLayout'
@@ -17,6 +19,8 @@ import './bones/registry'
 
 const Learn = lazy(() => import('../learn/Learn'))
 const Test = lazy(() => import('../test/Test'))
+const TestHistory = lazy(() => import('../test-history/TestHistory'))
+const HistoryResults = lazy(() => import('../test-history/HistoryResults'))
 const MySets = lazy(() => import('../authoring/MySets'))
 const SetEditor = lazy(() => import('../authoring/SetEditor'))
 const NotFoundPage = lazy(() => import('../navigation/NotFoundPage'))
@@ -83,7 +87,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   }, [setId, status])
 
   return (
-    <Stack align="start" gap="4">
+    <Stack align="start" gap="2">
       <Button asChild variant="ghost" size="xs" h="6" minH="6" fontFamily="body" color="janeq.ink">
         <a href={custom ? mySetsHref : homeHref}><IconArrowLeft size={18} />{custom ? 'Back to My sets' : 'Back to Home'}</a>
       </Button>
@@ -93,15 +97,13 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
         <div aria-hidden={pending || undefined}>
           <Skeleton name="study-set-overview" loading={pending && showSkeleton} animate="solid" color="var(--chakra-colors-janeq-divider)">
             {status === 'loaded' && set ? (
-              <Stack gap="4">
-                <Heading as="h1" ref={heading} tabIndex={-1} fontFamily="heading" fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
-                  lineHeight={{ base: '1.2', md: '1' }} overflowWrap="anywhere" _focus={{ outline: 'none' }}>
-                  {set.title}
-                </Heading>
-                <HStack gap="3" justify="space-between" minH="8">
-                  <Text color="janeq.muted" fontWeight="semibold">
-                    {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
-                  </Text>
+              <Stack gap="2">
+                <HStack gap="3" align="start" justify="space-between">
+                  <Heading as="h1" ref={heading} tabIndex={-1} minW="0" fontFamily="heading"
+                    fontSize={{ base: '4xl', md: '5xl' }} fontWeight="bold"
+                    lineHeight={{ base: '1.2', md: '1' }} overflowWrap="anywhere" _focus={{ outline: 'none' }}>
+                    {set.title}
+                  </Heading>
                   {custom ? (
                     <HStack gap="0" border="1px solid" borderColor="janeq.line" rounded="lg" flexShrink="0">
                       <IconButton asChild variant="ghost" size="sm" w="10" roundedEnd="0" color="janeq.focus"
@@ -112,8 +114,13 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
                     </HStack>
                   ) : null}
                 </HStack>
-                {set.description ? <Text>{set.description}</Text> : null}
-                {set.status === 'ready' ? <Box mt="6"><StudySetModes key={set.id} setId={set.id} legacyId={set.legacy_id}
+                <Flex align="baseline" wrap="wrap" columnGap="4" rowGap="1">
+                  <Text color="janeq.muted" fontWeight="semibold">
+                    {set.status === 'draft' ? 'Draft' : 'Ready'} · {set.question_count} {set.question_count === 1 ? 'question' : 'questions'}
+                  </Text>
+                  {set.description ? <Text maxW="full" overflowWrap="anywhere">{set.description}</Text> : null}
+                </Flex>
+                {set.status === 'ready' ? <Box mt="3"><StudySetModes key={set.id} setId={set.id} legacyId={set.legacy_id}
                   username={username} onSessionExpired={onSessionExpired} loadPreview={loadPreview} /></Box>
                   : <Text role="status">This set is unavailable for study.</Text>}
               </Stack>
@@ -125,6 +132,38 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   )
 }
 
+function SetTestRunner({ setId, setTitle, initialMode, canStartNewTest, onSessionExpired }: {
+  setId: string
+  setTitle?: string
+  initialMode: TestMode | null
+  canStartNewTest: boolean
+  onSessionExpired: () => void
+}) {
+  const [mode, setMode] = useState(initialMode)
+
+  function handleSelectMode(selected: TestMode) {
+    saveTestMode(setId, selected)
+    setMode(selected)
+  }
+
+  if (!mode) {
+    return (
+      <TestModeDialog
+        open={true}
+        onOpenChange={(open) => { if (!open) navigateLibrary(studySetHref(setId)) }}
+        onSelectMode={handleSelectMode}
+      />
+    )
+  }
+
+  return (
+    <Suspense fallback={<VisuallyHidden role="status">Loading Test…</VisuallyHidden>}>
+      <Test setId={setId} setTitle={setTitle} canStartNewTest={canStartNewTest}
+        mode={mode} onSessionExpired={onSessionExpired} />
+    </Suspense>
+  )
+}
+
 export default function Home({ route, username, signingOut, signOutError, onSignOut, onSessionExpired }: HomeProps) {
   const [state, setState] = useState<StudySetsState>({ kind: 'loading' })
   const [attempt, setAttempt] = useState(0)
@@ -132,8 +171,10 @@ export default function Home({ route, username, signingOut, signOutError, onSign
   const [previewLoader] = useState(createPreviewLoader)
   const catalogRequest = useRef<AbortController>(null)
   const sets = state.kind === 'loaded' ? state.sets : emptySets
-  const { selectedSet, recent, recentCount, editorId, viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets } =
-    useLibraryNavigation(username, sets, route)
+  const {
+    selectedSet, recent, recentCount, editorId, savedTestMode, resumingTimedTest,
+    viewingSet, viewingLearn, viewingTest, removeUnavailableRecentSets,
+  } = useLibraryNavigation(username, sets, route)
   const inMySets = route.kind === 'my-sets' || route.kind === 'create' || editorId !== undefined || selectedSet?.source_kind === 'custom'
 
   useEffect(() => previewLoader.clear, [previewLoader])
@@ -195,7 +236,7 @@ export default function Home({ route, username, signingOut, signOutError, onSign
     if (shouldNavigate) navigateLibrary(mySetsHref)
   }
 
-  if (viewingSet && !editorId && state.kind === 'loaded' && !selectedSet) {
+  if (viewingSet && !editorId && !resumingTimedTest && state.kind === 'loaded' && !selectedSet) {
     return <Suspense fallback={null}><NotFoundPage studySet /></Suspense>
   }
 
@@ -210,12 +251,24 @@ export default function Home({ route, username, signingOut, signOutError, onSign
         <MySets sets={sets} status={state.kind} showSkeleton={showSkeleton} onRetry={retry} />
       </Suspense>
     )
+    if (route.kind === 'history') return (
+      <Suspense fallback={<VisuallyHidden role="status">Loading test history…</VisuallyHidden>}>
+        <TestHistory onSessionExpired={onSessionExpired} />
+      </Suspense>
+    )
+    if (route.kind === 'history-result') return (
+      <Suspense fallback={<VisuallyHidden role="status">Loading test results…</VisuallyHidden>}>
+        <HistoryResults key={route.attemptId} attemptId={route.attemptId} onSessionExpired={onSessionExpired} />
+      </Suspense>
+    )
     if (viewingSet) {
-      if (viewingTest && selectedSet) return (
-        <Suspense fallback={<VisuallyHidden role="status">Loading Test…</VisuallyHidden>}>
-          <Test key={selectedSet.id} set={selectedSet} onSessionExpired={onSessionExpired} />
-        </Suspense>
-      )
+      if (route.kind === 'set' && viewingTest && (selectedSet || resumingTimedTest)) {
+        const setId = selectedSet?.id ?? route.id
+        return (
+          <SetTestRunner key={setId} setId={setId} setTitle={selectedSet?.title} initialMode={savedTestMode}
+            canStartNewTest={selectedSet?.status === 'ready'} onSessionExpired={onSessionExpired} />
+        )
+      }
       if (viewingLearn && selectedSet) return (
         <Suspense fallback={<VisuallyHidden role="status">Loading Learn…</VisuallyHidden>}>
           <Learn key={selectedSet.id} setId={selectedSet.id} onSessionExpired={onSessionExpired} />
@@ -252,7 +305,8 @@ export default function Home({ route, username, signingOut, signOutError, onSign
 
   return (
     <UiProvider>
-      <LibraryLayout username={username} inMySets={inMySets} signingOut={signingOut} signOutError={signOutError} onSignOut={onSignOut}>
+      <LibraryLayout username={username} inMySets={inMySets} signingOut={signingOut} signOutError={signOutError}
+        onSignOut={onSignOut} showFooter={!viewingTest} compactContent={route.kind === 'set' && route.mode === 'overview'}>
         {renderLibrary()}
       </LibraryLayout>
     </UiProvider>

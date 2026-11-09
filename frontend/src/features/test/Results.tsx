@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Heading, HStack, ProgressCircle, Stack, Text } from '@chakra-ui/react'
+import { Badge, Box, Button, Flex, Heading, HStack, ProgressCircle, Stack, Text } from '@chakra-ui/react'
 import { IconArrowLeft, IconCircleCheck, IconCircleX, IconRotateClockwise2 } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { studySetHref } from '../navigation/app-location'
@@ -7,7 +7,19 @@ import { DownloadResultButton } from './DownloadResultButton'
 import { reviewResult } from './result-review'
 import { ReviewedQuestion } from './TestQuestion'
 
-export function Results({ result, onRestart }: { result: TestResult; onRestart: () => void }) {
+export function Results({
+  result,
+  onRestart,
+  backHref = studySetHref(result.set_id),
+  backLabel,
+  onSessionExpired,
+}: {
+  result: TestResult
+  onRestart?: () => void
+  backHref?: string
+  backLabel?: string
+  onSessionExpired: () => void
+}) {
   const heading = useRef<HTMLHeadingElement>(null)
   const [downloadError, setDownloadError] = useState('')
   useEffect(() => {
@@ -22,18 +34,30 @@ export function Results({ result, onRestart }: { result: TestResult; onRestart: 
     <Stack gap="6">
       <Flex direction={{ base: 'column', sm: 'row' }} align={{ base: 'start', sm: 'center' }} justify="space-between" gap="4">
         <Box>
-          <Text color="janeq.muted" fontSize="sm" fontWeight="semibold" overflowWrap="anywhere">{result.title}</Text>
+          <HStack gap="2" align="center" mb="1" flexWrap="wrap">
+            <Text color="janeq.muted" fontSize="sm" fontWeight="semibold" overflowWrap="anywhere">{result.title}</Text>
+            <Text color="janeq.muted" fontSize="sm" aria-hidden="true">·</Text>
+            {result.mode === 'timed' ? (
+              <Badge colorPalette="orange" variant="subtle" size="sm">
+                Timed Test{result.time_per_question ? ` · ${result.time_per_question}s / question` : ''}
+              </Badge>
+            ) : (
+              <Badge variant="outline" size="sm" color="janeq.muted">Standard Test</Badge>
+            )}
+          </HStack>
           <Heading as="h1" ref={heading} tabIndex={-1} fontSize={{ base: '3xl', md: '4xl' }} _focus={{ outline: 'none' }}>
             Your results
           </Heading>
         </Box>
         <Flex wrap="wrap" gap="2">
-          <DownloadResultButton result={review} onError={setDownloadError} />
-          <Button variant="outline" color="janeq.focus" borderColor="janeq.line" _hover={{ bg: 'blue.50' }} onClick={onRestart}>
-            <IconRotateClockwise2 size={18} aria-hidden="true" /> New test
-          </Button>
+          <DownloadResultButton result={review} onError={setDownloadError} onSessionExpired={onSessionExpired} />
+          {onRestart ? (
+            <Button variant="outline" color="janeq.focus" borderColor="janeq.line" _hover={{ bg: 'blue.50' }} onClick={onRestart}>
+              <IconRotateClockwise2 size={18} aria-hidden="true" /> New test
+            </Button>
+          ) : null}
           <Button variant="outline" borderColor="janeq.line" asChild>
-            <a href={studySetHref(result.set_id)}><IconArrowLeft size={18} aria-hidden="true" /> Back</a>
+            <a href={backHref}><IconArrowLeft size={18} aria-hidden="true" /> {backLabel ?? 'Back'}</a>
           </Button>
         </Flex>
       </Flex>

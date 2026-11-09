@@ -64,6 +64,8 @@ CREATE TABLE IF NOT EXISTS test_attempts (
     score INTEGER CHECK (score BETWEEN 0 AND total),
     result_json TEXT,
     state_json TEXT,
+    time_per_question INTEGER,
+    timing_kind TEXT CHECK (timing_kind IN ('sequential', 'paper')),
     UNIQUE (username, mode, request_key),
     CHECK (
         (result_json IS NOT NULL AND state_json IS NULL AND submitted_at IS NOT NULL AND score IS NOT NULL)
@@ -116,11 +118,33 @@ def upgrade_study_sets(connection: sqlite3.Connection) -> None:
     connection.execute("CREATE UNIQUE INDEX IF NOT EXISTS study_sets_legacy_id ON study_sets(legacy_id)")
 
 
+def upgrade_test_attempts(connection: sqlite3.Connection) -> None:
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(test_attempts)")}
+    if "time_per_question" not in columns:
+        connection.execute("ALTER TABLE test_attempts ADD COLUMN time_per_question INTEGER")
+    if "timing_kind" in columns:
+        return
+    connection.execute("ALTER TABLE test_attempts ADD COLUMN timing_kind TEXT CHECK (timing_kind IN ('sequential', 'paper'))")
+    if "time_per_question" not in columns:
+        connection.execute("UPDATE test_attempts SET timing_kind = 'sequential' WHERE mode = 'timed'")
+        return
+    # Older completed snapshots without timing metadata can still be read by ID or start key.
+    connection.execute("""
+        UPDATE test_attempts SET timing_kind = CASE
+            WHEN json_extract(state_json, '$.duration_minutes') IS NOT NULL THEN 'paper'
+            WHEN state_json IS NOT NULL OR time_per_question IS NOT NULL
+                OR json_extract(result_json, '$.time_per_question') IS NOT NULL THEN 'sequential'
+        END
+        WHERE mode = 'timed'
+    """)
+
+
 def initialize_database(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with closing(connect(path)) as connection, connection:
         # Acquire the write lock before checking the seed marker.
         connection.executescript("BEGIN IMMEDIATE;\n" + SCHEMA)
+        upgrade_test_attempts(connection)
         upgrade_study_sets(connection)
         already_seeded = connection.execute(
             "SELECT 1 FROM seed_history WHERE name = ?", (SEED_NAME,)
@@ -202,7 +226,7 @@ def read_study_set_summaries(
 def read_study_set(connection: sqlite3.Connection, set_id: str, username: str) -> sqlite3.Row | None:
     return connection.execute(
         f"""
-        SELECT id, title, description, saved_at, source_kind, revision FROM study_sets
+        SELECT id, legacy_id, title, description, saved_at, source_kind, revision FROM study_sets
         WHERE (id = :id OR legacy_id = :id) AND {VISIBLE_STUDY_SETS}
         ORDER BY id = :id DESC LIMIT 1
         """,
