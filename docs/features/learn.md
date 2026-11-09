@@ -2,7 +2,7 @@
 
 ## Scope and order
 
-The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Study Set has an active **Learn** entry and a working flashcard preview. The standalone **Flashcards** card is reserved. **Test** opens the [Test, Results, and PDF download flow](test-results.md) on Ready sets.
+The flow is **Home → Study Set → Learn → round review → finish → Study Set**. Ready sets offer **Learn** and **Test** alongside an interactive flashcard preview. [Test, Results, and PDF download](test-results.md)
 
 ## Study set URLs and preview loading
 
@@ -27,8 +27,8 @@ The overview puts a quiet **Back to Home** link, title, and question count above
 | Area | JaneQ design target |
 | --- | --- |
 | Header | Use a bold 48 px title on desktop and 36 px on mobile. Show the question count and Ready or Draft status. Owned sets show the attached **Edit set** and **More actions** icons on the right of the metadata row. The menu reuses the editor's delete confirmation. [Authoring and deletion](study-set-authoring.md) |
-| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and layered shadow. Use 24 px Tabler icons with 2 px strokes, a blue foreground, and an offset blue shadow. Hover and keyboard focus move the icon layers. Reduced motion keeps the layers still. Disabled cards expose their unavailable state to assistive technology. |
-| Responsive layout | The desktop preview sits between two 160 px columns with 32 px gaps. At tablet widths the three mode cards form one row. Mobile uses two columns and moves the outline controls and a Settings icon below the preview. |
+| Mode cards | Desktop uses 160 × 59 px cards with a 3 px bottom border and layered shadow. Use 24 px Tabler icons with 2 px strokes, a blue foreground, and an offset blue shadow. Hover and keyboard focus move the icon layers. Reduced motion keeps the layers still. |
+| Responsive layout | On desktop, Learn and Test stack beside the preview, which sits between two 160 px columns with 32 px gaps. On tablet and mobile, the mode links share an equal-width row above the preview, with the outline controls and a Settings icon below it. |
 | Flashcard preview | Use a 500 px height, 12 px radius, layered shadow, orange progress stripe, and 48 px previous and next controls. Show the question or answer face, position, and a star action. Use dark blue for outline controls. |
 
 ### Flashcard preview interactions
@@ -100,6 +100,7 @@ Unknown sets return `404` and Draft sets return `409`. Preview and Learn calls g
 
 | Check | How to reproduce | Expected result | Verification |
 | --- | --- | --- | --- |
+| Study mode links | From Home, open the Ready HTML / CSS set at 1440, 768, 390, and 320 px. Tab to **Learn** and press Enter. Return to the overview and click **Test**. On the overview, click the flashcard and press Right Arrow. | The mode navigation contains Learn and Test. They stack on desktop and share an equal-width row on tablet and mobile. Learn shows Round 1, Test loads the questions, and the preview flips and advances. | Pass · Chromium against FastAPI and disposable SQLite. Layout checked at all four widths, Learn and preview interactions at 390 px, and Test at 1440 px. |
 | Study Set appearance | Open the Ready HTML / CSS set at 1440, 390, and 320 px. Check mode and preview styles in DevTools. | The desktop mode card is 160 × 59 px and the preview is 832 × 500 px. At 390 and 320 px the page has no horizontal overflow. | Pass · browser |
 | Study Set interactions | Hover Learn, enable reduced motion, flip the preview, press Right Arrow, toggle Autoplay, open mobile Settings, and use Enter on Learn. | The icon layers move on hover and stay still under reduced motion. The preview flips and advances. Autoplay shows its active color. Settings opens and Learn enters Round 1. | Pass · browser |
 | Learn entry and return | Open Learn, use Back, and open Learn again. | Learn opens for the selected set. Back returns to its overview. | Pass · browser |

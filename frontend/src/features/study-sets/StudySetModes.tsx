@@ -1,6 +1,6 @@
 import { Box, Button, Dialog, Flex, Grid, IconButton, Portal, Stack, Text, VisuallyHidden } from '@chakra-ui/react'
 import {
-  IconArrowsShuffle, IconBrain, IconCards, IconChevronLeft, IconChevronRight, IconReport,
+  IconArrowsShuffle, IconBrain, IconChevronLeft, IconChevronRight, IconReport,
   IconPlayerPlay, IconSettings, IconStar, IconStarFilled,
 } from '@tabler/icons-react'
 import { Skeleton } from 'boneyard-js/react'
@@ -28,35 +28,31 @@ const previewHeight = '500px'
 const previewSkeletonName = 'flashcard-preview'
 const previewSkeletonDelayMs = 200
 
-function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href?: string }) {
-  const content = <>
-    <Box aria-hidden="true" position="relative" boxSize="6" flexShrink="0" css={{ '& svg': { display: 'block' } }}>
-      <Box className="mode-icon-shadow" position="absolute" top="1" left="-1" color="#1a5fff"
-        filter="blur(2px)" opacity="0.3" transition="transform 300ms ease-in-out" _motionReduce={{ transition: 'none' }}>
-        {icon}
-      </Box>
-      <Box className="mode-icon" position="relative" color="#4b83ff"
-        transition="transform 300ms ease-in-out" _motionReduce={{ transition: 'none' }}>
-        {icon}
-      </Box>
-    </Box>
-    <Text as="span" fontFamily="heading" fontSize="md" fontWeight="bold" lineHeight="1.2">{label}</Text>
-  </>
-
+function ModeCard({ label, icon, href }: { label: string; icon: ReactNode; href: string }) {
   return <Flex asChild align="center" gap="3" py="4" px="5" rounded="xl" bg="white" color="janeq.ink"
     borderBottom="3px solid #e2e8f0" boxShadow={modeShadow} minW="0" outline="2px solid transparent"
     transition="transform 150ms ease-in-out, border-color 150ms ease-in-out, box-shadow 150ms ease-in-out"
     _motionReduce={{ transition: 'none' }}
-    _hover={href ? { boxShadow: hoverShadow, borderBottomColor: '#7ea6ff', transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } } : undefined}
+    _hover={{ boxShadow: hoverShadow, borderBottomColor: '#7ea6ff', transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } }}
     _focusVisible={{ outlineColor: '#4b83ff', bg: 'janeq.library' }}
     css={{
       '@media (max-width: 359px)': { px: '2.5', gap: '2' },
-      ...(href ? {
-        '&:is(:hover, :focus-visible) .mode-icon': { transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } },
-        '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
-      } : {}),
+      '&:is(:hover, :focus-visible) .mode-icon': { transform: 'translateY(-2px)', _motionReduce: { transform: 'none' } },
+      '&:is(:hover, :focus-visible) .mode-icon-shadow': { transform: 'translateX(-3px)', _motionReduce: { transform: 'none' } },
     }}>
-    {href ? <a href={href}>{content}</a> : <span role="link" aria-disabled="true">{content}</span>}
+    <a href={href}>
+      <Box aria-hidden="true" position="relative" boxSize="6" flexShrink="0" css={{ '& svg': { display: 'block' } }}>
+        <Box className="mode-icon-shadow" position="absolute" top="1" left="-1" color="#1a5fff"
+          filter="blur(2px)" opacity="0.3" transition="transform 300ms ease-in-out" _motionReduce={{ transition: 'none' }}>
+          {icon}
+        </Box>
+        <Box className="mode-icon" position="relative" color="#4b83ff"
+          transition="transform 300ms ease-in-out" _motionReduce={{ transition: 'none' }}>
+          {icon}
+        </Box>
+      </Box>
+      <Text as="span" fontFamily="heading" fontSize="md" fontWeight="bold" lineHeight="1.2">{label}</Text>
+    </a>
   </Flex>
 }
 
@@ -215,9 +211,8 @@ export function StudySetModes({ setId, legacyId, username, onSessionExpired, loa
   }, [attempt, loadPreview, onSessionExpired, setId])
 
   return <Grid templateColumns={{ base: 'minmax(0, 1fr)', lg: '10rem minmax(0, 1fr) 10rem' }} gap="8" alignItems="start">
-    <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))', lg: '1fr' }} gap="4">
+    <Grid as="nav" aria-label="Study modes" templateColumns={{ base: 'repeat(2, minmax(0, 1fr))', lg: '1fr' }} gap="4">
       <ModeCard label="Learn" icon={<IconBrain size={24} stroke={2} />} href={studySetHref(setId, 'learn')} />
-      <ModeCard label="Flashcards" icon={<IconCards size={24} stroke={2} />} />
       <ModeCard label="Test" icon={<IconReport size={24} stroke={2} />} href={studySetHref(setId, 'test')} />
     </Grid>
     {pending ? <>
