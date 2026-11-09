@@ -1,14 +1,19 @@
+import json
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Annotated, Literal
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect
 from .question_bank import Question, QuestionBank, read_question_bank
+from .test_attempt_store import read_attempt_by_key, save_standard_result
+from .test_results import GradedQuestion, TestResult, build_result, grade_question
 
 
 class TestPaper(BaseModel):
@@ -27,31 +32,12 @@ class TestAnswer(BaseModel):
 class TestSubmission(BaseModel):
     model_config = ConfigDict(extra="forbid")
     revision: int = Field(strict=True, examples=[1])
+    submission_id: UUID | None = Field(default=None, description="Reuse this UUID when retrying the same submission.")
     answers: list[TestAnswer] = Field(min_length=1, examples=[[
         {"question_id": "q15", "selected_ids": ["q15-a"]},
         {"question_id": "q16", "selected_ids": ["q16-a"]},
         {"question_id": "q24", "selected_ids": ["q24-a"]},
     ]])
-
-
-class GradedQuestion(Question):
-    selected_ids: list[str]
-    correct_ids: list[str]
-    correct: bool
-
-
-class TestResult(BaseModel):
-    set_id: str
-    title: str
-    revision: int
-    score: int
-    total: int
-    submitted_by: str = Field(description="Username from the signed session.", examples=["review"])
-    submitted_at: AwareDatetime = Field(
-        description="Server time when the successful submission was received, in UTC.",
-        examples=["2026-11-08T09:30:00Z"],
-    )
-    questions: list[GradedQuestion]
 
 
 class DraftTest(BaseModel):
@@ -63,12 +49,16 @@ class StaleTest(BaseModel):
     code: Literal["revision_changed"]
 
 
+class SubmissionKeyConflict(BaseModel):
+    code: Literal["submission_id_reused"]
+
+
 class DraftError(BaseModel):
     detail: DraftTest
 
 
 class SubmissionConflict(BaseModel):
-    detail: Annotated[DraftTest | StaleTest, Field(discriminator="code")]
+    detail: Annotated[DraftTest | StaleTest | SubmissionKeyConflict, Field(discriminator="code")]
 
 
 router = APIRouter(
@@ -107,17 +97,17 @@ def grade_test(bank: QuestionBank, submission: TestSubmission) -> list[GradedQue
     if len(selections) != len(bank.questions):
         raise invalid_answer("Answer every question before submitting.")
 
-    results = []
-    for question_id, question in bank.questions.items():
-        selected = set(selections[question_id])
-        correct_ids = bank.correct_ids[question_id]
-        results.append(GradedQuestion(
-            **question.model_dump(),
-            selected_ids=[option.id for option in question.options if option.id in selected],
-            correct_ids=correct_ids,
-            correct=selected == set(correct_ids),
-        ))
-    return results
+    return [
+        grade_question(question, selections[question_id], bank.correct_ids[question_id])
+        for question_id, question in bank.questions.items()
+    ]
+
+
+def submission_hash(set_id: str, submission: TestSubmission) -> str:
+    # Grading accepts either question order or selection order.
+    answers = sorted((answer.question_id, sorted(answer.selected_ids)) for answer in submission.answers)
+    payload = json.dumps([set_id, submission.revision, answers], separators=(",", ":"))
+    return sha256(payload.encode("utf-8")).hexdigest()
 
 
 @router.get(
@@ -136,22 +126,34 @@ def get_test(
     return TestPaper(set_id=set_id, title=bank.title, revision=bank.revision, questions=list(bank.questions.values()))
 
 
-@router.post("", responses={409: {"model": SubmissionConflict, "description": "The set is Draft or the revision changed."}})
+@router.post(
+    "",
+    response_model_exclude_none=True,
+    responses={409: {"model": SubmissionConflict, "description": "Draft set, stale revision, or reused submission ID."}},
+)
 def submit_test(
     set_id: str, submission: TestSubmission, request: Request, response: Response,
     user: Annotated[User, Depends(require_user)],
 ) -> TestResult:
-    """Grade every question against the submitted revision and return the complete review."""
+    """Grade the submitted revision and save the complete review in Test history."""
     response.headers["Cache-Control"] = "no-store"
     submitted_at = datetime.now(UTC)
+    request_hash = submission_hash(set_id, submission) if submission.submission_id else None
     with closing(connect(request.app.state.database_path)) as connection, connection:
-        connection.execute("BEGIN")
+        # Keep replay, revision validation, and the history write in one transaction.
+        connection.execute("BEGIN IMMEDIATE")
+        if submission.submission_id is not None:
+            saved = read_attempt_by_key(connection, user.username, "standard", submission.submission_id)
+            if saved is not None:
+                if saved["request_hash"] != request_hash:
+                    raise HTTPException(409, SubmissionKeyConflict(code="submission_id_reused").model_dump())
+                return TestResult.model_validate_json(saved["result_json"])
         bank = ready_bank(connection, set_id, user.username)
         if submission.revision != bank.revision:
             raise HTTPException(409, StaleTest(code="revision_changed").model_dump())
-        questions = grade_test(bank, submission)
-    return TestResult(
-        set_id=set_id, title=bank.title, revision=bank.revision,
-        score=sum(question.correct for question in questions), total=len(questions), questions=questions,
-        submitted_by=user.username, submitted_at=submitted_at,
-    )
+        result = build_result(
+            uuid4(), "standard", set_id, bank.title, bank.revision,
+            user.username, submitted_at, grade_test(bank, submission),
+        )
+        save_standard_result(connection, result, submission.submission_id, request_hash)
+    return result

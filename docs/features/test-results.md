@@ -19,7 +19,7 @@ The exported filename uses the set title. After the UUID upgrade, submitting HTM
 | `q16` | `q16-a` · `background-color: navy` | `q16-c` · `color: navy` | Incorrect |
 | `q24` | `q24-a` · alt attribute | `q24-a` · alt attribute | Correct |
 
-Results stay on the Test route and live in the current browser view. Leaving the route or reloading starts a new paper when Test is opened again. Results and the PDF share the percentage and option labels derived from the grading response. Each **Download PDF** click starts a Web Worker that loads React PDF and generates the file locally. If the worker cannot load or render the report, the inline error leaves the existing Results ready for another click. The sample uses the seeded catalog and a disposable demo account. [Shared review data](../../frontend/src/features/test/result-review.ts)
+Results stay on the Test route in the current browser view. Leaving or reloading opens a new paper. The backend saves completed attempts and exposes history through the API. Results and the PDF share the percentage and option labels derived from the grading response. Each **Download PDF** click starts a Web Worker that loads React PDF and generates the file locally. If the worker cannot load or render the report, the inline error leaves the existing Results ready for another click. The sample uses the seeded catalog and a disposable demo account. [Shared review data](../../frontend/src/features/test/result-review.ts)
 
 ## Report layout
 
@@ -42,13 +42,17 @@ Use the generated [Swagger UI](http://127.0.0.1:8000/docs) or [OpenAPI JSON](htt
 | Request | Contract |
 | --- | --- |
 | `GET /api/study-sets/{set_id}/test` | Opening Test loads `set_id`, `title`, `revision`, and ordered `questions`. Each question has `id`, `prompt`, `options` containing `id` and `text`, and a `multiple` boolean. |
-| `POST /api/study-sets/{set_id}/test` | Submit the paper's integer `revision` and one `{question_id, selected_ids}` entry per question. The response includes `score`, `total`, and graded questions with `correct`, `selected_ids`, and `correct_ids`. The response also includes the signed-in `submitted_by` and server-generated UTC `submitted_at`. |
+| `POST /api/study-sets/{set_id}/test` | Submit the paper's integer `revision` and one `{question_id, selected_ids}` entry per question. The response includes `attempt_id`, `mode`, `score`, `total`, graded questions, the signed-in `submitted_by`, and UTC `submitted_at`. Supply an optional `submission_id` UUID and reuse it on retries of the same submission. |
 
 For the sample, send `revision: 1` and selections `["q15-a"]`, `["q16-a"]`, and `["q24-a"]` on their corresponding questions. The server checks for missing, unknown, or duplicate question IDs, empty or duplicate selections, choices from another question, and extra choices on single-answer questions. Invalid submissions return `422`. A question earns one point only when the selected and correct ID sets match exactly. The server returns questions and selected IDs in catalog order for review and export.
 
 Both calls return `404` for a missing set and `409` with `detail.code: "draft"` and `detail.remaining_questions` for a Draft set. A Draft set with zero questions reports zero remaining and the UI asks the learner to add a configured question. A stale Ready submission returns `409` with `detail.code: "revision_changed"`. **Open a new test** clears the old choices and requests the current paper. A failed connection during submit leaves the choices available for another **Submit test**.
 
-The [Test router](../../backend/app/test.py) checks readiness and revision with the shared [question bank reader](../../backend/app/question_bank.py). Each request reads the set, question order, and option keys from one SQLite snapshot. [Database reference](../database.md#test-read-snapshot)
+The [Test router](../../backend/app/test.py) checks readiness and revision with the shared [question bank reader](../../backend/app/question_bank.py). A successful submission saves the result before responding. Replaying a `submission_id` with the same set reference, revision, and selections returns the saved result, including after the set has been edited or deleted. Using the same key with different input returns `409` with `detail.code: "submission_id_reused"`. Requests without a key each create a new attempt. [Database reference](../database.md#test-attempts)
+
+### Test history API
+
+Sign in and use the session cookie for both routes. `GET /api/test-attempts` returns completed attempts newest first, with `limit` from 1 to 100 (default 20). Pass `next_before` as `before` for the next page. `GET /api/test-attempts/{attempt_id}` returns the complete saved result. A missing attempt or cursor, including one owned by another account, returns `404`. Unsigned requests return `401`. [History router](../../backend/app/test_history.py) · [OpenAPI](http://127.0.0.1:8000/docs)
 
 ## Reproduce failure checks
 
@@ -88,7 +92,7 @@ Browser checks used Chromium with Vite, FastAPI, and disposable SQLite databases
 | Revision and exact-set grading | Apply the first SQL fixture while a paper is open. Submit the stale paper, open the new one, and test complete and partial selections. | Pass · Chromium and API. The stale paper offered **Open a new test**. Both checked options earned the point. A partial selection lost it at 360 px. The API also verified that an extra option loses the point. |
 | Incomplete data and session | Apply the second fixture to the built-in set and navigate directly to its Test URL. Run the unsigned GET and POST tests. | Pass · API. The Test API returned 409 for the incomplete fixture, and both unsigned calls returned 401. The earlier browser run confirmed the direct Test route displayed no questions. Existing custom Draft links now open the editor. |
 | Loading and network retry | Delay the paper request, then let it finish. Abort a load and retry. Abort a submit after all questions are answered, then restore the request and submit again. | Pass · Chromium. The Test header was visible immediately and the skeleton appeared during the delayed response. Both retries succeeded. The failed submit retained all three choices and the answered count. |
-| Read-only grading | Inspect the disposable database in read-only mode after Test runs. | Pass · SQLite. It had the five catalog and Learn tables and zero Learn progress rows. Test introduced no attempt or export table. |
+| Saved history | Submit the HTML / CSS sample with a `submission_id`, read it through history, then replay it. Delete its source set in a disposable database and restart. Read the result as the original account and as another account. | Pass · API and SQLite. The keyed replay kept the same attempt and score. After restart the original account read the full snapshot. The other account received `404`. |
 | Backend, lint, and build | Run the checks below from the indicated directories. | Pass · CLI. All 13 backend tests passed. Lint and build completed. Vite emitted the PDF worker as a separate asset. |
 
 From `backend/`:

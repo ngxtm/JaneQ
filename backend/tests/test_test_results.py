@@ -5,6 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
@@ -32,15 +33,18 @@ class TestResultsTests(TestCase):
     def sign_in(self) -> None:
         self.assertEqual(self.client.post("/api/auth/login", json=self.credentials).status_code, 200)
 
-    def submit(self, q15: list[str] | None = None, *, revision: int = 1):
-        return self.client.post(self.path, json={
+    def submit(self, q15: list[str] | None = None, *, revision: int = 1, submission_id: str | None = None):
+        payload = {
             "revision": revision,
             "answers": [
                 {"question_id": "q24", "selected_ids": ["q24-a"]},
                 {"question_id": "q16", "selected_ids": ["q16-a"]},
                 {"question_id": "q15", "selected_ids": ["q15-a"] if q15 is None else q15},
             ],
-        })
+        }
+        if submission_id is not None:
+            payload["submission_id"] = submission_id
+        return self.client.post(self.path, json=payload)
 
     def test_requires_session_and_rejects_draft_on_both_requests(self) -> None:
         self.assertEqual(self.client.get(self.path).status_code, 401)
@@ -90,9 +94,47 @@ class TestResultsTests(TestCase):
         resubmitted = self.submit().json()
         self.assertGreaterEqual(datetime.fromisoformat(resubmitted.pop("submitted_at")), submitted_at)
         result.pop("submitted_at")
+        self.assertNotEqual(resubmitted.pop("attempt_id"), result.pop("attempt_id"))
         self.assertEqual(resubmitted, result)
         with closing(connect(self.database)) as connection:
             self.assertEqual(connection.execute("SELECT COUNT(*) FROM learn_progress").fetchone()[0], 0)
+
+    def test_history_is_private_and_survives_restart_and_set_deletion(self) -> None:
+        history = "/api/test-attempts"
+        self.assertEqual(self.client.get(history).status_code, 401)
+        self.sign_in()
+        self.assertEqual(self.client.get(history).json(), {"attempts": [], "next_before": None})
+
+        key = str(uuid4())
+        saved = self.submit(submission_id=key).json()
+        detail = f"{history}/{saved['attempt_id']}"
+        newer = self.submit().json()
+        first_page = self.client.get(history, params={"limit": 1}).json()
+        self.assertEqual(first_page["next_before"], newer["attempt_id"])
+        self.assertEqual(first_page["attempts"], [{k: v for k, v in newer.items() if k != "questions"}])
+        last_page = self.client.get(history, params={"limit": 1, "before": first_page["next_before"]}).json()
+        self.assertEqual(last_page["attempts"][0]["attempt_id"], saved["attempt_id"])
+        self.assertIsNone(last_page["next_before"])
+
+        conflict = self.submit(["q15-b"], submission_id=key)
+        self.assertEqual(conflict.status_code, 409)
+        self.assertEqual(conflict.json(), {"detail": {"code": "submission_id_reused"}})
+        with closing(connect(self.database)) as connection, connection:
+            connection.execute("DELETE FROM study_sets WHERE legacy_id = 'html-css'")
+            self.assertEqual(connection.execute("PRAGMA foreign_key_check").fetchall(), [])
+        self.assertEqual(self.submit(submission_id=key).json(), saved)
+        self.assertEqual(len(self.client.get(history).json()["attempts"]), 2)
+
+        with TestClient(self.client.app) as restarted:
+            self.assertEqual(restarted.post("/api/auth/login", json=self.credentials).status_code, 200)
+            self.assertEqual(restarted.get(detail).json(), saved)
+
+        self.client.app.state.demo_username = "other-reviewer"
+        self.credentials["username"] = "other-reviewer"
+        self.sign_in()
+        self.assertEqual(self.client.get(history).json(), {"attempts": [], "next_before": None})
+        self.assertEqual(self.client.get(detail).status_code, 404)
+        self.assertEqual(self.client.get(history, params={"before": saved["attempt_id"]}).status_code, 404)
 
     def test_rejects_incomplete_duplicate_foreign_and_single_choice_answers(self) -> None:
         self.sign_in()

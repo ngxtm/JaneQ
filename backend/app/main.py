@@ -10,6 +10,7 @@ from .database import initialize_database
 from .learn import router as learn_router
 from .study_sets import router as study_sets_router
 from .test import router as test_router
+from .test_history import router as test_history_router
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -55,6 +56,7 @@ def create_app() -> FastAPI:
     app.include_router(study_sets_router)
     app.include_router(learn_router)
     app.include_router(test_router)
+    app.include_router(test_history_router)
     return app
 
 

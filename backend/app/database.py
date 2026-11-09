@@ -50,6 +50,28 @@ CREATE TABLE IF NOT EXISTS learn_progress (
     state_json TEXT NOT NULL,
     PRIMARY KEY (username, study_set_id)
 );
+CREATE TABLE IF NOT EXISTS test_attempts (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK (mode IN ('standard', 'timed')),
+    request_key TEXT,
+    request_hash TEXT,
+    set_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    total INTEGER NOT NULL CHECK (total > 0),
+    submitted_at TEXT,
+    score INTEGER CHECK (score BETWEEN 0 AND total),
+    result_json TEXT,
+    state_json TEXT,
+    UNIQUE (username, mode, request_key),
+    CHECK (
+        (result_json IS NOT NULL AND state_json IS NULL AND submitted_at IS NOT NULL AND score IS NOT NULL)
+        OR (mode = 'timed' AND result_json IS NULL AND state_json IS NOT NULL AND submitted_at IS NULL AND score IS NULL)
+    )
+);
+CREATE INDEX IF NOT EXISTS test_attempts_history ON test_attempts(username, submitted_at DESC, id DESC)
+    WHERE submitted_at IS NOT NULL;
 """
 
 QUESTION_STATUS = """
