@@ -16,7 +16,7 @@
   <a href="#documentation">Documentation</a>
 </p>
 
-![JaneQ Home showing recently opened study sets and the built-in question bank](docs/readme/home.png)
+![JaneQ Home with a prompt to open your first study set and a list of built-in sets](docs/readme/home.png)
 
 ## Features
 
@@ -81,7 +81,7 @@ JaneQ seeds `backend/data/janeq-mvp.sqlite3` on first startup. Use `JANEQ_DB_PAT
 
 | Area | Guides |
 | --- | --- |
-| Library | [Sign in and Home](docs/features/login-home.md) · [Built-in study sets](docs/features/builtin-sets.md) · [Missing pages and sets](docs/features/login-home.md#page-and-study-set-not-found) |
+| Library | [Sign in and Home](docs/features/login-home.md) · [Account registration plan](docs/features/account-registration.md) · [Built-in study sets](docs/features/builtin-sets.md) · [Missing pages and sets](docs/features/login-home.md#page-and-study-set-not-found) |
 | Study modes | [Study Set and Learn](docs/features/learn.md) · [Study set URLs and preview loading](docs/features/learn.md#study-set-urls-and-preview-loading) · [Test, Results, and PDF export](docs/features/test-results.md) |
 | Authoring | [My sets and Create/Edit](docs/features/study-set-authoring.md) |
 | Implementation | [Database reference](docs/database.md) · [Frontend UI guide](docs/frontend.md) · [Branding](docs/features/branding.md) |
