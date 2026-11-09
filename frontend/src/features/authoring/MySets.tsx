@@ -39,7 +39,9 @@ export default function MySets({ sets, status, showSkeleton, onRetry }: {
   onRetry: () => void
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
-  useEffect(() => { heading.current?.focus() }, [])
+  useEffect(() => {
+    if (document.activeElement === document.body) heading.current?.focus({ preventScroll: true })
+  }, [])
 
   const ownSets = sets.filter((set) => set.source_kind === 'custom')
   const empty = status === 'loaded' && ownSets.length === 0
@@ -77,7 +79,7 @@ export default function MySets({ sets, status, showSkeleton, onRetry }: {
             <IconFolder size={32} />
           </Flex>
           <Heading as="h2" size="xl">Create your first study set</Heading>
-          <Text color="janeq.muted" maxW="sm">Add your own questions and save a draft to finish whenever you’re ready.</Text>
+          <Text color="janeq.muted" maxW="sm">Add your questions and mark the correct answers before saving your set.</Text>
           <PrimaryButton asChild fontFamily="body"><a href={createSetHref}><IconPlus size={18} /> Create set</a></PrimaryButton>
         </Stack>
       ) : null}

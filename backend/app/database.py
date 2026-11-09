@@ -1,6 +1,7 @@
 import json
 import sqlite3
 from contextlib import closing
+from hashlib import sha256
 from pathlib import Path
 from uuid import UUID, uuid4, uuid5
 
@@ -29,6 +30,10 @@ CREATE TABLE IF NOT EXISTS questions (
     position INTEGER NOT NULL,
     UNIQUE (study_set_id, position)
 );
+CREATE TABLE IF NOT EXISTS study_set_creation_keys (
+    study_set_id TEXT PRIMARY KEY,
+    content_hash TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS answer_options (
     id TEXT PRIMARY KEY,
     question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
@@ -51,6 +56,7 @@ QUESTION_STATUS = """
     SELECT q.id, q.study_set_id,
         CASE
             WHEN trim(q.prompt) <> ''
+                AND COUNT(CASE WHEN trim(o.text) <> '' THEN 1 END) >= 2
                 AND COUNT(CASE WHEN trim(o.text) <> '' AND o.is_correct = 1 THEN 1 END) > 0
             THEN 1 ELSE 0
         END AS configured
@@ -210,13 +216,19 @@ def create_study_set(
     connection: sqlite3.Connection, username: str, content: StudySetContent, idempotency_key: UUID | None,
 ) -> str | None:
     set_id = str(uuid4())
+    content_hash = None
     if idempotency_key is not None:
-        # A retry from the same editor and account resolves to the same set.
         set_id = str(uuid5(CUSTOM_SET_NAMESPACE, json.dumps([username, str(idempotency_key)])))
-        existing = read_study_set(connection, set_id, username)
-        if existing is not None:
-            saved = read_study_set_editor(connection, existing)
-            return set_id if saved.model_dump(exclude={"revision", "saved_at"}) == content.model_dump() else None
+        normalized = json.dumps(content.model_dump(), sort_keys=True, separators=(",", ":"))
+        content_hash = sha256(normalized.encode("utf-8")).hexdigest()
+        recorded = connection.execute(
+            "SELECT content_hash FROM study_set_creation_keys WHERE study_set_id = ?", (set_id,),
+        ).fetchone()
+        if recorded is not None:
+            return set_id if recorded["content_hash"] == content_hash else None
+        # Existing legacy sets have no trustworthy record of the original payload.
+        if read_study_set(connection, set_id, username) is not None:
+            return None
     connection.execute(
         """
         INSERT INTO study_sets (id, title, description, source_kind, owner_username, saved_at)
@@ -225,6 +237,12 @@ def create_study_set(
         (set_id, content.title, content.description, username),
     )
     write_study_questions(connection, set_id, content.questions)
+    if content_hash is not None:
+        # Keep this record even when the set is deleted so a retry cannot recreate it.
+        connection.execute(
+            "INSERT INTO study_set_creation_keys (study_set_id, content_hash) VALUES (?, ?)",
+            (set_id, content_hash),
+        )
     return set_id
 
 

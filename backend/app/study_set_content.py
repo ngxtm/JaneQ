@@ -36,12 +36,22 @@ class CompleteOption(OptionContent):
 
 class CompleteQuestion(QuestionContent):
     prompt: RequiredText
-    options: list[CompleteOption] = Field(min_length=2, description="At least one option must be marked correct.")
+    options: list[CompleteOption] = Field(
+        min_length=2, description="At least one option must be correct. Identical text must have matching correctness."
+    )
 
     @model_validator(mode="after")
     def require_correct_answer(self) -> "CompleteQuestion":
         if not any(option.is_correct for option in self.options):
             raise ValueError("Mark at least one option correct.")
+        return self
+
+    @model_validator(mode="after")
+    def reject_conflicting_options(self) -> "CompleteQuestion":
+        correctness_by_text: dict[str, bool] = {}
+        for option in self.options:
+            if correctness_by_text.setdefault(option.text, option.is_correct) != option.is_correct:
+                raise ValueError("Identical answer options must have the same correctness.")
         return self
 
 

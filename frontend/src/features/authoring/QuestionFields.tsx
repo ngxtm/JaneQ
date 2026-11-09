@@ -76,15 +76,15 @@ export function QuestionFields({ question, number, count, focusKey, errors, onCh
           <Text fontSize="sm" fontWeight="medium">Answer options</Text>
           {question.options.map((option, index) => (
             <Flex key={option.key} gap="2" align="end" flexWrap="wrap">
-              <Field.Root flex="1" minW="28" invalid={errors?.blankOptions.has(option.key)}>
+              <Field.Root flex="1" minW="28" invalid={errors?.optionIssues.has(option.key)}>
                 <VisuallyHidden asChild><Field.Label>Question {number}, option {index + 1}</Field.Label></VisuallyHidden>
                 <Input value={option.text} autoFocus={focusKey === option.key} placeholder={`Option ${index + 1}`}
                   data-validation-focus={errors?.missingOptions && question.options.length >= 2 && !option.text.trim() ? '' : undefined}
-                  variant="flushed" borderColor={errors?.blankOptions.has(option.key) ? 'red.600' : 'janeq.line'} onChange={(event) => {
+                  variant="flushed" borderColor={errors?.optionIssues.has(option.key) ? 'red.600' : 'janeq.line'} onChange={(event) => {
                   const text = event.target.value
                   updateOption(option.key, { text, is_correct: Boolean(text.trim()) && option.is_correct })
                 }} />
-                {errors?.blankOptions.has(option.key) ? <Field.ErrorText>Enter an option or remove this row.</Field.ErrorText> : null}
+                {errors?.optionIssues.has(option.key) ? <Field.ErrorText>{errors.optionIssues.get(option.key)}</Field.ErrorText> : null}
               </Field.Root>
               <Checkbox.Root checked={option.is_correct} disabled={!option.text.trim()} minH="10" colorPalette="blue"
                 css={{ '&:has(input:focus-visible) [data-part=control]': { outline: '2px solid', outlineColor: 'janeq.focus', outlineOffset: '2px' } }}

@@ -4,7 +4,7 @@ import { Skeleton } from 'boneyard-js/react'
 import { lazy, Suspense, useEffect, useRef, useState, type PropsWithChildren } from 'react'
 import { isUnauthorized } from '../../http'
 import { UiProvider } from '../../ui/UiProvider'
-import { SetDeleteMenu } from '../authoring/SetDeleteMenu'
+import { SetDeleteMenu, type OnSetDeleted } from '../authoring/SetDeleteMenu'
 import { homeHref, mySetsHref, navigateLibrary, studySetHref, type LibraryRoute } from '../navigation/app-location'
 import { getStudySets, type StudySet } from './api'
 import { EmptyLibrary } from './EmptyLibrary'
@@ -70,7 +70,7 @@ function StudySetOverview({ set, status, showSkeleton, onRetry, username, onSess
   username: string
   onSessionExpired: () => void
   loadPreview: ReturnType<typeof createPreviewLoader>['load']
-  onDeleted: (id: string) => void
+  onDeleted: OnSetDeleted
 }) {
   const heading = useRef<HTMLHeadingElement>(null)
   const setId = set?.id
@@ -185,14 +185,14 @@ export default function Home({ route, username, signingOut, signOutError, onSign
     navigateLibrary(studySetHref(set.id))
   }
 
-  function handleDeleted(id: string) {
+  function handleDeleted(id: string, shouldNavigate: boolean) {
     catalogRequest.current?.abort()
     previewLoader.clear()
     setState((current) => current.kind === 'loaded'
       ? { kind: 'loaded', sets: current.sets.filter((set) => set.id !== id) }
       : current)
     setAttempt((current) => current + 1)
-    navigateLibrary(mySetsHref)
+    if (shouldNavigate) navigateLibrary(mySetsHref)
   }
 
   if (viewingSet && !editorId && state.kind === 'loaded' && !selectedSet) {

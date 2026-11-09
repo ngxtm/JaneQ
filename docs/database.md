@@ -12,6 +12,7 @@ JaneQ uses SQLite through Python's `sqlite3` module. The default file is `backen
 study_sets 1 ──── * questions 1 ──── * answer_options
 study_sets 1 ──── * learn_progress
 seed_history tracks completed seed runs independently.
+study_set_creation_keys keeps fingerprints for keyed creates, including deleted sets.
 ```
 
 | Table | Columns | Constraints and purpose |
@@ -20,6 +21,7 @@ seed_history tracks completed seed runs independently.
 | `questions` | `id TEXT`, `study_set_id TEXT`, `prompt TEXT`, `position INTEGER` | `id` is the primary key. The other columns are required. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. A position is unique within a study set. |
 | `answer_options` | `id TEXT`, `question_id TEXT`, `text TEXT`, `position INTEGER`, `is_correct INTEGER` | `id` is the primary key. The other columns are required. `question_id` references `questions.id` with `ON DELETE CASCADE`. A position is unique within a question. `is_correct` accepts `0` or `1` and defaults to `0`. |
 | `seed_history` | `name TEXT` | `name` is the primary key. `builtin_catalog` marks completion of the MVP seed. |
+| `study_set_creation_keys` | `study_set_id TEXT`, `content_hash TEXT NOT NULL` | `study_set_id` is the primary key and encodes the username and creation key through the set's deterministic UUID. `content_hash` is the SHA-256 fingerprint of the original normalized payload. The table keeps its records after a set is deleted. |
 | `learn_progress` | `username TEXT`, `study_set_id TEXT`, `revision INTEGER`, `state_json TEXT` | All columns are required. The composite primary key is `(username, study_set_id)`. `study_set_id` references `study_sets.id` with `ON DELETE CASCADE`. |
 
 Deleting a study set cascades to its questions, answer options, and saved Learn progress when foreign keys are enabled. The schema allows several options for a question to be marked correct.
@@ -51,7 +53,7 @@ Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `ba
 | Response field | How it is computed |
 | --- | --- |
 | `question_count` | Number of questions in the set. |
-| `configured_count` | Number of questions with a nonblank prompt and at least one nonblank option marked correct. The SQL uses `trim()` to check for blank text. |
+| `configured_count` | Number of questions with a nonblank prompt and at least two nonblank options, including at least one marked correct. The SQL uses `trim()` to check for blank text. |
 | `status` | `ready` when the set has at least one question and every question is configured. Otherwise it is `draft`. |
 | `revision` | Current set revision read in the same query as the summary. The overview submits it when deleting a set. |
 
@@ -59,7 +61,13 @@ These fields are calculated when Home requests the list. Learn, preview, and Tes
 
 ## Custom study set writes
 
-Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once and updates `saved_at`. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision, IDs, and timestamp. The write API trims outer whitespace and requires a title, at least one question, and a prompt and at least two nonblank options per question, with at least one marked correct. Previously saved incomplete sets and blank option rows remain readable in the editor for repair. Ready sets saved with one option per question remain ready to study until edited.
+Create writes the set, ordered questions, and ordered options in one transaction. Edit locks the database for writing before reading the current revision. An effective edit increments the set revision once and updates `saved_at`. When questions or options change, the same transaction replaces the question tree with new server-generated UUIDs in form order. A title or description edit retains the question tree. A save with identical normalized content keeps the revision, IDs, and timestamp. The write API trims outer whitespace and requires a title, at least one question, and a prompt and at least two nonblank options per question, with at least one marked correct. Previously saved incomplete sets and blank option rows remain readable in the editor for repair. A set with a one-option question appears as Draft until the author adds a second option and saves.
+
+Create records the fingerprint in the same transaction as the set. A matching replay uses the original fingerprint even after edits. Deleting a keyed set leaves its fingerprint behind so a replay cannot recreate it. Startup adds the table to existing databases. A legacy set whose ID matches a replayed key returns `409` because the original payload is unavailable. Previously deleted legacy sets have no history to migrate.
+
+To check the upgrade, create a keyed set in a disposable database, close the app, drop only `study_set_creation_keys`, and restart against the same database. **Pass · API and SQLite.** Startup recreated the table, the set remained readable, the legacy key returned `409`, and a new key could create and replay a set.
+
+Within a question, options with identical text after trimming must agree on whether they are correct. The write API rejects conflicts and the editor can still read older questions with conflicting choices for repair.
 
 Delete locks the database before checking the signed-in owner, custom source, and submitted revision. It removes the set in one transaction. SQLite foreign keys remove its questions, options, and Learn progress.
 
@@ -67,7 +75,7 @@ Run `uv run --locked --no-sync python -m unittest discover -s tests -v` from `ba
 
 ## Learn progress
 
-Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, answers in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Written responses store `answer_text` in the answer entry. Correct answers come from `answer_options` at request time.
+Startup creates `learn_progress` on both fresh and existing databases. A Learn command stores one snapshot for the signed-in username and set. The JSON records the current round, queue, phase, selected option IDs in the current round, studied question IDs, mastery levels (`1` for Familiar and `2` for Mastered), shuffle setting, and a step version. Correct answers come from `answer_options` at request time.
 
 A write transaction checks both the study set revision and the saved step version before it updates the snapshot. When a study set revision changes, Learn presents a fresh session and replaces the previous snapshot on the next successful command. This applies to every effective edit, including metadata changes. [Learn flow and API](features/learn.md)
 
@@ -98,4 +106,4 @@ db.execute("SELECT COUNT(*) FROM questions JOIN study_sets ON study_sets.id = qu
 db.close()
 ```
 
-For a fresh seeded database, expect the five tables above, an empty list from `foreign_key_check`, 18 built-in sets, and 281 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify the fresh seed and reopen an MVP database with saved Learn progress. Both cases passed using disposable SQLite files. [Built-in catalog acceptance checks](features/builtin-sets.md#acceptance-checks)
+For a fresh seeded database, expect the six tables above, an empty list from `foreign_key_check`, 18 built-in sets, and 281 built-in questions. Run `uv run --locked --no-sync python -m unittest discover -s tests` from `backend/` to verify the fresh seed and reopen an MVP database with saved Learn progress. Both cases passed using disposable SQLite files. [Built-in catalog acceptance checks](features/builtin-sets.md#acceptance-checks)

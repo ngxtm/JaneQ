@@ -13,14 +13,14 @@ import { EditorToolbar } from './EditorToolbar'
 import { EditorTopBar } from './EditorTopBar'
 import { EditorToast } from './EditorToast'
 import { QuestionFields, type QuestionField } from './QuestionFields'
-import { SetDeleteMenu } from './SetDeleteMenu'
+import { SetDeleteMenu, type OnSetDeleted } from './SetDeleteMenu'
 import { questionErrors } from './validation'
 import './bones/registry'
 
 type EditorProps = {
   id?: string
   onSaved: (set: StudySet) => void
-  onDeleted: (id: string) => void
+  onDeleted: OnSetDeleted
   onSessionExpired: () => void
 }
 
@@ -163,7 +163,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
     const firstInvalid = invalidQuestions[0]
     if (firstInvalid) {
       const { errors, key, number } = firstInvalid
-      const onlyMissingAnswer = errors.missingAnswer && !errors.missingPrompt && !errors.missingOptions && !errors.blankOptions.size
+      const onlyMissingAnswer = errors.missingAnswer && !errors.missingPrompt && !errors.missingOptions && !errors.optionIssues.size
       const description = invalidQuestions.length > 1 ? `${invalidQuestions.length} questions need attention.`
         : onlyMissingAnswer ? `Question ${number} needs at least one correct answer.` : `Review the fields in question ${number}.`
       reject({ kind: 'question', key }, description)
@@ -216,7 +216,7 @@ function EditorForm({ id, data, onSaved, onDeleted }: Pick<EditorProps, 'id' | '
               <Stack gap="1" role="alert" align="start" fontSize="sm" borderTop="1px solid" borderColor="janeq.divider" pt="3">
                 <Text color="red.700">{issue.message}</Text>
                 {issue.status === 409 && id ? <Link href={studySetHref(id, 'editor')} target="_blank" rel="noopener">Open latest version in a new tab</Link> : null}
-                {issue.status === 409 && !id ? <Link href={mySetsHref} target="_blank" rel="noopener">Review My sets in a new tab</Link> : null}
+                {(issue.status === 409 || issue.status === 410) && !id ? <Link href={mySetsHref} target="_blank" rel="noopener">Open My sets in a new tab</Link> : null}
                 {issue.status === 401 ? <Link href={mySetsHref} target="_blank" rel="noopener">Sign in in a new tab</Link> : null}
               </Stack>
             ) : null}

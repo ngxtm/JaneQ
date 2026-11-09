@@ -5,11 +5,13 @@ import { httpErrorMessage, httpStatus } from '../../http'
 import { mySetsHref, studySetHref } from '../navigation/app-location'
 import { deleteEditorSet } from './api'
 
+export type OnSetDeleted = (id: string, shouldNavigate: boolean) => void
+
 export function SetDeleteMenu({ id, title, revision, onDeleted, onPendingChange, disabled, attached }: {
   id: string
   title: string
   revision: number
-  onDeleted: (id: string) => void
+  onDeleted: OnSetDeleted
   onPendingChange?: (pending: boolean) => void
   disabled?: boolean
   attached?: boolean
@@ -23,17 +25,22 @@ export function SetDeleteMenu({ id, title, revision, onDeleted, onPendingChange,
 
   async function remove() {
     if (pending.current) return
+    const origin = window.location.pathname
+    const completeDeletion = () => {
+      // A request can outlive the overview that started it.
+      onDeleted(id, trigger.current?.isConnected === true && window.location.pathname === origin)
+    }
     pending.current = true
     setBusy(true)
     onPendingChange?.(true)
     setIssue({ message: '' })
     try {
       await deleteEditorSet(id, revision)
-      onDeleted(id)
+      completeDeletion()
     } catch (error) {
       const status = httpStatus(error)
       if (status === 404) {
-        onDeleted(id)
+        completeDeletion()
       } else {
         const message = status === 401
           ? 'Your session expired. Sign in again, then retry deleting here.'
@@ -77,7 +84,7 @@ export function SetDeleteMenu({ id, title, revision, onDeleted, onPendingChange,
           </Dialog.Body>
           <Dialog.Footer>
             <Dialog.ActionTrigger asChild><Button ref={cancel} type="button" variant="outline" fontFamily="body" disabled={busy}>Cancel</Button></Dialog.ActionTrigger>
-            <Button type="button" colorPalette="red" fontFamily="body" loading={busy} loadingText="Deleting…" onClick={() => void remove()}>Delete set</Button>
+            <Button type="button" colorPalette="red" fontFamily="body" loading={busy} loadingText="Delete set" onClick={() => void remove()}>Delete set</Button>
           </Dialog.Footer>
         </Dialog.Content></Dialog.Positioner></Portal>
       </Dialog.Root>

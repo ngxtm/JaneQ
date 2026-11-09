@@ -1,10 +1,9 @@
-import { Button, Dialog, Field, IconButton, Portal, Stack, Text, Textarea, VisuallyHidden } from '@chakra-ui/react'
+import { Button, Dialog, IconButton, Portal, VisuallyHidden } from '@chakra-ui/react'
 import { IconArrowLeft, IconCheck, IconKeyframes, IconSettings, IconTrophy, IconX } from '@tabler/icons-react'
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { PrimaryButton } from '../../ui/PrimaryButton'
 import { SettingsSwitch } from '../../ui/SettingsSwitch'
 import { studySetHref } from '../navigation/app-location'
-import type { AnswerInput } from '../study-sets/question'
 import type { Feedback, LearnView, Question } from './api'
 import { useLearn } from './use-learn'
 import './learn.css'
@@ -49,17 +48,15 @@ function QuestionCard({ view, question, feedback, busy, shortcuts, onAnswer }: {
   feedback: Feedback | null
   busy: boolean
   shortcuts: boolean
-  onAnswer: (answer: AnswerInput) => void
+  onAnswer: (ids: string[]) => void
 }) {
   const [selected, setSelected] = useState<string[]>([])
-  const [answerText, setAnswerText] = useState('')
   const disabled = busy || feedback !== null
-  const written = !question.options.length
   function choose(id: string) {
     if (disabled) return
     if (question.multiple) {
       setSelected((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id])
-    } else onAnswer({ selected_ids: [id] })
+    } else onAnswer([id])
   }
   const chooseShortcut = useEffectEvent(choose)
 
@@ -80,28 +77,9 @@ function QuestionCard({ view, question, feedback, busy, shortcuts, onAnswer }: {
       <p className="learn-eyebrow">Question {Math.min(view.round_size, view.round_answered + (feedback ? 0 : 1))} of {view.round_size}</p>
       <h2 id="learn-prompt">{question.prompt}</h2>
       <p className={feedback ? (feedback.correct ? 'learn-positive' : 'learn-negative') : 'learn-eyebrow'} aria-live="polite">
-        {feedback ? (feedback.correct ? 'Correct' : 'Incorrect. Review the correct answer below.')
-          : written ? 'Type your answer' : question.multiple ? 'Select all correct answers' : 'Choose the correct answer'}
+        {feedback ? (feedback.correct ? 'Correct' : 'Incorrect. Review the correct answer below.') : (question.multiple ? 'Select all correct answers' : 'Choose the correct answer')}
       </p>
-      {written ? feedback ? (
-        <Stack gap="2" mt="4" whiteSpace="pre-wrap" overflowWrap="anywhere">
-          <Text><strong>Your answer</strong> {feedback.answer_text}</Text>
-          <Text><strong>Correct answer</strong> {feedback.correct_text}</Text>
-        </Stack>
-      ) : (
-        <Stack asChild gap="3" mt="4" align="start">
-          <form onSubmit={(event) => {
-            event.preventDefault()
-            if (!disabled && answerText.trim()) onAnswer({ answer_text: answerText })
-          }}>
-            <Field.Root disabled={disabled}>
-              <Field.Label>Your answer</Field.Label>
-              <Textarea value={answerText} rows={2} onChange={(event) => setAnswerText(event.target.value)} />
-            </Field.Root>
-            <PrimaryButton type="submit" disabled={disabled || !answerText.trim()}>Check answer</PrimaryButton>
-          </form>
-        </Stack>
-      ) : <div className="learn-options" role="group" aria-label="Answer choices">
+      <div className="learn-options" role="group" aria-label="Answer choices">
         {question.options.map((option, index) => {
           const correct = feedback?.correct_ids.includes(option.id)
           const incorrect = feedback?.selected_ids.includes(option.id) && !correct
@@ -117,9 +95,9 @@ function QuestionCard({ view, question, feedback, busy, shortcuts, onAnswer }: {
             {correct || incorrect ? <VisuallyHidden>{correct ? 'Correct answer' : 'Incorrect choice'}</VisuallyHidden> : null}
           </Button>
         })}
-      </div>}
+      </div>
       {question.multiple && !feedback ? (
-        <PrimaryButton disabled={busy || !selected.length} onClick={() => onAnswer({ selected_ids: selected })}>Check answer</PrimaryButton>
+        <PrimaryButton disabled={busy || !selected.length} onClick={() => onAnswer(selected)}>Check answer</PrimaryButton>
       ) : null}
     </div>
   </section>
@@ -173,7 +151,7 @@ export default function Learn({ setId, onSessionExpired }: { setId: string; onSe
       {error} {!view ? <Button variant="outline" size="sm" onClick={reload}>Try again</Button> : null}
     </div> : null}
     {view?.question ? <QuestionCard key={`${view.round}:${view.question.id}`} view={view} question={view.question}
-      feedback={view.feedback} busy={busy} shortcuts={!settings} onAnswer={(answer) => { void send({ action: 'check', ...answer }) }} /> : null}
+      feedback={view.feedback} busy={busy} shortcuts={!settings} onAnswer={(ids) => { void send({ action: 'check', selected_ids: ids }) }} /> : null}
     {view && phase === 'summary' ? <RoundSummary view={view} /> : null}
     {view && phase === 'complete' ? <section className="learn-complete" aria-labelledby="learn-complete-title">
       <StudyStats view={view} />

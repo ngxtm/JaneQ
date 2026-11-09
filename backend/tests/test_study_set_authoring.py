@@ -143,6 +143,29 @@ class StudySetAuthoringTests(TestCase):
         custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
         self.assertEqual(custom, [first.json()])
 
+    def test_create_replay_uses_original_content_after_edit_and_delete(self) -> None:
+        headers = {"Idempotency-Key": str(uuid4())}
+        original = {"title": "Original", "questions": [self.complete_question]}
+        first = self.client.post(self.catalog, headers=headers, json=original)
+        self.assertEqual(first.status_code, 201, first.text)
+        set_id = first.json()["id"]
+        path = f"{self.catalog}/{set_id}"
+        edited = {**original, "title": "Edited"}
+        response = self.client.put(f"{path}/editor", json={**edited, "revision": 1})
+        self.assertEqual(response.status_code, 200, response.text)
+
+        with self.signed_in_as("author") as reopened:
+            replay = reopened.post(self.catalog, headers=headers, json={**original, "title": "  Original  "})
+            self.assertEqual(replay.status_code, 201, replay.text)
+            self.assertEqual(replay.json(), response.json())
+            self.assertEqual(reopened.post(self.catalog, headers=headers, json=edited).status_code, 409)
+            self.assertEqual(reopened.delete(path, params={"revision": 2}).status_code, 204)
+
+        with self.signed_in_as("author") as reopened:
+            self.assertEqual(reopened.post(self.catalog, headers=headers, json=original).status_code, 410)
+            self.assertEqual(reopened.post(self.catalog, headers=headers, json=edited).status_code, 409)
+            self.assertEqual(reopened.get(f"{path}/editor").status_code, 404)
+
     def test_create_and_update_require_complete_questions(self) -> None:
         saved = self.create_set()
         path = f"{self.catalog}/{saved['id']}/editor"
@@ -150,6 +173,7 @@ class StudySetAuthoringTests(TestCase):
         question = self.complete_question
         invalid_questions = (
             [],
+            [{**question, "options": [{"text": "GET", "is_correct": True}, {"text": " GET ", "is_correct": False}]}],
             [{**question, "prompt": "  "}],
             [{**question, "options": []}],
             [{**question, "options": question["options"][:1]}],
@@ -165,60 +189,33 @@ class StudySetAuthoringTests(TestCase):
         custom = [study_set for study_set in self.client.get(self.catalog).json() if study_set["source_kind"] == "custom"]
         self.assertEqual(custom, [saved])
 
-    def test_legacy_single_answers_generate_choices_or_accept_text_in_test_and_learn(self) -> None:
-        content = StudySetContent(title="Legacy set", questions=[
-            {"prompt": prompt, "options": [{"text": answer, "is_correct": True}]}
-            for prompt, answer in [("First result?", "12"), ("Second result?", "24"), ("Name the web protocol.", "HTTPS")]
-        ])
-        single = StudySetContent(title="Legacy one-question set", questions=[{
+    def test_legacy_one_option_set_requires_repair_before_study(self) -> None:
+        content = StudySetContent(title="Legacy one-question set", questions=[{
             "prompt": "What resolves hostnames?", "options": [{"text": "DNS", "is_correct": True}],
         }])
         with closing(connect(self.database)) as connection, connection:
             set_id = create_study_set(connection, "author", content, None)
-            single_id = create_study_set(connection, "author", single, None)
         path = f"{self.catalog}/{set_id}"
-        paper = self.client.get(f"{path}/test").json()
-        self.assertEqual(self.client.get(f"{path}/test").json(), paper)
-        first, second, written = paper["questions"]
-        for question in (first, second):
-            self.assertCountEqual([option["text"] for option in question["options"]], ["12", "24"])
-        self.assertEqual(written["options"], [])
-        self.assertNotIn("HTTPS", str(written))
+        summary = next(item for item in self.client.get(self.catalog).json() if item["id"] == set_id)
+        self.assertEqual((summary["status"], summary["configured_count"]), ("draft", 0))
+        for mode in ("preview", "learn", "test"):
+            self.assertEqual(self.client.get(f"{path}/{mode}").status_code, 409)
 
-        answers = [
-            {"question_id": first["id"], "selected_ids": [next(option["id"] for option in first["options"] if option["text"] == "24")]},
-            {"question_id": second["id"], "selected_ids": [next(option["id"] for option in second["options"] if option["text"] == "24")]},
-            {"question_id": written["id"], "answer_text": "  https  "},
-        ]
-        result = self.client.post(f"{path}/test", json={"revision": paper["revision"], "answers": answers})
-        self.assertEqual(result.status_code, 200, result.text)
-        self.assertEqual(result.json()["score"], 2)
-        self.assertEqual(result.json()["questions"][2]["correct_text"], "HTTPS")
-        for invalid in ({"answer_text": " "}, {"selected_ids": [first["options"][0]["id"]]}):
-            bad = [*answers[:2], {"question_id": written["id"], **invalid}]
-            self.assertEqual(self.client.post(f"{path}/test", json={"revision": paper["revision"], "answers": bad}).status_code, 422)
-
-        single_path = f"{self.catalog}/{single_id}"
-        learn_path = f"{single_path}/learn"
-        view = self.client.get(learn_path).json()
-        self.assertEqual(view["question"]["options"], [])
-        feedback = self.client.post(learn_path, json={
-            "action": "check", "revision": view["revision"], "version": view["version"], "answer_text": "HTTP",
-        })
-        self.assertEqual(feedback.status_code, 200, feedback.text)
-        self.assertEqual(feedback.json()["feedback"], {
-            "correct": False, "answer_text": "HTTP", "correct_text": "DNS", "selected_ids": [], "correct_ids": [],
-        })
-        self.assertEqual(self.client.get(learn_path).json(), feedback.json())
-
-        editor_path = f"{single_path}/editor"
+        editor_path = f"{path}/editor"
         editor = self.client.get(editor_path).json()
         editor.pop("saved_at")
         self.assertEqual(self.client.put(editor_path, json=editor).status_code, 422)
         editor["questions"][0]["options"].append({"text": "HTTP", "is_correct": False})
-        self.assertEqual(self.client.put(editor_path, json=editor).status_code, 200)
-        repaired = self.client.get(f"{single_path}/test").json()["questions"][0]
-        self.assertEqual([option["text"] for option in repaired["options"]], ["DNS", "HTTP"])
+        response = self.client.put(editor_path, json=editor)
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["status"], "ready")
+
+        for mode in ("learn", "test"):
+            response = self.client.get(f"{path}/{mode}")
+            self.assertEqual(response.status_code, 200, response.text)
+            view = response.json()
+            question = view["question"] if mode == "learn" else view["questions"][0]
+            self.assertEqual([option["text"] for option in question["options"]], ["DNS", "HTTP"])
 
     def test_revision_checked_delete_cascades_to_questions_and_learn_progress(self) -> None:
         draft = self.create_set(questions=[{

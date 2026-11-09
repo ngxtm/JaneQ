@@ -8,7 +8,7 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect
-from .question_bank import AnswerInput, Question, QuestionBank, read_question_bank
+from .question_bank import Question, QuestionBank, read_question_bank
 
 
 class TestPaper(BaseModel):
@@ -18,9 +18,10 @@ class TestPaper(BaseModel):
     questions: list[Question]
 
 
-class TestAnswer(AnswerInput):
+class TestAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
     question_id: str
+    selected_ids: list[str] = Field(min_length=1)
 
 
 class TestSubmission(BaseModel):
@@ -37,8 +38,6 @@ class GradedQuestion(Question):
     selected_ids: list[str]
     correct_ids: list[str]
     correct: bool
-    answer_text: str | None = None
-    correct_text: str | None = None
 
 
 class TestResult(BaseModel):
@@ -97,27 +96,28 @@ def invalid_answer(message: str, *location: str | int) -> HTTPException:
 
 
 def grade_test(bank: QuestionBank, submission: TestSubmission) -> list[GradedQuestion]:
-    graded: dict[str, GradedQuestion] = {}
+    selections: dict[str, list[str]] = {}
     for index, answer in enumerate(submission.answers):
         question = bank.questions.get(answer.question_id)
-        if question is None or answer.question_id in graded:
+        if question is None or answer.question_id in selections:
             raise invalid_answer("Submit each question exactly once.", index, "question_id")
-        correct_ids = bank.correct_ids[question.id]
-        correct = question.grade(answer, correct_ids)
-        if correct is None:
-            raise invalid_answer("Enter a written answer." if question.written else "Choose valid options for this question.",
-                                 index, "answer_text" if question.written else "selected_ids")
-        selected = set(answer.selected_ids or [])
-        graded[question.id] = GradedQuestion(
-            **question.for_study().model_dump(),
-            selected_ids=[option.id for option in question.options if option.id in selected],
-            correct_ids=[] if question.written else correct_ids,
-            correct=correct, answer_text=answer.answer_text,
-            correct_text=question.options[0].text if question.written else None,
-        )
-    if len(graded) != len(bank.questions):
+        if not question.accepts(answer.selected_ids):
+            raise invalid_answer("Choose valid options for this question.", index, "selected_ids")
+        selections[answer.question_id] = answer.selected_ids
+    if len(selections) != len(bank.questions):
         raise invalid_answer("Answer every question before submitting.")
-    return [graded[question_id] for question_id in bank.questions]
+
+    results = []
+    for question_id, question in bank.questions.items():
+        selected = set(selections[question_id])
+        correct_ids = bank.correct_ids[question_id]
+        results.append(GradedQuestion(
+            **question.model_dump(),
+            selected_ids=[option.id for option in question.options if option.id in selected],
+            correct_ids=correct_ids,
+            correct=selected == set(correct_ids),
+        ))
+    return results
 
 
 @router.get(
@@ -133,12 +133,10 @@ def get_test(
         # Keep the revision and ordered question rows in the same SQLite snapshot.
         connection.execute("BEGIN")
         bank = ready_bank(connection, set_id, user.username)
-    return TestPaper(set_id=set_id, title=bank.title, revision=bank.revision,
-                     questions=[question.for_study() for question in bank.questions.values()])
+    return TestPaper(set_id=set_id, title=bank.title, revision=bank.revision, questions=list(bank.questions.values()))
 
 
-@router.post("", response_model_exclude_none=True,
-             responses={409: {"model": SubmissionConflict, "description": "The set is Draft or the revision changed."}})
+@router.post("", responses={409: {"model": SubmissionConflict, "description": "The set is Draft or the revision changed."}})
 def submit_test(
     set_id: str, submission: TestSubmission, request: Request, response: Response,
     user: Annotated[User, Depends(require_user)],

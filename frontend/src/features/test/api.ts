@@ -1,10 +1,10 @@
 import { isAxiosError } from 'axios'
 import { http } from '../../http'
-import { isQuestion, type AnswerInput, type Question } from '../study-sets/question'
+import { isQuestion, type Question } from '../study-sets/question'
 
 type TestMetadata = { set_id: string; title: string; revision: number }
 export type TestPaper = TestMetadata & { questions: Question[] }
-export type GradedQuestion = Question & { selected_ids: string[]; correct_ids: string[]; correct: boolean; answer_text?: string; correct_text?: string }
+export type GradedQuestion = Question & { selected_ids: string[]; correct_ids: string[]; correct: boolean }
 export type TestResult = TestMetadata & {
   score: number
   total: number
@@ -12,7 +12,7 @@ export type TestResult = TestMetadata & {
   submitted_at: string
   questions: GradedQuestion[]
 }
-type TestAnswer = { question_id: string } & AnswerInput
+type TestAnswer = { question_id: string; selected_ids: string[] }
 type TestConflict = { code: 'draft'; remaining_questions: number } | { code: 'revision_changed' }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -29,15 +29,12 @@ function isMetadata(value: unknown, id: string): value is TestMetadata & Record<
 
 function isGradedQuestion(value: unknown): value is GradedQuestion {
   if (!isQuestion(value)) return false
-  if (!('correct' in value) || typeof value.correct !== 'boolean' || !('selected_ids' in value) || !('correct_ids' in value)) return false
-  if (!value.options.length) {
-    return Array.isArray(value.selected_ids) && !value.selected_ids.length && Array.isArray(value.correct_ids) && !value.correct_ids.length
-      && 'answer_text' in value && typeof value.answer_text === 'string' && 'correct_text' in value && typeof value.correct_text === 'string'
-  }
   const optionIds = new Set(value.options.map((option) => option.id))
   const validIds = (ids: unknown) => Array.isArray(ids) && ids.length > 0 && new Set(ids).size === ids.length
     && ids.every((id: unknown) => typeof id === 'string' && optionIds.has(id))
-  return validIds(value.selected_ids) && validIds(value.correct_ids)
+  return 'correct' in value && typeof value.correct === 'boolean'
+    && 'selected_ids' in value && validIds(value.selected_ids)
+    && 'correct_ids' in value && validIds(value.correct_ids)
 }
 
 function testPath(id: string) {

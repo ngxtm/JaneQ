@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import AuthError, SESSION_REQUIRED_RESPONSES, User, require_user
 from .database import connect, read_learn_progress, save_learn_progress
-from .question_bank import AnswerInput, Question, QuestionBank, read_question_bank
+from .question_bank import Question, QuestionBank, read_question_bank
 
 router = APIRouter(
     prefix="/api/study-sets/{set_id}",
@@ -34,7 +34,6 @@ class Answer(BaseModel):
     question_id: str
     selected_ids: list[str]
     correct: bool
-    answer_text: str | None = None
 
 
 class LearnProgress(BaseModel):
@@ -52,8 +51,6 @@ class Feedback(BaseModel):
     correct: bool
     selected_ids: list[str]
     correct_ids: list[str]
-    answer_text: str | None = None
-    correct_text: str | None = None
 
 
 class RoundReview(StudyCard):
@@ -84,8 +81,9 @@ class LearnAction(BaseModel):
     version: str | None = Field(examples=[None])
 
 
-class CheckAnswer(LearnAction, AnswerInput):
+class CheckAnswer(LearnAction):
     action: Literal["check"]
+    selected_ids: list[str] = Field(min_length=1, examples=[["q15-a"]])
 
 
 class Advance(LearnAction):
@@ -139,17 +137,16 @@ def apply_command(
     if isinstance(command, CheckAnswer) and progress.phase == "question":
         question_id = progress.queue[len(progress.answers)]
         question = questions[question_id]
-        correct = question.grade(command, correct_ids[question_id])
-        if correct is None:
+        if not question.accepts(command.selected_ids):
             raise HTTPException(422, [{
-                "type": "value_error", "loc": ["body", "answer_text" if question.written else "selected_ids"],
-                "msg": "Enter a written answer." if question.written else "Choose valid options for the current question.",
+                "type": "value_error", "loc": ["body", "selected_ids"],
+                "msg": "Choose valid options for the current question.",
             }])
+        correct = set(command.selected_ids) == set(correct_ids[question_id])
         if correct:
             progress.mastery[question_id] = 2 if question_id in progress.mastery else 1
         progress.studied_ids.add(question_id)
-        progress.answers.append(Answer(question_id=question_id, selected_ids=command.selected_ids or [],
-                                       answer_text=command.answer_text, correct=correct))
+        progress.answers.append(Answer(question_id=question_id, selected_ids=command.selected_ids, correct=correct))
         progress.phase = "feedback"
         return progress
     if isinstance(command, Advance) and progress.phase == "feedback":
@@ -183,9 +180,7 @@ def learn_view(
         answer = progress.answers[-1]
         question = questions[answer.question_id]
         feedback = Feedback(
-            correct=answer.correct, selected_ids=answer.selected_ids,
-            correct_ids=[] if question.written else correct_ids[answer.question_id],
-            answer_text=answer.answer_text, correct_text=question.options[0].text if question.written else None,
+            correct=answer.correct, selected_ids=answer.selected_ids, correct_ids=correct_ids[answer.question_id],
         )
     elif progress.phase == "summary":
         for answer in progress.answers:
@@ -199,7 +194,7 @@ def learn_view(
         studied=len(progress.studied_ids),
         familiar=sum(value == 1 for value in progress.mastery.values()),
         mastered=sum(value == 2 for value in progress.mastery.values()),
-        shuffle=progress.shuffle, question=question.for_study() if question else None, feedback=feedback, review=review,
+        shuffle=progress.shuffle, question=question, feedback=feedback, review=review,
     )
 
 

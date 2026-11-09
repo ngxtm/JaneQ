@@ -51,7 +51,8 @@ def owned_custom_set(connection: Connection, set_id: str, username: str) -> Row:
 
 
 @router.post("", status_code=201, responses={
-    409: {"model": AuthError, "description": "This creation key already belongs to a set with different content."},
+    409: {"model": AuthError, "description": "The creation key is already in use and the original content cannot be matched."},
+    410: {"model": AuthError, "description": "The study set created with this key was deleted."},
 })
 def post_study_set(
     content: CompleteStudySet, request: Request, response: Response, user: SessionUser,
@@ -64,7 +65,10 @@ def post_study_set(
         set_id = create_study_set(connection, user.username, content, idempotency_key)
         if set_id is None:
             raise HTTPException(409, "This set was already created. Open My sets to review the saved version.")
-        return StudySetSummary(**read_study_set_summaries(connection, user.username, set_id)[0])
+        summaries = read_study_set_summaries(connection, user.username, set_id)
+        if not summaries:
+            raise HTTPException(410, "The study set created by this request was deleted. Open My sets to start a new set.")
+        return StudySetSummary(**summaries[0])
 
 
 @router.get("/{set_id}/editor", responses=EDITOR_NOT_FOUND)
