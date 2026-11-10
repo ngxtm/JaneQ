@@ -18,6 +18,7 @@ services:
       JANEQ_SESSION_SECRET: ${JANEQ_SESSION_SECRET:?Set JANEQ_SESSION_SECRET}
       JANEQ_DB_PATH: /data/janeq.sqlite3
       JANEQ_COOKIE_SECURE: "true"
+      JANEQ_PDF_EXPORT_DIR: "${JANEQ_PDF_EXPORT_DIR:-}"
     volumes:
       - janeq-data:/data
     restart: unless-stopped
